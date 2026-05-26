@@ -485,9 +485,8 @@
 .fs-slab-figure-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(31,53,54,0.0) 0%, rgba(31,53,54,0.12) 100%);
+  background: none;
   pointer-events: none;
-  mix-blend-mode: overlay;
 }
 
 /* === SECTION HEAD === */
