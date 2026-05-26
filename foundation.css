@@ -497,7 +497,7 @@
 .fs-programs {
   max-width: 1320px;
   margin: 0 auto;
-  padding: 140px 48px;
+  padding: 70px 48px 140px;
 }
 .fs-programs-grid {
   display: grid;
@@ -1774,7 +1774,7 @@
   }
   .fs-slab-figure { max-width: 480px; }
 
-  .fs-programs { padding: 88px 24px; }
+  .fs-programs { padding: 48px 24px 88px; }
   .fs-programs-grid {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -1854,7 +1854,7 @@
   .fs-slab-text { margin: 18px 0 32px; }
   .fs-slab-meta { flex-direction: column; align-items: flex-start; gap: 12px; }
 
-  .fs-programs { padding: 64px 18px; }
+  .fs-programs { padding: 36px 18px 64px; }
   .fs-program-inner { padding: 22px; }
   .fs-program-title { font-size: 22px; }
   .fs-program-num-big { font-size: 30px; }
