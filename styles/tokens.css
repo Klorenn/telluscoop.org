@@ -1,0 +1,105 @@
+/* Tellus Cooperative — shared palette + tokens (all three systems) */
+:root {
+  --sand: #ECE0CC;
+  --sand-soft: #F5EDDD;
+  --sand-muted: #D4C8B5;
+
+  --teal: #3F8487;
+  --teal-deep: #2A5A5C;
+  --teal-ink: #1F3536;
+
+  --clay: #C75A2A;
+  --clay-deep: #9E441F;
+
+  --cream-90: rgba(236, 224, 204, 0.90);
+  --cream-70: rgba(236, 224, 204, 0.70);
+  --cream-50: rgba(236, 224, 204, 0.50);
+
+  --teal-deep-20: rgba(42, 90, 92, 0.20);
+  --teal-deep-40: rgba(42, 90, 92, 0.40);
+
+  --serif: 'Fraunces', 'Instrument Serif', Georgia, serif;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--sans);
+  color: var(--teal-ink);
+  background: var(--sand);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img { display: block; max-width: 100%; }
+button { font-family: inherit; cursor: pointer; }
+a { color: inherit; }
+
+/* Eyebrow label — used across systems */
+.eyebrow {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+}
+
+/* Tellus brand mark — lowercase serif wordmark with clay sun */
+.tellus-mark {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-family: var(--serif);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  color: var(--teal);
+  position: relative;
+}
+.tellus-mark .mark-text {
+  display: flex;
+  flex-direction: column;
+}
+.tellus-mark .mark-sun {
+  width: 0.55em;
+  height: 0.55em;
+  background: var(--clay);
+  border-radius: 50%;
+  margin-top: 0.18em;
+  margin-left: -0.18em;
+  align-self: flex-start;
+}
+
+/* Image placeholders */
+.placeholder {
+  position: relative;
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(42,90,92,0.08) 0 1px,
+      transparent 1px 10px),
+    var(--sand-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--teal-deep);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+.placeholder.on-teal {
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(236,224,204,0.10) 0 1px,
+      transparent 1px 10px),
+    var(--teal-deep);
+  color: var(--cream-70);
+}
+
+/* Scrollbars (subtle) */
+.scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.scroll::-webkit-scrollbar-thumb { background: var(--sand-muted); border-radius: 4px; }
+.scroll::-webkit-scrollbar-track { background: transparent; }
