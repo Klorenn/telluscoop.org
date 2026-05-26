@@ -325,7 +325,7 @@ const FoundationSystem = () => {
               </div>
             </Reveal>
             <Reveal delay={150} className="fs-slab-figure">
-              <img src="uploads/3 PLANETAS.svg" alt="Three planets illustration" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', mixBlendMode: 'darken' }} />
+              <img src="uploads/3 PLANETAS.svg" alt="Three planets illustration" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
               <div className="fs-slab-figure-overlay" aria-hidden="true"></div>
             </Reveal>
           </div>
