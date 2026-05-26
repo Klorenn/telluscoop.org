@@ -481,6 +481,18 @@
   border: none;
   box-shadow: none;
 }
+.fs-slab-figure::after {
+  content: '';
+  position: absolute;
+  bottom: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 62%;
+  height: 8%;
+  background: rgba(31,53,54,0.22);
+  border-radius: 50%;
+  pointer-events: none;
+}
 .fs-slab-figure image-slot { width: 100%; height: 100%; display: block; }
 .fs-slab-figure-overlay {
   position: absolute;
