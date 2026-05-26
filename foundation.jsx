@@ -118,7 +118,7 @@ const FoundationSystem = () => {
     fetchXml().then(xml => {
       if (!xml) return;
       const doc = new DOMParser().parseFromString(xml, 'text/xml');
-      const mapped = Array.from(doc.querySelectorAll('item')).slice(0, 18).map((item, i) => {
+      const mapped = Array.from(doc.querySelectorAll('item')).map((item, i) => {
         const title = getText(item, 'title');
         const description = getText(item, 'description');
         const link = getText(item, 'link');
