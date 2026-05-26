@@ -89,7 +89,12 @@ const FoundationSystem = () => {
 
   useEffect(() => {
     const RSS = 'https://rss.beehiiv.com/feeds/NRVrKCDABF.xml';
-    const proxies = ['https://corsproxy.io/?url=', 'https://api.allorigins.win/raw?url='];
+    const proxies = [
+      '',
+      'https://api.allorigins.win/raw?url=',
+      'https://corsproxy.io/?url=',
+      'https://thingproxy.freeboard.io/fetch/',
+    ];
 
     const tagFor = (cat = '') => {
       if (/\bia\b|inteligencia|gpt|gemini|claude|llm/i.test(cat)) return 'ai';
@@ -106,7 +111,8 @@ const FoundationSystem = () => {
     const fetchXml = async () => {
       for (const proxy of proxies) {
         try {
-          const r = await fetch(proxy + encodeURIComponent(RSS));
+          const url = proxy ? proxy + encodeURIComponent(RSS) : RSS;
+          const r = await fetch(url);
           if (!r.ok) continue;
           const t = await r.text();
           if (t.includes('<item>')) return t;
