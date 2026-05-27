@@ -152,14 +152,38 @@ window.useLang = () => {
   return { lang, setLang, t };
 };
 
-const LangSwitcher = ({ lang, setLang }) => (
-  <div className="fs-lang-switcher">
-    {['en', 'es', 'pt'].map(l => (
-      <button key={l} className={`fs-lang-btn${lang === l ? ' is-on' : ''}`} onClick={() => setLang(l)}>
-        {l.toUpperCase()}
+const LANG_LABELS = { en: 'English', es: 'Español', pt: 'Português' };
+
+const LangSwitcher = ({ lang, setLang }) => {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className="fs-lang-switcher" ref={ref}>
+      <button className="fs-lang-trigger" onClick={() => setOpen(o => !o)} aria-label="Select language">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+        <span>{lang.toUpperCase()}</span>
       </button>
-    ))}
-  </div>
-);
+      {open && (
+        <div className="fs-lang-dropdown">
+          {['en', 'es', 'pt'].map(l => (
+            <button key={l} className={`fs-lang-option${lang === l ? ' is-on' : ''}`} onClick={() => { setLang(l); setOpen(false); }}>
+              <span className="fs-lang-code">{l.toUpperCase()}</span>
+              <span className="fs-lang-label">{LANG_LABELS[l]}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 window.LangSwitcher = LangSwitcher;
