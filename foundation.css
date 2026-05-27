@@ -1822,6 +1822,12 @@
   transition: color 200ms ease, padding-left 220ms ease;
 }
 .fs-nav-mobile a:hover { color: var(--clay); padding-left: 4px; }
+.fs-nav-mobile-lang {
+  padding: 12px 0 4px;
+  border-bottom: 1px solid var(--sand-muted);
+}
+.fs-nav-mobile-lang .fs-lang-trigger { opacity: 0.8; font-size: 11px; padding: 6px 10px; }
+.fs-nav-mobile-lang .fs-lang-dropdown { left: 0; right: auto; }
 .fs-nav-mobile .fs-btn-primary {
   margin-top: 16px;
   justify-content: center;
@@ -1964,6 +1970,7 @@
   .fs-article-body { padding: 22px; }
   .fs-article-title { font-size: 22px; }
   .fs-article-excerpt { font-size: 14.5px; margin-bottom: 20px; }
+  .fs-article-img { aspect-ratio: 16 / 8; }
   .fs-article-side { grid-template-columns: 110px 1fr; }
   .fs-article-side-body { padding: 14px 16px; gap: 8px; }
   .fs-article-side-title { font-size: 15px; }

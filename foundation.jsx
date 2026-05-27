@@ -240,6 +240,9 @@ const FoundationSystem = () => {
           {[['programs', t('navPrograms')], ['articles', t('navArticles')], ['courses', t('navCourses')], ['about', t('navAbout')]].map(([id, label]) => (
             <a key={id} href={`#${id}`} onClick={() => setMobileNavOpen(false)}>{label}</a>
           ))}
+          <div className="fs-nav-mobile-lang">
+            <window.LangSwitcher lang={lang} setLang={(l) => { setLang(l); setMobileNavOpen(false); }} />
+          </div>
           <button className="fs-btn-primary" onClick={() => { setMobileNavOpen(false); setJoinOpen(true); }}>
             <span>{t('navJoinFull')}</span>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
