@@ -1,3 +1,5 @@
+const https = require('https');
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -9,23 +11,39 @@ module.exports = async function handler(req, res) {
   const { email } = req.body || {};
   if (!email) return res.status(400).json({ error: 'Email required' });
 
-  try {
-    const response = await fetch('https://api.beehiiv.com/v2/publications/NRVrKCDABF/subscriptions', {
+  const body = JSON.stringify({ email, reactivate_existing: true, send_welcome_email: true });
+
+  return new Promise((resolve) => {
+    const options = {
+      hostname: 'api.beehiiv.com',
+      path: '/v2/publications/NRVrKCDABF/subscriptions',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer M8oDjuGHryuvp0reiO24RAwiWJ8cx73AfZQo4ijYruPeAfK3cansSvhHVsVEynk8',
+        'Content-Length': Buffer.byteLength(body),
       },
-      body: JSON.stringify({
-        email,
-        reactivate_existing: true,
-        send_welcome_email: true,
-      }),
+    };
+
+    const req2 = https.request(options, (r) => {
+      let data = '';
+      r.on('data', (chunk) => { data += chunk; });
+      r.on('end', () => {
+        if (r.statusCode >= 200 && r.statusCode < 300) {
+          res.status(200).json({ ok: true });
+        } else {
+          res.status(r.statusCode).json({ error: data });
+        }
+        resolve();
+      });
     });
-    const data = await response.json();
-    if (!response.ok) return res.status(response.status).json(data);
-    return res.status(200).json({ ok: true });
-  } catch (err) {
-    return res.status(500).json({ error: 'Internal error' });
-  }
+
+    req2.on('error', (err) => {
+      res.status(500).json({ error: err.message });
+      resolve();
+    });
+
+    req2.write(body);
+    req2.end();
+  });
 };
