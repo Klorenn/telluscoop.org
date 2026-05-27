@@ -699,11 +699,34 @@ const JoinModal = ({ onClose }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const handleSubscribe = (e) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubscribe = async (e) => {
     e.preventDefault();
     if (!email) return;
-    window.open(`https://blog.telluscoop.com/subscribe?email=${encodeURIComponent(email)}`, '_blank');
-    setDone(true);
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('https://api.beehiiv.com/v2/publications/NRVrKCDABF/subscriptions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer M8oDjuGHryuvp0reiO24RAwiWJ8cx73AfZQo4ijYruPeAfK3cansSvhHVsVEynk8',
+        },
+        body: JSON.stringify({
+          email,
+          reactivate_existing: true,
+          send_welcome_email: true,
+        }),
+      });
+      if (!res.ok) throw new Error('error');
+      setDone(true);
+    } catch {
+      setError('Something went wrong. Try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -723,12 +746,14 @@ const JoinModal = ({ onClose }) => {
                 required
                 autoFocus
                 className="fs-subscribe-input"
+                disabled={loading}
               />
-              <button type="submit" className="fs-btn-primary fs-subscribe-btn">
-                <span>Subscribe</span>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <button type="submit" className="fs-btn-primary fs-subscribe-btn" disabled={loading}>
+                <span>{loading ? '...' : 'Subscribe'}</span>
+                {!loading && <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
               </button>
             </form>
+            {error && <p style={{ color: 'var(--clay)', fontSize: 13, marginTop: 8 }}>{error}</p>}
             <div className="fs-modal-divider"><span>also join the community</span></div>
             <div className="fs-modal-community">
               <a href="https://chat.whatsapp.com/FsNIUPsmNCl2YJkQi5r4p4" target="_blank" rel="noopener noreferrer" className="fs-community-btn fs-community-wa">
