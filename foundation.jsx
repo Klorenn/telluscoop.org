@@ -716,7 +716,7 @@ const JoinModal = ({ onClose }) => {
       if (!res.ok) throw new Error('error');
       setDone(true);
     } catch {
-      setError('Something went wrong. Try again.');
+      setError('Could not subscribe. Visit blog.telluscoop.com/subscribe to sign up directly.');
     } finally {
       setLoading(false);
     }
