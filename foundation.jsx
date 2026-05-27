@@ -519,7 +519,7 @@ const FoundationSystem = () => {
       </section>
 
       {/* SOCIAL WALL */}
-      <section className="fs-wall">
+      <section className="fs-wall" id="field">
         <Reveal className="fs-section-head fs-wall-head">
           <div>
             <div className="eyebrow">Live from the cooperative</div>
@@ -581,7 +581,7 @@ const FoundationSystem = () => {
         </div>
 
         <div className="fs-wall-foot">
-          <a className="fs-wall-cta">
+          <a className="fs-wall-cta" href="#field">
             <span>Follow the cooperative</span>
             <span className="fs-arrow">→</span>
           </a>
