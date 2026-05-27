@@ -1,0 +1,44 @@
+# Tellus Cooperative
+
+> The blockchain cooperative for Latin America. Est. 2019. Tellus Cooperative Foundation, New York, NY.
+
+Tellus Cooperative is a Latin American blockchain cooperative with 4,500+ active subscribers across 12 chapters in Santiago, Mexico City, São Paulo, Buenos Aires, Bogotá, Lima, Montevideo, Quito, Medellín, and Porto Alegre.
+
+## What we do
+
+- **Cooperative education** — Quarterly cohorts on blockchain, AI, and decentralized economics. Full scholarships for students from public universities across Latin America. 847 active students.
+- **Project incubation** — We help new projects emerge, find resources, and access funding opportunities. 23 projects incubated.
+- **Public resources** — Open publications on data sovereignty, cooperative organizational models, and digital economics.
+
+## Institutional ecosystem
+
+Partners include Stellar Foundation, Filecoin, Ethereum Foundation, Avalanche, PizzaDAO, and IdeaUFRO.
+
+## Newsletter & articles
+
+All published articles and newsletters are available at https://telluscoop.beehiiv.com
+
+RSS feed: https://rss.beehiiv.com/feeds/NRVrKCDABF.xml
+
+## Social
+
+- X / Twitter: https://x.com/TellusCoop
+- Instagram: https://www.instagram.com/telluscoop/
+- YouTube: https://www.youtube.com/@telluscoop
+- LinkedIn: https://www.linkedin.com/company/tellus-cooperative/
+
+## Courses (YouTube)
+
+Free courses on blockchain, Stellar, and Web3 available at https://www.youtube.com/@telluscoop/playlists
+
+## Organization
+
+- Legal name: Tellus Cooperative Foundation
+- HQ: New York, NY
+- Website: https://telluscoop.org
+- Founded: 2019
+- License: CC BY-SA 4.0
+
+## For LLM agents
+
+This site is a static single-page application. All content is rendered client-side via React. The main HTML entry point is index.html. No sitemap is currently published. For full article content, query the Beehiiv RSS feed or the newsletter archive at https://telluscoop.beehiiv.com.
