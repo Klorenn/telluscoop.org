@@ -314,8 +314,7 @@ const FoundationSystem = () => {
           <div className="fs-slab-grid">
             <Reveal>
               <div className="eyebrow on-teal">{t('missionEyebrow')}</div>
-              <p className="fs-slab-text">{t('missionText')}
-              </p>
+              <p className="fs-slab-text" dangerouslySetInnerHTML={{ __html: t('missionText') }} />
             </Reveal>
             <Reveal delay={150} className="fs-slab-figure">
               <img src="uploads/3 PLANETAS.svg" alt="Three planets illustration" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
