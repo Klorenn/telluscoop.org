@@ -1,1 +1,9 @@
-{}
+{
+  "redirects": [
+    {
+      "source": "/stellar",
+      "destination": "https://demo.stellarpassport.xyz/org/stellar-chile",
+      "permanent": false
+    }
+  ]
+}
