@@ -708,17 +708,10 @@ const JoinModal = ({ onClose }) => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('https://api.beehiiv.com/v2/publications/NRVrKCDABF/subscriptions', {
+      const res = await fetch('/api/subscribe', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer M8oDjuGHryuvp0reiO24RAwiWJ8cx73AfZQo4ijYruPeAfK3cansSvhHVsVEynk8',
-        },
-        body: JSON.stringify({
-          email,
-          reactivate_existing: true,
-          send_welcome_email: true,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       });
       if (!res.ok) throw new Error('error');
       setDone(true);
