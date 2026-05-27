@@ -29,7 +29,7 @@ module.exports = async function handler(req, res) {
   return new Promise((resolve) => {
     const options = {
       hostname: 'api.beehiiv.com',
-      path: '/v2/publications/30c7e4c1-15ed-46d8-a23d-32c90e011794/subscriptions',
+      path: '/v2/publications/pub_30c7e4c1-15ed-46d8-a23d-32c90e011794/subscriptions',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
