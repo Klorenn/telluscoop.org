@@ -902,7 +902,7 @@
 .fs-wall {
   max-width: 1320px;
   margin: 0 auto;
-  padding: 0 48px 140px;
+  padding: 0 48px 48px;
 }
 .fs-wall-head {
   display: flex !important;
