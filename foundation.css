@@ -2006,3 +2006,26 @@
   .fs-modal-step { padding: 28px 22px 24px; }
   .fs-modal-h { font-size: 28px; }
 }
+
+/* Language switcher */
+.fs-lang-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.fs-lang-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  font-family: var(--mono);
+  letter-spacing: 0.06em;
+  padding: 3px 5px;
+  color: var(--ink);
+  opacity: 0.35;
+  border-radius: 3px;
+  transition: opacity 0.15s;
+  line-height: 1;
+}
+.fs-lang-btn:hover { opacity: 0.65; }
+.fs-lang-btn.is-on { opacity: 1; font-weight: 600; }
