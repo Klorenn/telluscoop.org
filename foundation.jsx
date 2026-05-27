@@ -304,8 +304,8 @@ const FoundationSystem = () => {
 
       {/* STATS */}
       <Reveal as="section" className="fs-stats-strip">
-        <Stat num={4548} label="active subscribers" />
-        <Stat num={12} label="countries reached" />
+        <Stat num={4548} suffix="+" label="active subscribers" />
+        <Stat num={12} suffix="+" label="countries reached" />
         <Stat num={209} suffix="+" label="hackathon projects" />
         <Stat num={100} suffix="%" unit="open & cooperative" />
       </Reveal>
