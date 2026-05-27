@@ -936,10 +936,12 @@
   transition: transform 300ms cubic-bezier(.34,1.56,.64,1);
 }
 .fs-handle:hover .fs-handle-ico { transform: scale(1.15) rotate(-8deg); }
-.fs-handle-ig { background: transparent; }
-.fs-handle-fc { background: var(--teal); }
-.fs-handle-yt { background: transparent; }
-.fs-handle-li { background: transparent; }
+.fs-ico-x  { background: #000; }
+.fs-ico-ig { background: radial-gradient(circle at 30% 110%, #f09433, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888); }
+.fs-ico-yt { background: #FF0000; }
+.fs-ico-li { background: #0A66C2; }
+.fs-ico-wa { background: #25D366; }
+.fs-ico-dc { background: #5865F2; }
 
 .fs-wall-grid {
   display: grid;
