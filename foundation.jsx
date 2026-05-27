@@ -175,7 +175,7 @@ const FoundationSystem = () => {
   const [articlesAll, setArticlesAll] = useState([
     { id: 1, kind: 'Research', tag: 'res', read: '10 min read', date: '04 May 2026', title: 'On data sovereignty: a cooperative reading of the Global South\'s digital infrastructure.', excerpt: 'A long-form essay on why the next decade of digital policy in Latin America will be defined less by what platforms we use and more by who owns the rails underneath them.', author: 'Sofía Aravena · with C. Restrepo', role: 'Council · Treasury & Research', feat: true },
     { id: 2, kind: 'Field notes', tag: 'fld', read: '6 min read', date: '02 May', title: 'Cohort 04, week one: what 23 students taught us about cooperative pedagogy.' },
-    { id: 3, kind: 'Governance', tag: 'gov', read: '8 min read', date: '28 Apr', title: 'Drafting our first cooperative charter: how 412 members shaped the founding document.' },
+    { id: 3, kind: 'Education', tag: 'edu', read: '8 min read', date: '28 Apr', title: 'Drafting our first cooperative charter: how 412 members shaped the founding document.' },
     { id: 4, kind: 'Research', tag: 'res', read: '12 min read', date: '22 Apr', title: 'Mapping cooperative AI: a directory of 47 LATAM projects building outside Big Tech.' },
   ]);
   const TAB_FILTERS = { 'all': null, 'blockchain': 'blk', 'ia': 'ai', 'newsletter': 'fld' };
@@ -215,7 +215,7 @@ const FoundationSystem = () => {
             <img src="uploads/tellus.svg" alt="Tellus Cooperative" className="fs-mark-img" />
           </a>
           <div className="fs-nav-links">
-            {['Programs', 'Chapters', 'Articles', 'Courses', 'Governance', 'About'].map(l => (
+            {['Programs', 'Articles', 'Courses', 'About'].map(l => (
               <a key={l} href={`#${l.toLowerCase()}`}>
                 <span>{l}</span>
                 <span className="fs-nav-underline" aria-hidden="true"></span>
@@ -235,7 +235,7 @@ const FoundationSystem = () => {
           </button>
         </div>
         <div className={`fs-nav-mobile ${mobileNavOpen ? 'is-open' : ''}`}>
-          {['Programs', 'Chapters', 'Articles', 'Governance', 'About'].map(l => (
+          {['Programs', 'Articles', 'Courses', 'About'].map(l => (
             <a key={l} href={`#${l.toLowerCase()}`} onClick={() => setMobileNavOpen(false)}>{l}</a>
           ))}
           <button className="fs-btn-primary" onClick={() => { setMobileNavOpen(false); setJoinOpen(true); }}>
@@ -354,8 +354,7 @@ const FoundationSystem = () => {
           <div className="eyebrow">Three programs</div>
           <h2 className="fs-h2">What we do, today.</h2>
           <p className="fs-section-sub">
-            Three concurrent tracks. Members can join any combination, and contribute
-            governance time across all of them.
+            Three concurrent tracks. Members can join any combination across all of them.
           </p>
         </Reveal>
         <div className="fs-programs-grid">
