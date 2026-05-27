@@ -1561,6 +1561,25 @@
   overflow: hidden;
 }
 .fs-modal-wide { width: 520px; }
+.fs-subscribe-form {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.fs-subscribe-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid var(--sand-muted);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--sand-soft);
+  color: var(--teal-ink);
+  outline: none;
+  transition: border-color 200ms ease;
+}
+.fs-subscribe-input:focus { border-color: var(--teal); }
+.fs-subscribe-btn { white-space: nowrap; }
+
 .fs-modal-divider {
   display: flex;
   align-items: center;

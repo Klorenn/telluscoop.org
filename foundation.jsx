@@ -690,40 +690,80 @@ const Stat = ({ num, suffix = '', label, unit, decimals = 0 }) => {
 };
 
 const JoinModal = ({ onClose }) => {
+  const [email, setEmail] = useState('');
+  const [done, setDone] = useState(false);
+
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    if (!email) return;
+    window.open(`https://blog.telluscoop.com/subscribe?email=${encodeURIComponent(email)}`, '_blank');
+    setDone(true);
+  };
+
   return (
     <div className="fs-modal-bg" onClick={onClose}>
       <div className="fs-modal fs-modal-wide" onClick={e => e.stopPropagation()}>
         <button className="fs-modal-close" onClick={onClose} aria-label="Close">×</button>
-        <h3 className="fs-modal-h" style={{ marginBottom: 4 }}>Join Tellus.</h3>
-        <p className="fs-modal-lede" style={{ marginBottom: 20 }}>Subscribe to our newsletter — weekly guides, events, and resources for blockchain entrepreneurship.</p>
-        <iframe
-          src="https://embeds.beehiiv.com/NRVrKCDABF"
-          data-test-id="beehiiv-embed"
-          width="100%"
-          height="180"
-          frameBorder="0"
-          scrolling="no"
-          style={{ borderRadius: 8, border: 'none', background: 'transparent', display: 'block' }}
-        />
-        <div className="fs-modal-divider">
-          <span>then join the community</span>
-        </div>
-        <div className="fs-modal-community">
-          <a href="https://chat.whatsapp.com/FsNIUPsmNCl2YJkQi5r4p4" target="_blank" rel="noopener noreferrer" className="fs-community-btn fs-community-wa">
-            <img src="uploads/whatsapp.svg" alt="WhatsApp" width="20" height="20" style={{filter:'brightness(10)'}} />
-            <span>WhatsApp · 300+ members</span>
-          </a>
-          <a href="https://discord.gg/Fy2SgR3XRu" target="_blank" rel="noopener noreferrer" className="fs-community-btn fs-community-dc">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028 14.09 14.09 0 001.226-1.994.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
-            <span>Discord community</span>
-          </a>
-        </div>
+        {!done ? (
+          <>
+            <h3 className="fs-modal-h" style={{ marginBottom: 4 }}>Join Tellus.</h3>
+            <p className="fs-modal-lede" style={{ marginBottom: 24 }}>Weekly guides, events, and resources for blockchain entrepreneurship — free.</p>
+            <form className="fs-subscribe-form" onSubmit={handleSubscribe}>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                autoFocus
+                className="fs-subscribe-input"
+              />
+              <button type="submit" className="fs-btn-primary fs-subscribe-btn">
+                <span>Subscribe</span>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </form>
+            <div className="fs-modal-divider"><span>also join the community</span></div>
+            <div className="fs-modal-community">
+              <a href="https://chat.whatsapp.com/FsNIUPsmNCl2YJkQi5r4p4" target="_blank" rel="noopener noreferrer" className="fs-community-btn fs-community-wa">
+                <img src="uploads/whatsapp.svg" alt="WhatsApp" width="20" height="20" style={{filter:'brightness(10)'}} />
+                <span>WhatsApp · 300+ members</span>
+              </a>
+              <a href="https://discord.gg/Fy2SgR3XRu" target="_blank" rel="noopener noreferrer" className="fs-community-btn fs-community-dc">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028 14.09 14.09 0 001.226-1.994.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                <span>Discord community</span>
+              </a>
+            </div>
+          </>
+        ) : (
+          <div className="fs-modal-success">
+            <div className="fs-modal-check" aria-hidden="true">
+              <svg viewBox="0 0 48 48" width="48" height="48">
+                <circle cx="24" cy="24" r="22" fill="none" stroke="currentColor" strokeWidth="1.5" className="fs-check-c"/>
+                <path d="M14 24l7 7 14-14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="fs-check-p"/>
+              </svg>
+            </div>
+            <h3 className="fs-modal-h">Check your inbox.</h3>
+            <p className="fs-modal-lede">Confirm your subscription in the tab that just opened. Then join the community:</p>
+            <div className="fs-modal-community">
+              <a href="https://chat.whatsapp.com/FsNIUPsmNCl2YJkQi5r4p4" target="_blank" rel="noopener noreferrer" className="fs-community-btn fs-community-wa">
+                <img src="uploads/whatsapp.svg" alt="WhatsApp" width="20" height="20" style={{filter:'brightness(10)'}} />
+                <span>WhatsApp · 300+ members</span>
+              </a>
+              <a href="https://discord.gg/Fy2SgR3XRu" target="_blank" rel="noopener noreferrer" className="fs-community-btn fs-community-dc">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028 14.09 14.09 0 001.226-1.994.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                <span>Discord community</span>
+              </a>
+            </div>
+            <button className="fs-btn-primary fs-modal-btn" style={{ marginTop: 16 }} onClick={onClose}>Done</button>
+          </div>
+        )}
       </div>
     </div>
   );
