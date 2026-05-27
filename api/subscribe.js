@@ -19,8 +19,10 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { email } = await parseBody(req);
-  if (!email) return res.status(400).json({ error: 'Email required' });
+  const parsed = await parseBody(req);
+  console.log('[subscribe] parsed body:', JSON.stringify(parsed));
+  const { email } = parsed;
+  if (!email) return res.status(400).json({ error: 'Email required', parsed });
 
   const body = JSON.stringify({ email, reactivate_existing: true, send_welcome_email: true });
 
@@ -40,6 +42,7 @@ module.exports = async function handler(req, res) {
       let data = '';
       r.on('data', (chunk) => { data += chunk; });
       r.on('end', () => {
+        console.log('[subscribe] beehiiv status:', r.statusCode, 'body:', data);
         if (r.statusCode >= 200 && r.statusCode < 300) {
           res.status(200).json({ ok: true });
         } else {
