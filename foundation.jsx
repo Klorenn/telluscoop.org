@@ -168,7 +168,7 @@ const FoundationSystem = () => {
 
   const programs = [
     { code: '01', title: 'Cooperative education', body: 'Quarterly cohorts on blockchain, AI, and decentralized economics. Full scholarships for students from public universities across Latin America.', stat: 4548, statSuffix: '+', statLabel: 'active students', img: 'uploads/cooperative education.jpg' },
-    { code: '02', title: 'Project incubation', body: 'We help new projects emerge, find resources, and access funding opportunities — connecting founders with the cooperative network, mentors, and partners to build with real backing.', stat: 100, statSuffix: '+', statLabel: 'community projects', img: 'uploads/project incubation.jpg' },
+    { code: '02', title: 'Project incubation', body: 'We help new projects emerge, find resources, and access funding opportunities — connecting founders with the cooperative network, mentors, and partners to build with real backing.', stat: 209, statSuffix: '+', statLabel: 'community projects', img: 'uploads/project incubation.jpg' },
     { code: '03', title: 'Public resources', body: 'Open publications on data sovereignty, cooperative organizational models, and digital economics — freely available for communities across Latin America.', stat: 191, statSuffix: '+', statLabel: 'articles published', img: 'uploads/public research.jpg' },
   ];
 
