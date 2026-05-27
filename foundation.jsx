@@ -250,7 +250,6 @@ const FoundationSystem = () => {
         <div className="fs-hero-grid">
           <div className="fs-hero-text">
             <Reveal className="fs-hero-eye">
-              <span className="fs-eye-dot" aria-hidden="true"></span>
               <span className="eyebrow">The blockchain cooperative · EST 2019</span>
             </Reveal>
             <h1 className="fs-h1">
