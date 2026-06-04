@@ -482,6 +482,7 @@
   box-shadow: none;
 }
 .fs-slab-figure image-slot { width: 100%; height: 100%; display: block; }
+.fs-slab-single { max-width: 760px; }
 .fs-slab-figure-overlay {
   position: absolute;
   inset: 0;
@@ -1151,7 +1152,7 @@
 .fs-partners {
   max-width: 1320px;
   margin: 0 auto;
-  padding: 56px 48px 56px;
+  padding: 120px 48px 80px;
 }
 .fs-partners-ticker {
   position: relative;

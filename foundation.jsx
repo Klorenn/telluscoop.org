@@ -90,6 +90,8 @@ const FoundationSystem = () => {
 
   useEffect(() => {
     const RSS = 'https://rss.beehiiv.com/feeds/NRVrKCDABF.xml';
+    const CACHE_KEY = 'tellus_rss_v1';
+    const TTL = 24 * 3600 * 1000;
     const proxies = [
       '',
       'https://api.allorigins.win/raw?url=',
@@ -109,6 +111,23 @@ const FoundationSystem = () => {
     };
     const getText = (el, tag) => el.getElementsByTagName(tag)[0]?.textContent?.trim() || '';
 
+    const parseXml = (xml) => {
+      const doc = new DOMParser().parseFromString(xml, 'text/xml');
+      const items = Array.from(doc.querySelectorAll('item'));
+      items.sort((a, b) => new Date(getText(b, 'pubDate')) - new Date(getText(a, 'pubDate')));
+      return items.map((item, i) => {
+        const title = getText(item, 'title');
+        const description = getText(item, 'description');
+        const link = getText(item, 'link');
+        const date = fmtDate(getText(item, 'pubDate'));
+        const cats = Array.from(item.getElementsByTagName('category')).map(c => c.textContent.trim());
+        const kind = cats[0] || 'Field notes';
+        const enc = item.getElementsByTagName('enclosure')[0];
+        const thumbnail = enc?.getAttribute('url') || undefined;
+        return { id: i + 1, title, excerpt: description, link, date, kind, tag: tagFor(kind), thumbnail };
+      });
+    };
+
     const fetchXml = async () => {
       for (const proxy of proxies) {
         try {
@@ -122,21 +141,19 @@ const FoundationSystem = () => {
       return null;
     };
 
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < TTL) {
+        setArticlesAll(cached.data);
+        return;
+      }
+    } catch {}
+
     fetchXml().then(xml => {
       if (!xml) return;
-      const doc = new DOMParser().parseFromString(xml, 'text/xml');
-      const mapped = Array.from(doc.querySelectorAll('item')).map((item, i) => {
-        const title = getText(item, 'title');
-        const description = getText(item, 'description');
-        const link = getText(item, 'link');
-        const date = fmtDate(getText(item, 'pubDate'));
-        const cats = Array.from(item.getElementsByTagName('category')).map(c => c.textContent.trim());
-        const kind = cats[0] || 'Field notes';
-        const enc = item.getElementsByTagName('enclosure')[0];
-        const thumbnail = enc?.getAttribute('url') || undefined;
-        return { id: i + 1, title, excerpt: description, link, date, kind, tag: tagFor(kind), thumbnail, feat: i === 0 };
-      });
+      const mapped = parseXml(xml);
       setArticlesAll(mapped);
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: mapped })); } catch {}
     });
   }, []);
 
@@ -195,13 +212,13 @@ const FoundationSystem = () => {
   ];
 
   const playlists = [
-    { title: 'Hola Stellar — Aprende Stellar desde cero', list: 'PLLgyZ3kOWK4O-Lp1oRBUWGGbuW9ksLQc-', vid: 'RfRx7C5twi0' },
+    { title: 'Hola Stellar — Aprende Stellar desde cero', list: 'PLLgyZ3kOWK4O-Lp1oRBUWGGbuW9ksLQc-', vid: 'RfRx7C5twi0', url: 'https://www.youtube.com/watch?v=RfRx7C5twi0&list=PLLgyZ3kOWK4O-Lp1oRBUWGGbuW9ksLQc-&index=3' },
     { title: 'Guía Completa de Stellar Quest', list: 'PLLgyZ3kOWK4OfidwhewcUJOsr2WG3j0nv', vid: '-rSLo0rioaM' },
     { title: 'Talleres', list: 'PLLgyZ3kOWK4MJeY7lqpYJ91K5kYSTqj5z', vid: 'X2md53SSNOA' },
     { title: 'Charlas Educativas', list: 'PLLgyZ3kOWK4MZk7iDpfQfwDLNtD5VPeX8', vid: 'hLtreVEM1yo' },
     { title: 'Charlas Stellares', list: 'PLLgyZ3kOWK4MkXrQni_xlO9B9Wi9sRoSx', vid: 'poGbTGRE0Nw' },
     { title: 'Introducción a Tellus Cooperative', list: 'PLLgyZ3kOWK4PZ33fsUOJa6PtLI8Rv0Itw', vid: '3erjjWHErAo' },
-    { title: 'InstaWards', list: 'PLLgyZ3kOWK4Og0k1cTBJHCNc975drI5ru', vid: 'H9N3xA8eRII' },
+    { title: 'InstaWards', list: 'PLLgyZ3kOWK4Og0k1cTBJHCNc975drI5ru', vid: 'H9N3xA8eRII', url: 'https://www.youtube.com/watch?v=H9N3xA8eRII&list=PLLgyZ3kOWK4Og0k1cTBJHCNc975drI5ru&index=3' },
   ];
 
   return (
@@ -314,16 +331,10 @@ const FoundationSystem = () => {
       <section className="fs-slab" id="about">
         <div className="fs-slab-bg" aria-hidden="true"></div>
         <div className="fs-slab-inner">
-          <div className="fs-slab-grid">
-            <Reveal>
-              <div className="eyebrow on-teal">{t('missionEyebrow')}</div>
-              <p className="fs-slab-text" dangerouslySetInnerHTML={{ __html: t('missionText') }} />
-            </Reveal>
-            <Reveal delay={150} className="fs-slab-figure">
-              <img src="uploads/3 PLANETAS.svg" alt="Three planets illustration" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
-              <div className="fs-slab-figure-overlay" aria-hidden="true"></div>
-            </Reveal>
-          </div>
+          <Reveal className="fs-slab-single">
+            <div className="eyebrow on-teal">{t('missionEyebrow')}</div>
+            <p className="fs-slab-text" dangerouslySetInnerHTML={{ __html: t('missionText') }} />
+          </Reveal>
         </div>
       </section>
 
@@ -473,7 +484,7 @@ const FoundationSystem = () => {
           <Reveal delay={0} className="fs-course-feat-wrap">
             <a
               className="fs-course-feat"
-              href={`https://www.youtube.com/playlist?list=${playlists[0].list}`}
+              href={playlists[0].url || `https://www.youtube.com/playlist?list=${playlists[0].list}`}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -495,7 +506,7 @@ const FoundationSystem = () => {
               <Reveal key={i} delay={i * 60}>
                 <a
                   className="fs-course-side"
-                  href={`https://www.youtube.com/playlist?list=${p.list}`}
+                  href={p.url || `https://www.youtube.com/playlist?list=${p.list}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
