@@ -1,5 +1,7 @@
 {
+  "cleanUrls": true,
   "rewrites": [
     { "source": "/brand", "destination": "/brand.html" }
-  ]
+  ],
+  "trailingSlash": false
 }
