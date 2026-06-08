@@ -658,7 +658,7 @@ const FoundationSystem = () => {
         </div>
         <div className="fs-footer-base">
           <span>{t('footerCopyright')}</span>
-          <a href="/brand" className="fs-footer-icon-link" style={{fontSize:11,opacity:0.55}}>Brand Guide</a>
+          <a href="/brand" rel="noopener noreferrer" style={{fontSize:11,opacity:0.55,fontFamily:'var(--mono)',letterSpacing:'0.05em',textDecoration:'none',color:'var(--teal-deep)'}}>Brand Guide</a>
         </div>
       </footer>
 
