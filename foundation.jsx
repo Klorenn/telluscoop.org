@@ -411,6 +411,7 @@ const FoundationSystem = () => {
               </button>
             ))}
           </div>
+          </div>
         </Reveal>
 
         <div className="fs-articles-grid" key={`${tab}-${page}`}>
