@@ -66,6 +66,7 @@ const FoundationSystem = () => {
   const { lang, setLang, t } = window.useLang();
   const [joinOpen, setJoinOpen] = useState(false);
   const [activeProgram, setActiveProgram] = useState(0);
+  const [rssKey, setRssKey] = useState(0);
   const [tab, setTab] = useState('all');
   const [page, setPage] = useState(1);
   const [navScrolled, setNavScrolled] = useState(false);
@@ -155,7 +156,7 @@ const FoundationSystem = () => {
       setArticlesAll(mapped);
       try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: mapped })); } catch {}
     });
-  }, []);
+  }, [rssKey]);
 
   useEffect(() => {
     if (window.twttr?.widgets) {
@@ -399,7 +400,11 @@ const FoundationSystem = () => {
             <div className="eyebrow">{t('articlesEyebrow')}</div>
             <h2 className="fs-h2">{t('articlesH2')}</h2>
           </div>
-          <div className="fs-articles-tabs" role="tablist">
+          <div style={{display:'flex',alignItems:'center',gap:16}}>
+            <button className="fs-art-tab" onClick={() => { localStorage.removeItem('tellus_rss_v1'); setRssKey(k => k + 1); setTab('all'); setPage(1); }} title="Refresh articles from Beehiiv" style={{fontSize:11,padding:'6px 10px',display:'inline-flex',alignItems:'center',gap:4,border:'1px solid var(--sand-muted)',borderRadius:999,background:'transparent',color:'var(--teal-deep)',cursor:'pointer',opacity:0.55,transition:'opacity .2s'}} onMouseEnter={e => e.target.style.opacity=1} onMouseLeave={e => e.target.style.opacity=0.55}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            </button>
+            <div className="fs-articles-tabs" role="tablist">
             {['all', 'blockchain', 'ia', 'newsletter'].map(t => (
               <button key={t} className={`fs-art-tab ${tab === t ? 'is-on' : ''}`} onClick={() => { setTab(t); setPage(1); }}>
                 <span>{t}</span>
