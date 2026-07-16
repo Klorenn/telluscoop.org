@@ -90,7 +90,7 @@
       <main class="auth-shell" id="main">
         <section class="auth-brand" aria-labelledby="auth-brand-title">
           <div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Tellus Cooperative</div>
-          <div><span class="eyebrow" style="color:#f1a479">Stellar Chile · Operaciones</span><h1 id="auth-brand-title">Cumplir, demostrar y cobrar.</h1><p>Un solo lugar para metas, responsables, evidencia, reportes, aceptación y pagos del capítulo chileno.</p></div>
+          <div><span class="eyebrow" style="color:#f1a479">Programas Stellar · Operaciones</span><h1 id="auth-brand-title">Cumplir, demostrar y cobrar.</h1><p>Un solo lugar para gestionar Stellar Chile, Stellar Barrio, Stellar Academy y Coffee Breaks.</p></div>
           <p>Acceso privado para el equipo Tellus.</p>
         </section>
         <section class="auth-panel">
@@ -153,8 +153,7 @@
       return;
     }
     const button = form.querySelector("button[type=submit]");
-    button.disabled = true;
-    button.textContent = "Configurando…";
+    setButtonLoading(button, "Configurando…");
     const email = form.email.value.trim().toLowerCase();
     const password = form.password.value;
     const { data, error } = await supabase.functions.invoke("first-access", {
@@ -162,15 +161,13 @@
     });
     if (error || data?.error) {
       message.textContent = data?.error || "No pudimos configurar la cuenta.";
-      button.disabled = false;
-      button.textContent = "Crear contraseña y entrar";
+      resetButton(button, "Crear contraseña y entrar");
       return;
     }
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     if (signInError) {
       message.textContent = "Contraseña creada. Vuelve al acceso e inicia sesión.";
-      button.disabled = false;
-      button.textContent = "Crear contraseña y entrar";
+      resetButton(button, "Crear contraseña y entrar");
     }
   }
 
@@ -205,14 +202,14 @@
       return;
     }
     const button = form.querySelector("button[type=submit]");
-    button.disabled = true;
+    setButtonLoading(button, "Guardando…");
     const currentData = state.session.user.user_metadata || {};
     const { data, error } = await supabase.auth.updateUser({
       password: form.password.value,
       data: { ...currentData, password_configured: true },
     });
-    button.disabled = false;
     if (error) {
+      resetButton(button, "Guardar contraseña y continuar");
       message.textContent = error.message || "No pudimos guardar la contraseña.";
       return;
     }
@@ -224,10 +221,9 @@
     event.preventDefault();
     const form = event.currentTarget;
     const button = form.querySelector("button[type=submit]");
-    button.disabled = true;
+    setButtonLoading(button, "Entrando…");
     const { error } = await supabase.auth.signInWithPassword({ email: form.email.value.trim(), password: form.password.value });
-    button.disabled = false;
-    if (error) document.querySelector("#auth-message").textContent = "No pudimos iniciar sesión. Revisa tu correo y contraseña.";
+    if (error) { resetButton(button, "Entrar"); document.querySelector("#auth-message").textContent = "No pudimos iniciar sesión. Revisa tu correo y contraseña."; }
   }
 
   async function loadLiveData() {
@@ -306,7 +302,7 @@
       <div class="app-shell">
         <button class="sidebar-backdrop ${state.sidebarOpen ? "visible" : ""}" id="sidebar-backdrop" aria-label="Cerrar menú"></button>
         <aside class="sidebar ${state.sidebarOpen ? "open" : ""}" id="sidebar">
-          <div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Stellar Ops</div>
+          <div class="sidebar-head"><div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Stellar Ops</div><button class="icon-button sidebar-close" id="close-menu" aria-label="Cerrar menú">${icon("x")}</button></div>
           <div class="program-switcher"><label for="program-scope">Espacio operativo</label><select id="program-scope"><option value="global" ${state.selectedProgram === "global" ? "selected" : ""}>Toda la operación</option>${state.programs.map((program) => `<option value="${esc(program.id)}" ${state.selectedProgram === program.id ? "selected" : ""}>${esc(program.name)}</option>`).join("")}</select></div>
           <nav class="nav" aria-label="Principal">
             ${navButton("dashboard","layout-dashboard",state.selectedProgram === "global" ? "Resumen global" : "Resumen")}${navButton("program_metrics","gauge","Métricas")}${navButton("initiatives","calendar-days","Eventos")}${navButton("finance","circle-dollar-sign","Gastos")}${navButton("resources","table-properties","Planillas")}${navButton("participants","users","Participantes")}${navButton("evidence","folder-check","Evidencias")}${navButton("deliverables","file-check-2","Entregables")}
@@ -402,6 +398,7 @@
     document.querySelectorAll("[data-open-program]").forEach((button) => button.addEventListener("click", () => { state.selectedProgram=button.dataset.openProgram; state.view="dashboard"; renderShell(); }));
     document.querySelector("#menu")?.addEventListener("click", () => { state.sidebarOpen = !state.sidebarOpen; document.querySelector("#sidebar").classList.toggle("open", state.sidebarOpen); document.querySelector("#sidebar-backdrop").classList.toggle("visible", state.sidebarOpen); document.querySelector("#menu").setAttribute("aria-expanded", String(state.sidebarOpen)); });
     document.querySelector("#sidebar-backdrop")?.addEventListener("click", () => { state.sidebarOpen = false; renderShell(); });
+    document.querySelector("#close-menu")?.addEventListener("click", () => { state.sidebarOpen = false; renderShell(); });
     document.querySelector("#signout")?.addEventListener("click", () => supabase.auth.signOut());
     document.querySelector("#quick-add")?.addEventListener("click", () => openInitiativeModal());
     document.querySelector("#add-initiative")?.addEventListener("click", () => openInitiativeModal());
@@ -466,9 +463,9 @@
     event.preventDefault();
     const form = event.currentTarget;
     const button = form.querySelector("button[type=submit]");
-    button.disabled = true;
+    setButtonLoading(button, "Importando…");
     const { data, error } = await supabase.functions.invoke("luma-events", { body: { action:"details", event_id:form.event_id.value } });
-    if (error || data?.error) { button.disabled = false; return notify(data?.error || error?.message || "No pudimos importar el evento.", true); }
+    if (error || data?.error) { resetButton(button, "Vincular evento"); return notify(data?.error || error?.message || "No pudimos importar el evento.", true); }
     const lumaEvent = data.event;
     const occurredOn = String(lumaEvent.start_at || "").slice(0,10) || null;
     const period = state.periods.find((p) => occurredOn && occurredOn >= p.starts_on && occurredOn <= p.ends_on);
@@ -512,6 +509,7 @@
 
   function statusOptions(selected) { return Object.entries(statusLabels).map(([v,l]) => `<option value="${v}" ${selected === v ? "selected" : ""}>${l}</option>`).join(""); }
   function setButtonLoading(button, label) { button.disabled = true; button.innerHTML = `<span class="button-spinner" aria-hidden="true"></span>${esc(label)}`; }
+  function resetButton(button, label) { button.disabled = false; button.textContent = label; }
   async function afterMutation(error, message) { if (error) return notify(error.message, true); closeModal(); notify(message); await loadLiveData(); renderShell(); }
 
   async function boot() {
