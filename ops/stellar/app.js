@@ -333,6 +333,15 @@
   function linksText(links) { return Array.isArray(links) ? links.map((link) => link.url || "").filter(Boolean).join("\n") : ""; }
   function resourceLinks(links) { return Array.isArray(links) ? links.slice(0,3).map((link) => `<a class="table-link" href="${esc(link.url)}" target="_blank" rel="noopener">${icon("link")} Recurso</a>`).join("") : ""; }
 
+  async function invokeEdge(name, body) {
+    let result = await supabase.functions.invoke(name, { body });
+    if (result.error?.context?.status === 401) {
+      const { error:refreshError } = await supabase.auth.refreshSession();
+      if (!refreshError) result = await supabase.functions.invoke(name, { body });
+    }
+    return result;
+  }
+
   function renderShell() {
     const viewLabels = { dashboard:state.selectedProgram === "global" ? "Resumen global" : "Resumen", program_metrics:"Métricas", initiatives:"Eventos", deliverables:"Entregables", finance:"Gastos", resources:"Planillas y recursos", participants:"Participantes", evidence:"Evidencias", activity:"Actividad" };
     const userIdentity=currentUserIdentity();
@@ -369,7 +378,7 @@
       const isEventMetric = m.code === "events" || /eventos calificables/i.test(m.label || "");
       const remaining = Math.max(0, Number(m.target || 0) - Number(m.update.actual || 0));
       return `<article class="card metric-card"><div class="metric-head"><h3>${esc(m.label)}</h3>${status(m.update.status)}</div><div class="metric-value">${esc(m.update.actual)} <small>/ ${esc(m.target)} ${esc(m.unit)}</small></div>${isEventMetric?`<p class="metric-hint">${remaining ? `Faltan ${remaining} eventos enviados o aceptados.` : "Meta de eventos completada."}</p>`:""}<div class="bar" aria-label="${pct}% cumplido"><span style="width:${pct}%"></span></div><div class="metric-foot"><span>${pct}%</span>${isEventMetric?`<button class="table-link" data-view-link="initiatives">Ver eventos</button>`:`<button class="table-link" data-edit-metric="${esc(m.id)}">Actualizar</button>`}</div></article>`;
-    }).join("");
+    }).join("") || `<article class="card metric-card"><div class="metric-head"><h3>Sin métricas configuradas</h3></div><p>Define las metas independientes de este programa para comenzar a medir su avance.</p><button class="button button-secondary" data-view-link="program_metrics">Configurar métricas</button></article>`;
     return `<section class="hero"><article class="card hero-card"><div><span class="eyebrow">${esc(period?.label || "Período")}</span><h2>${completion >= 100 ? "Objetivos cubiertos" : completion >= 70 ? "Buen avance, quedan brechas" : "Necesitamos acelerar"}</h2><p>${metrics.filter((m) => ["at_risk","blocked"].includes(m.update.status)).length} métricas requieren atención. Cada valor debe quedar respaldado por evidencia verificable.</p></div><div class="progress-ring" style="--progress:${completion}" aria-label="Cumplimiento ${completion}%"><strong>${completion}%</strong></div></article><article class="card deadline-card"><div><span class="eyebrow">Próximo vencimiento</span><div class="date">${next ? fmtDate(next.due_on) : "Al día"}</div><p>${next ? esc(next.title) : "No hay entregables pendientes."}</p></div>${next ? status(next.status) : ""}</article></section><article class="card program-owner-card"><div><span class="eyebrow">Responsable principal</span><strong>${esc(leadName(selectedProgram()))}</strong></div><button class="button button-secondary" id="manage-program-leads">${icon("users-round")} Elegir responsables</button></article><section class="metric-grid">${metricCards}</section><section class="section-grid"><article class="card section-card"><div class="section-head"><div><h2>Entregables próximos</h2><p>De ejecutar a aceptar, sin perder trazabilidad.</p></div><button class="table-link" data-view-link="deliverables">Ver todos</button></div>${deliverablesTable(scopedDeliverables.slice(0,5))}</article><article class="card section-card"><div class="section-head"><div><h2>Acciones prioritarias</h2><p>Selecciona una alerta para resolverla directamente.</p></div></div><div class="mini-list">${priorityItems(metrics, next)}</div></article></section>`;
   }
 
@@ -513,6 +522,9 @@
 
   function openInitiativeModal(item = {}) {
     modal(item.id ? "Editar actividad" : "Nueva actividad", `<form id="initiative-form"><input type="hidden" id="luma_event_id" name="luma_event_id" value="${esc(item.luma_event_id || "")}" /><input type="hidden" id="luma_registered_count" name="luma_registered_count" value="${esc(item.luma_registered_count || 0)}" /><input type="hidden" id="luma_checked_in_count" name="luma_checked_in_count" value="${esc(item.luma_checked_in_count || 0)}" /><div class="field"><label for="program_id">Programa</label><select id="program_id" name="program_id">${programOptions(item.program_id)}</select></div><div class="field"><label for="type">Tipo</label><select id="type" name="type">${Object.entries(typeLabels).map(([v,l]) => `<option value="${v}" ${item.type === v ? "selected" : ""}>${l}</option>`).join("")}</select></div><div class="field"><label for="title">Nombre</label><input id="title" name="title" value="${esc(item.title || "")}" required /></div><div class="field"><label for="owner_id">Responsable principal</label><select id="owner_id" name="owner_id">${ownerOptions(item.owner_id)}</select></div><div class="field"><label for="due_on">Fecha objetivo</label><input id="due_on" name="due_on" type="date" value="${esc(item.due_on || "")}" /></div><div class="field"><label for="luma_url">Enlace del evento en Luma</label><div class="input-action-row"><input id="luma_url" name="luma_url" type="url" value="${esc(item.luma_url || "")}" placeholder="https://lu.ma/..." /><button type="button" class="button button-secondary" id="choose-luma-event">${icon("calendar-search")} Ver eventos</button></div><div id="luma-picker"></div></div><div class="field"><label for="resource_links">Enlaces de trabajo</label><textarea id="resource_links" name="resource_links" placeholder="Un enlace por línea: Google Sheets, Drive, Notion…">${esc(linksText(item.resource_links))}</textarea><small>Un enlace por línea.</small></div><div class="field"><label for="contact_emails">Lista de correos</label><textarea id="contact_emails" name="contact_emails" placeholder="Un correo por línea">${esc(contactEmails(item.id))}</textarea><div class="input-action-row file-action-row"><input id="contact-file" type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" /><button type="button" class="button button-secondary" id="import-contact-file">${icon("file-up")} Añadir desde archivo</button></div><small>Puedes añadirla ahora o editar el evento después. CSV, XLS y XLSX admitidos.</small><div class="form-message" id="contact-import-message"></div></div><div class="field"><label for="status">Estado</label><select id="status" name="status">${statusOptions(item.status || "not_started")}</select></div><div class="field"><label for="notes">Notas</label><textarea id="notes" name="notes">${esc(item.notes || "")}</textarea></div><div class="modal-actions">${item.id ? `<button type="button" class="button button-danger" id="delete-initiative">${icon("trash-2")} Eliminar</button>` : ""}<span class="modal-actions-spacer"></span><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" type="submit">Guardar actividad</button></div></form>`);
+    const programSelect = document.querySelector("#initiative-form #program_id");
+    programSelect.required = true;
+    if (!item.program_id && state.selectedProgram !== "global") programSelect.value = state.selectedProgram;
     document.querySelector("#cancel").onclick = closeModal;
     document.querySelector("#choose-luma-event").addEventListener("click", loadLumaPicker);
     document.querySelector("#import-contact-file").addEventListener("click", importContactEmailsFromFile);
@@ -523,7 +535,7 @@
   async function loadLumaPicker(event) {
     if (state.preview) return notify("La vista previa no se conecta con Luma.");
     const button=event.currentTarget; setButtonLoading(button,"Buscando…");
-    const {data,error}=await supabase.functions.invoke("luma-events",{body:{action:"list"}}); button.disabled=false;button.innerHTML=`${icon("calendar-search")} Ver eventos`;hydrateIcons();
+    const {data,error}=await invokeEdge("luma-events",{action:"list"}); button.disabled=false;button.innerHTML=`${icon("calendar-search")} Ver eventos`;hydrateIcons();
     const picker=document.querySelector("#luma-picker"); if(!picker)return;
     if(error||data?.error){picker.innerHTML=`<div class="form-message">${esc(data?.error||error?.message||"No pudimos conectar con Luma.")}</div>`;return;}
     const events=data.events||[]; picker.innerHTML=events.length?`<div class="luma-picker-row"><select id="luma-event-choice" aria-label="Evento de Luma">${events.map((row)=>`<option value="${esc(row.id)}">${esc(row.name)} · ${fmtDate(String(row.start_at||"").slice(0,10))}</option>`).join("")}</select><button type="button" class="button button-primary" id="apply-luma-event">Usar evento</button></div>`:`<div class="form-message">No hay eventos administrados en este calendario.</div>`;
@@ -532,7 +544,7 @@
 
   async function applyLumaSelection(event){
     const button=event.currentTarget;setButtonLoading(button,"Leyendo…");const eventId=document.querySelector("#luma-event-choice")?.value;
-    const {data,error}=await supabase.functions.invoke("luma-events",{body:{action:"details",event_id:eventId}});if(error||data?.error){resetButton(button,"Usar evento");return notify(data?.error||error?.message||"No pudimos leer el evento.",true);}
+    const {data,error}=await invokeEdge("luma-events",{action:"details",event_id:eventId});if(error||data?.error){resetButton(button,"Usar evento");return notify(data?.error||error?.message||"No pudimos leer el evento.",true);}
     const row=data.event;document.querySelector("#luma_event_id").value=row.id;document.querySelector("#luma_url").value=row.url||"";document.querySelector("#due_on").value=String(row.start_at||"").slice(0,10);document.querySelector("#luma_registered_count").value=data.registered_count||0;document.querySelector("#luma_checked_in_count").value=data.checked_in_count||0;if(!document.querySelector("#title").value.trim())document.querySelector("#title").value=row.name||"";document.querySelector("#luma-picker").innerHTML=`<div class="form-message success">Evento vinculado: ${esc(row.name)} · ${esc(data.registered_count||0)} registrados.</div>`;notify("Evento de Luma seleccionado");
   }
 
@@ -549,7 +561,7 @@
   async function openLumaModal() {
     if (state.preview) return notify("La vista previa no se conecta con Luma.");
     modal("Importar evento desde Luma", `<div id="luma-content"><div class="loading" style="min-height:12rem"><div><div class="spinner"></div><p>Cargando calendario…</p></div></div></div>`);
-    const { data, error } = await supabase.functions.invoke("luma-events", { body: { action:"list" } });
+    const { data, error } = await invokeEdge("luma-events", { action:"list" });
     const content = document.querySelector("#luma-content");
     if (!content) return;
     if (error || data?.error) {
@@ -567,7 +579,7 @@
     const form = event.currentTarget;
     const button = form.querySelector("button[type=submit]");
     setButtonLoading(button, "Importando…");
-    const { data, error } = await supabase.functions.invoke("luma-events", { body: { action:"details", event_id:form.event_id.value } });
+    const { data, error } = await invokeEdge("luma-events", { action:"details", event_id:form.event_id.value });
     if (error || data?.error) { resetButton(button, "Vincular evento"); return notify(data?.error || error?.message || "No pudimos importar el evento.", true); }
     const lumaEvent = data.event;
     const occurredOn = String(lumaEvent.start_at || "").slice(0,10) || null;
