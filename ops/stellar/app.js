@@ -18,7 +18,7 @@
   };
   const state = {
     session: null, membership: null, organization: null, periods: [], selectedPeriod: null,
-    metrics: [], updates: [], initiatives: [], deliverables: [], payments: [], funds: [], members: [], programs: [], contacts: [], participants: [], budgets: [], resources: [], evidence: [], selectedProgram:"global", importRows:[],
+    metrics: [], updates: [], initiatives: [], deliverables: [], payments: [], funds: [], members: [], programs: [], contacts: [], participants: [], budgets: [], resources: [], evidence: [], audit: [], selectedProgram:"global", importRows:[],
     view: "dashboard", sidebarOpen: false, preview: PREVIEW,
   };
 
@@ -81,8 +81,21 @@
   };
   const hydrateIcons = () => window.lucide?.createIcons({ attrs: { "aria-hidden": "true" } });
 
+  function wirePasswordToggles() {
+    document.querySelectorAll("[data-password-toggle]").forEach((button) => button.addEventListener("click", () => {
+      const input = document.querySelector(`#${button.dataset.passwordToggle}`);
+      if (!input) return;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      button.innerHTML = icon(show ? "eye-off" : "eye");
+      button.setAttribute("aria-label", show ? "Ocultar contraseña" : "Mostrar contraseña");
+      hydrateIcons();
+      input.focus();
+    }));
+  }
+
   function renderLoading() {
-    $app.innerHTML = `<div class="loading"><div><div class="spinner" aria-hidden="true"></div><p>Cargando Stellar Ops…</p></div></div>`;
+    $app.innerHTML = `<div class="loading-shell" aria-busy="true"><aside class="loading-sidebar"><div class="loading-brand"><img src="/uploads/TellusCooperative ICON.png" alt="" /><strong>Tellus Cooperative</strong></div><div class="skeleton skeleton-select"></div>${Array.from({length:7},()=>`<div class="skeleton skeleton-nav"></div>`).join("")}</aside><main class="loading-main"><header class="loading-topbar"><div><span class="eyebrow">Stellar Ops</span><h1>Preparando tu operación</h1></div><div class="loading-status"><span class="spinner" aria-hidden="true"></span>Cargando datos…</div></header><div class="loading-content"><div class="skeleton skeleton-hero"></div><div class="loading-card-grid">${Array.from({length:4},()=>`<div class="skeleton skeleton-card"></div>`).join("")}</div><div class="loading-columns"><div class="skeleton skeleton-panel"></div><div class="skeleton skeleton-panel"></div></div></div></main></div>`;
   }
 
   function renderAuth() {
@@ -97,7 +110,7 @@
           <form class="auth-card" id="login-form">
             <span class="eyebrow">Acceso seguro</span><h2>Entrar al dashboard</h2><p>Usa tu cuenta autorizada por Tellus.</p>
             <div class="field"><label for="email">Correo</label><input id="email" name="email" type="email" autocomplete="email" required /></div>
-            <div class="field"><label for="password">Contraseña</label><input id="password" name="password" type="password" autocomplete="current-password" minlength="8" /></div>
+            <div class="field"><label for="password">Contraseña</label><div class="password-input"><input id="password" name="password" type="password" autocomplete="current-password" minlength="8" /><button type="button" data-password-toggle="password" aria-label="Mostrar contraseña">${icon("eye")}</button></div></div>
             <div class="auth-actions">
               <button class="button button-primary button-block" type="submit">${icon("log-in")} Entrar</button>
               <button class="button button-secondary button-block" type="button" id="first-access" hidden>Crear contraseña por primera vez</button>
@@ -107,6 +120,7 @@
         </section>
       </main>`;
     hydrateIcons();
+    wirePasswordToggles();
     document.querySelector("#login-form").addEventListener("submit", signIn);
     document.querySelector("#first-access").addEventListener("click", renderFirstAccess);
     updateFirstAccessAvailability();
@@ -132,14 +146,16 @@
             <span class="eyebrow">Cuenta autorizada</span><h2>Configurar acceso</h2><p>No enviaremos ningún email.</p>
             <div class="field"><label for="setup-email">Correo</label><input id="setup-email" name="email" type="email" autocomplete="email" required /></div>
             <div class="field"><label for="access-code">Código temporal</label><input id="access-code" name="code" type="text" autocomplete="one-time-code" required /></div>
-            <div class="field"><label for="setup-password">Nueva contraseña</label><input id="setup-password" name="password" type="password" autocomplete="new-password" minlength="10" required /><small>Mínimo 10 caracteres.</small></div>
-            <div class="field"><label for="setup-confirmation">Confirmar contraseña</label><input id="setup-confirmation" name="confirmation" type="password" autocomplete="new-password" minlength="10" required /></div>
+            <div class="field"><label for="setup-password">Nueva contraseña</label><div class="password-input"><input id="setup-password" name="password" type="password" autocomplete="new-password" minlength="10" required /><button type="button" data-password-toggle="setup-password" aria-label="Mostrar contraseña">${icon("eye")}</button></div><small>Mínimo 10 caracteres.</small></div>
+            <div class="field"><label for="setup-confirmation">Confirmar contraseña</label><div class="password-input"><input id="setup-confirmation" name="confirmation" type="password" autocomplete="new-password" minlength="10" required /><button type="button" data-password-toggle="setup-confirmation" aria-label="Mostrar contraseña">${icon("eye")}</button></div></div>
             <button class="button button-primary button-block" type="submit">Crear contraseña y entrar</button>
             <button class="button button-ghost button-block" type="button" id="back-to-login">Volver al acceso</button>
             <div class="form-message" id="auth-message" role="alert"></div>
           </form>
         </section>
       </main>`;
+    hydrateIcons();
+    wirePasswordToggles();
     document.querySelector("#first-access-form").addEventListener("submit", createFirstPassword);
     document.querySelector("#back-to-login").addEventListener("click", renderAuth);
   }
@@ -182,14 +198,15 @@
         <section class="auth-panel">
           <form class="auth-card" id="password-setup-form">
             <span class="eyebrow">Configuración obligatoria</span><h2>Crear contraseña</h2><p>Usarás el correo <strong>${esc(state.session.user.email)}</strong> y esta contraseña para entrar.</p>
-            <div class="field"><label for="new-password">Nueva contraseña</label><input id="new-password" name="password" type="password" autocomplete="new-password" minlength="10" required /><small>Mínimo 10 caracteres.</small></div>
-            <div class="field"><label for="confirm-password">Confirmar contraseña</label><input id="confirm-password" name="confirmation" type="password" autocomplete="new-password" minlength="10" required /></div>
+            <div class="field"><label for="new-password">Nueva contraseña</label><div class="password-input"><input id="new-password" name="password" type="password" autocomplete="new-password" minlength="10" required /><button type="button" data-password-toggle="new-password" aria-label="Mostrar contraseña">${icon("eye")}</button></div><small>Mínimo 10 caracteres.</small></div>
+            <div class="field"><label for="confirm-password">Confirmar contraseña</label><div class="password-input"><input id="confirm-password" name="confirmation" type="password" autocomplete="new-password" minlength="10" required /><button type="button" data-password-toggle="confirm-password" aria-label="Mostrar contraseña">${icon("eye")}</button></div></div>
             <button class="button button-primary button-block" type="submit">Guardar contraseña y continuar</button>
             <div class="form-message" id="auth-message" role="alert"></div>
           </form>
         </section>
       </main>`;
     hydrateIcons();
+    wirePasswordToggles();
     document.querySelector("#password-setup-form").addEventListener("submit", saveInitialPassword);
   }
 
@@ -238,7 +255,7 @@
     state.membership = membership;
     state.organization = membership.organizations;
     const orgId = membership.organization_id;
-    const [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, participants, budgets, resources, evidence] = await Promise.all([
+    const [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, participants, budgets, resources, evidence, audit] = await Promise.all([
       supabase.from("reporting_periods").select("*").eq("organization_id", orgId).order("starts_on"),
       supabase.from("metric_definitions").select("*").eq("organization_id", orgId).order("sort_order"),
       supabase.from("metric_updates").select("*").eq("organization_id", orgId),
@@ -253,10 +270,11 @@
       supabase.from("program_budgets").select("*").eq("organization_id", orgId),
       supabase.from("program_resources").select("*").eq("organization_id", orgId).order("created_at", { ascending:false }),
       supabase.from("evidence").select("id,program_id,initiative_id,deliverable_id,title,kind,url,storage_path,created_at").eq("organization_id", orgId).order("created_at", { ascending:false }),
+      supabase.from("audit_log").select("id,program_id,actor_user_id,action,entity_table,entity_id,entity_label,created_at").eq("organization_id", orgId).order("created_at", { ascending:false }).limit(200),
     ]);
-    const failed = [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, participants, budgets, resources, evidence].find((r) => r.error);
+    const failed = [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, participants, budgets, resources, evidence, audit].find((r) => r.error);
     if (failed) throw failed.error;
-    Object.assign(state, { periods:periods.data, metrics:metrics.data, updates:updates.data, initiatives:initiatives.data, deliverables:deliverables.data, payments:payments.data, funds:funds.data, members:members.data, programs:programs.data, contacts:contacts.data, participants:participants.data, budgets:budgets.data, resources:resources.data, evidence:evidence.data });
+    Object.assign(state, { periods:periods.data, metrics:metrics.data, updates:updates.data, initiatives:initiatives.data, deliverables:deliverables.data, payments:payments.data, funds:funds.data, members:members.data, programs:programs.data, contacts:contacts.data, participants:participants.data, budgets:budgets.data, resources:resources.data, evidence:evidence.data, audit:audit.data });
     state.selectedPeriod ||= state.periods.find((p) => new Date(p.starts_on) <= new Date() && new Date(p.ends_on) >= new Date())?.id || state.periods[0]?.id;
     return true;
   }
@@ -278,7 +296,7 @@
     ];
     state.programs = ["Stellar Chile","Stellar Barrio","Stellar Academy","Coffee Breaks"].map((name, index) => ({ id:`program-${index}`, name }));
     state.contacts = [];
-    state.participants = []; state.budgets = []; state.resources = []; state.evidence = [];
+    state.participants = []; state.budgets = []; state.resources = []; state.evidence = []; state.audit = [];
   }
 
   function currentPeriod() { return state.periods.find((p) => p.id === state.selectedPeriod) || state.periods[0]; }
@@ -292,13 +310,14 @@
   function programOptions(selected) { return `<option value="">Sin programa</option>${state.programs.map((program) => `<option value="${esc(program.id)}" ${selected === program.id ? "selected" : ""}>${esc(program.name)}</option>`).join("")}`; }
   function contactEmails(itemId) { return state.contacts.filter((contact) => contact.initiative_id === itemId).map((contact) => contact.email).join("\n"); }
   function ownerName(id) { return state.members.find((member) => member.id === id)?.full_name || "Sin asignar"; }
+  function leadName(program) { return program?.lead_user_id ? ownerName(program.lead_user_id) : ({"alexbnjmnch@gmail.com":"Alex Hernández","inboxblessedux@gmail.com":"Joaquín Farfán"}[program?.lead_email] || "Sin responsable"); }
   function ownerOptions(selected) { return `<option value="">Sin asignar</option>${state.members.map((member) => `<option value="${esc(member.id)}" ${selected === member.id ? "selected" : ""}>${esc(member.full_name)}</option>`).join("")}`; }
   function linksFromText(value) { return String(value || "").split(/\r?\n/).map((url) => url.trim()).filter(Boolean).map((url) => ({ url })); }
   function linksText(links) { return Array.isArray(links) ? links.map((link) => link.url || "").filter(Boolean).join("\n") : ""; }
   function resourceLinks(links) { return Array.isArray(links) ? links.slice(0,3).map((link) => `<a class="table-link" href="${esc(link.url)}" target="_blank" rel="noopener">${icon("link")} Recurso</a>`).join("") : ""; }
 
   function renderShell() {
-    const viewLabels = { dashboard:state.selectedProgram === "global" ? "Resumen global" : "Resumen", program_metrics:"Métricas", initiatives:"Eventos", deliverables:"Entregables", finance:"Gastos", resources:"Planillas y recursos", participants:"Participantes", evidence:"Evidencias" };
+    const viewLabels = { dashboard:state.selectedProgram === "global" ? "Resumen global" : "Resumen", program_metrics:"Métricas", initiatives:"Eventos", deliverables:"Entregables", finance:"Gastos", resources:"Planillas y recursos", participants:"Participantes", evidence:"Evidencias", activity:"Actividad" };
     $app.innerHTML = `
       <div class="app-shell">
         <button class="sidebar-backdrop ${state.sidebarOpen ? "visible" : ""}" id="sidebar-backdrop" aria-label="Cerrar menú"></button>
@@ -306,7 +325,7 @@
           <div class="sidebar-head"><div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Stellar Ops</div><button class="icon-button sidebar-close" id="close-menu" aria-label="Cerrar menú">${icon("x")}</button></div>
           <div class="program-switcher"><label for="program-scope">Espacio operativo</label><select id="program-scope"><option value="global" ${state.selectedProgram === "global" ? "selected" : ""}>Toda la operación</option>${state.programs.map((program) => `<option value="${esc(program.id)}" ${state.selectedProgram === program.id ? "selected" : ""}>${esc(program.name)}</option>`).join("")}</select></div>
           <nav class="nav" aria-label="Principal">
-            ${navButton("dashboard","layout-dashboard",state.selectedProgram === "global" ? "Resumen global" : "Resumen")}${navButton("program_metrics","gauge","Métricas")}${navButton("initiatives","calendar-days","Eventos")}${navButton("finance","circle-dollar-sign","Gastos")}${navButton("resources","table-properties","Planillas")}${navButton("participants","users","Participantes")}${navButton("evidence","folder-check","Evidencias")}${navButton("deliverables","file-check-2","Entregables")}
+            ${navButton("dashboard","layout-dashboard",state.selectedProgram === "global" ? "Resumen global" : "Resumen")}${navButton("program_metrics","gauge","Métricas")}${navButton("initiatives","calendar-days","Eventos")}${navButton("finance","circle-dollar-sign","Gastos")}${navButton("resources","table-properties","Planillas")}${navButton("participants","users","Participantes")}${navButton("evidence","folder-check","Evidencias")}${navButton("deliverables","file-check-2","Entregables")}${navButton("activity","history","Actividad")}
           </nav>
           <div class="sidebar-footer"><div class="user-meta"><strong>${esc(state.preview ? "Vista previa" : state.session?.user?.email)}</strong><span>${esc(state.membership?.role || "")}</span></div>${state.preview ? `<a class="button button-ghost" href="./">${icon("log-in")} Ir al acceso</a>` : `<button class="button button-ghost" id="signout">${icon("log-out")} Cerrar sesión</button>`}</div>
         </aside>
@@ -319,7 +338,7 @@
   }
 
   function navButton(view, iconName, label) { return `<button data-view="${view}" class="${state.view === view ? "active" : ""}">${icon(iconName)} ${label}</button>`; }
-  function renderView() { return state.view === "dashboard" ? dashboardView() : state.view === "program_metrics" ? metricsView() : state.view === "initiatives" ? initiativesView() : state.view === "deliverables" ? deliverablesView() : state.view === "finance" ? financeView() : state.view === "resources" ? resourcesView() : state.view === "participants" ? participantsView() : evidenceView(); }
+  function renderView() { return state.view === "dashboard" ? dashboardView() : state.view === "program_metrics" ? metricsView() : state.view === "initiatives" ? initiativesView() : state.view === "deliverables" ? deliverablesView() : state.view === "finance" ? financeView() : state.view === "resources" ? resourcesView() : state.view === "participants" ? participantsView() : state.view === "activity" ? activityView() : evidenceView(); }
 
   function dashboardView() {
     if (state.selectedProgram === "global") return globalDashboardView();
@@ -342,7 +361,7 @@
       const contacts = state.contacts.filter((contact) => initiativeIds.has(contact.initiative_id)).length;
       const budget = state.budgets.filter((row) => row.program_id === program.id && row.period_id === state.selectedPeriod).reduce((sum,row) => sum + Number(row.allocated_usd), 0);
       const spent = state.funds.filter((row) => row.program_id === program.id && row.direction === "debit").reduce((sum,row) => sum + Number(row.amount_usd), 0);
-      return `<button class="card program-card" data-open-program="${esc(program.id)}"><span class="eyebrow">Programa</span><h2>${esc(program.name)}</h2><div class="program-stats"><span><strong>${events}</strong> eventos</span><span><strong>${contacts}</strong> participantes</span><span><strong>${fmtMoney(spent)}</strong> gastado</span><span><strong>${fmtMoney(budget)}</strong> presupuesto del período</span></div></button>`;
+      return `<button class="card program-card" data-open-program="${esc(program.id)}"><span class="eyebrow">Programa</span><h2>${esc(program.name)}</h2><p class="program-lead">${icon("user-round-check")} ${esc(leadName(program))}</p><div class="program-stats"><span><strong>${events}</strong> eventos</span><span><strong>${contacts}</strong> participantes</span><span><strong>${fmtMoney(spent)}</strong> gastado</span><span><strong>${fmtMoney(budget)}</strong> presupuesto del período</span></div></button>`;
     }).join("");
     const totalSpent = state.funds.filter((row) => row.direction === "debit").reduce((sum,row) => sum + Number(row.amount_usd), 0);
     const totalBudget = state.budgets.filter((row) => row.period_id === state.selectedPeriod).reduce((sum,row) => sum + Number(row.allocated_usd), 0);
@@ -389,7 +408,10 @@
   }
 
   function resourcesView() { const rows=state.resources.filter(inProgram); return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Planillas y recursos</h2></div>${state.selectedProgram !== "global" ? `<button class="button button-primary" id="add-resource">${icon("plus")} Añadir enlace</button>` : ""}</div><section class="resource-grid">${rows.map((row)=>`<a class="card resource-card" href="${esc(row.url)}" target="_blank" rel="noopener"><span class="type-chip">${esc(row.resource_type.replaceAll("_"," "))}</span><h3>${esc(row.title)}</h3><p>${esc(row.description || "Abrir recurso")}</p></a>`).join("") || `<div class="empty">No hay planillas o recursos en este espacio.</div>`}</section>`; }
-  function participantsView() { const rows=state.participants.filter(inProgram); const actions=`<button class="button button-secondary" id="export-participants">${icon("download")} Exportar CSV</button>${state.selectedProgram !== "global" ? `<button class="button button-primary" id="import-participants">${icon("file-up")} Importar planilla</button>` : ""}`; return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Participantes</h2></div><div class="topbar-actions">${actions}</div></div><article class="card section-card"><div class="metric-value">${rows.length} <small>participantes guardados</small></div><div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Correo</th><th>GitHub</th><th>Rango / tier</th><th>Fuente</th></tr></thead><tbody>${rows.map((row)=>`<tr><td>${esc(row.full_name || "—")}</td><td>${esc(row.email)}</td><td>${row.github ? `<a class="table-link" href="${esc(row.github.startsWith("http") ? row.github : `https://github.com/${row.github.replace(/^@/,"")}`)}" target="_blank" rel="noopener">${esc(row.github)}</a>` : "—"}</td><td>${esc(row.participant_rank || "—")}</td><td>${esc(row.source_name || "Manual")}</td></tr>`).join("")}</tbody></table></div>${rows.length ? "" : `<div class="empty">No hay participantes cargados.</div>`}</article>`; }
+  function participantLink(iconName, label, href, external=false) { return label ? `<a class="contact-link" href="${esc(href)}" ${external ? `target="_blank" rel="noopener"` : ""}>${icon(iconName)}<span>${esc(label)}</span></a>` : ""; }
+  function participantDetails(row) { const details=[["map-pin",[row.city,row.country].filter(Boolean).join(", ")],["briefcase-business",row.project_company],["badge-check",row.program_status],["users-round",row.program_role],["calendar-check",row.events_attended],["sparkles",row.experience],["notebook-text",row.classification_note]]; return `<details class="participant-details"><summary>Ver ficha completa</summary><div class="participant-detail-grid">${details.filter(([,value])=>value).map(([name,value])=>`<span>${icon(name)}<span>${esc(value)}</span></span>`).join("") || `<span>Sin información adicional.</span>`}</div></details>`; }
+  function participantsView() { const rows=state.participants.filter(inProgram); const actions=`<button class="button button-secondary" id="export-participants">${icon("download")} Exportar CSV</button>${state.selectedProgram !== "global" ? `<button class="button button-primary" id="import-participants">${icon("file-up")} Importar planilla</button>` : ""}`; return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Participantes</h2></div><div class="topbar-actions">${actions}</div></div><article class="card section-card"><div class="metric-value">${rows.length} <small>participantes guardados</small></div><div class="participant-list">${rows.map((row)=>`<article class="participant-row"><div class="participant-main"><div><strong>${esc(row.full_name || "Sin nombre")}</strong><span>${esc(row.participant_rank || row.participant_type || "Sin rango")}</span></div><div class="participant-contacts">${participantLink("mail",row.email,`mailto:${row.email}`)}${participantLink("github",row.github,row.github?.startsWith("http") ? row.github : `https://github.com/${String(row.github||"").replace(/^@/,"")}`,true)}${participantLink("message-circle",row.discord,`https://discord.com/users/${row.discord}`,true)}${participantLink("message-circle-more",row.phone,`https://wa.me/${String(row.phone||"").replace(/\D/g,"")}`,true)}${participantLink("globe",row.personal_url,row.personal_url,true)}</div></div>${participantDetails(row)}</article>`).join("")}</div>${rows.length ? "" : `<div class="empty">No hay participantes cargados.</div>`}</article>`; }
+  function activityView() { const rows=state.audit.filter(inProgram); const actions={insert:"Creó",update:"Modificó",delete:"Eliminó"}; const entities={programs:"programa",program_budgets:"presupuesto",program_resources:"recurso",program_participants:"participante",initiatives:"evento",deliverables:"entregable",evidence:"evidencia",fund_transactions:"movimiento",metric_definitions:"métrica",metric_updates:"avance",event_contacts:"contacto"}; const actor=(id)=>id ? ownerName(id) : "Sistema"; const when=(value)=>new Intl.DateTimeFormat("es-CL",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value)); return `<div class="toolbar"><div><span class="eyebrow">Trazabilidad</span><h2>Actividad del equipo</h2></div></div><article class="card section-card"><div class="mini-list">${rows.map((row)=>`<div class="mini-item"><div class="mini-icon">${icon(row.action==="delete"?"trash-2":row.action==="insert"?"plus":"pencil")}</div><div><strong>${esc(actor(row.actor_user_id))} · ${esc(actions[row.action]||row.action)} ${esc(entities[row.entity_table]||row.entity_table)}</strong><span>${esc(row.entity_label||"Registro")} · ${esc(programName(row.program_id))} · ${esc(when(row.created_at))}</span></div></div>`).join("") || `<div class="empty">Todavía no hay actividad registrada.</div>`}</div></article>`; }
   function evidenceView() { const rows=state.evidence.filter(inProgram); return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Evidencias</h2></div></div><section class="resource-grid">${rows.map((row)=>`<article class="card resource-card"><span class="type-chip">${esc(row.kind)}</span><h3>${esc(row.title)}</h3>${row.url ? `<a class="table-link" href="${esc(row.url)}" target="_blank" rel="noopener">Abrir evidencia</a>` : `<p>Archivo privado</p>`}</article>`).join("") || `<div class="empty">No hay evidencias cargadas.</div>`}</section>`; }
 
   function wireShell() {
@@ -505,12 +527,12 @@
 
   function normalizeColumn(value) { return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""); }
   function participantRowsFromSheet(rawRows, sourceName) {
-    const aliases={full_name:["nombre","name","full_name","nombre_completo","participant_name"],email:["correo","email","e_mail","mail","correo_electronico"],github:["github","github_user","github_username","usuario_github","perfil_github"],participant_rank:["rango","rank","tier","nivel","level","ambassador_tier"]};
-    const normalized=rawRows.map((row)=>Object.fromEntries(Object.entries(row).map(([key,value])=>[normalizeColumn(key),String(value ?? "").trim()])));
+    const aliases={full_name:["nombre","name","full_name","nombre_completo","participant_name"],email:["correo","email","e_mail","mail","correo_electronico"],github:["github","github_user","github_username","usuario_github","perfil_github"],participant_rank:["rango","range","rank","tier","nivel","level","ambassador_tier"],events_attended:["events_attended","eventos_asistidos"],discord:["discord","usuario_discord"],roster_source:["source","fuente"],program_status:["program_status","estado_programa"],program_role:["program_role","rol_programa"],discord_roles:["discord_roles","roles_discord"],participant_type:["type","tipo"],city:["city","ciudad"],country:["country","pais"],personal_url:["personal_url","url_personal","sitio_web"],project_company:["project_company","project_company_","proyecto_empresa","empresa"],experience:["experience","experiencia"],classification_note:["classification_note","nota_clasificacion"],phone:["phone","telefono","telefono_whatsapp","whatsapp","wsp"]};
+    const normalized=rawRows.map((source_data)=>({source_data,row:Object.fromEntries(Object.entries(source_data).map(([key,value])=>[normalizeColumn(key),String(value ?? "").trim()]))}));
     const valueFor=(row,keys)=>keys.map((key)=>row[key]).find(Boolean) || "";
     const emailPattern=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const deduped=new Map();
-    for(const row of normalized){const email=valueFor(row,aliases.email).toLowerCase();if(!emailPattern.test(email))continue;deduped.set(email,{full_name:valueFor(row,aliases.full_name),email,github:valueFor(row,aliases.github),participant_rank:valueFor(row,aliases.participant_rank),source_name:sourceName});}
+    for(const item of normalized){const email=valueFor(item.row,aliases.email).toLowerCase();if(!emailPattern.test(email))continue;const mapped=Object.fromEntries(Object.entries(aliases).map(([field,keys])=>[field,valueFor(item.row,keys)||null]));deduped.set(email,{...mapped,email,source_name:sourceName,source_data:item.source_data});}
     return [...deduped.values()];
   }
 
@@ -518,7 +540,7 @@
 
   function openParticipantImportModal() {
     state.importRows=[];
-    modal("Importar participantes", `<form id="participant-import-form"><div class="field"><label for="participant-file">Excel o CSV</label><input id="participant-file" type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" /><small>Se leerá la primera hoja. Columnas reconocidas: nombre, correo/email, GitHub y rango/tier.</small></div><div class="field"><label for="google-sheet-url">Google Sheets público</label><input id="google-sheet-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/..." /><button class="button button-secondary" type="button" id="load-google-sheet">${icon("sheet")} Cargar enlace</button><small>La hoja debe permitir acceso mediante enlace.</small></div><div id="import-preview"><div class="empty">Selecciona una planilla para revisar los datos antes de guardarlos.</div></div><div class="modal-actions"><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" id="save-import" type="submit" disabled>Importar participantes</button></div></form>`);
+    modal("Importar participantes", `<form id="participant-import-form"><div class="field"><label for="participant-file">Excel o CSV</label><input id="participant-file" type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" /><small>Se conserva la fila original completa y se estructuran nombre, correo, GitHub, rango, Discord, ubicación, roles, experiencia y demás campos reconocidos.</small></div><div class="field"><label for="google-sheet-url">Google Sheets público</label><input id="google-sheet-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/..." /><button class="button button-secondary" type="button" id="load-google-sheet">${icon("sheet")} Cargar enlace</button><small>La hoja debe permitir acceso mediante enlace.</small></div><div id="import-preview"><div class="empty">Selecciona una planilla para revisar los datos antes de guardarlos.</div></div><div class="modal-actions"><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" id="save-import" type="submit" disabled>Importar participantes</button></div></form>`);
     document.querySelector("#cancel").onclick=closeModal;
     document.querySelector("#participant-file").addEventListener("change",readParticipantFile);
     document.querySelector("#load-google-sheet").addEventListener("click",readGoogleSheet);
@@ -535,7 +557,7 @@
 
   async function saveParticipantImport(event) { event.preventDefault(); if(lockedPreview())return; const button=document.querySelector("#save-import");setButtonLoading(button,"Importando…");const payload=state.importRows.map((row)=>({...row,organization_id:state.organization.id,program_id:state.selectedProgram,imported_by:state.session.user.id,imported_at:new Date().toISOString(),updated_at:new Date().toISOString()}));let error=null;for(let index=0;index<payload.length;index+=200){const result=await supabase.from("program_participants").upsert(payload.slice(index,index+200),{onConflict:"program_id,email"});if(result.error){error=result.error;break;}}await afterMutation(error,`${payload.length} participantes importados`); }
 
-  function exportParticipantsCsv() { const rows=state.participants.filter(inProgram); if(!rows.length)return notify("No hay participantes para exportar.",true); const csvValue=(value)=>{let safe=String(value??"");if(/^[=+\-@]/.test(safe))safe=`'${safe}`;return `"${safe.replaceAll('"','""')}"`;}; const csv=["Nombre,Correo,GitHub,Rango/Tier,Fuente",...rows.map((row)=>[row.full_name,row.email,row.github,row.participant_rank,row.source_name].map(csvValue).join(","))].join("\r\n"); const blob=new Blob(["\ufeff",csv],{type:"text/csv;charset=utf-8"}); const url=URL.createObjectURL(blob); const link=document.createElement("a");link.href=url;link.download=`participantes-${selectedProgram()?.code||"tellus"}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }
+  function exportParticipantsCsv() { const rows=state.participants.filter(inProgram); if(!rows.length)return notify("No hay participantes para exportar.",true); const fields=[["Nombre","full_name"],["Correo","email"],["Rango/Tier","participant_rank"],["Eventos asistidos","events_attended"],["GitHub","github"],["Discord","discord"],["Teléfono/WhatsApp","phone"],["Fuente roster","roster_source"],["Estado programa","program_status"],["Rol programa","program_role"],["Roles Discord","discord_roles"],["Tipo","participant_type"],["Ciudad","city"],["País","country"],["URL personal","personal_url"],["Proyecto/Empresa","project_company"],["Experiencia","experience"],["Nota clasificación","classification_note"],["Archivo fuente","source_name"]]; const csvValue=(value)=>{let safe=String(value??"");if(/^[=+\-@]/.test(safe))safe=`'${safe}`;return `"${safe.replaceAll('"','""')}"`;}; const csv=[fields.map(([label])=>csvValue(label)).join(","),...rows.map((row)=>fields.map(([,key])=>csvValue(row[key])).join(","))].join("\r\n"); const blob=new Blob(["\ufeff",csv],{type:"text/csv;charset=utf-8"}); const url=URL.createObjectURL(blob); const link=document.createElement("a");link.href=url;link.download=`participantes-${selectedProgram()?.code||"tellus"}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }
 
   function openBudgetModal() {
     const current=state.budgets.find((row)=>row.program_id===state.selectedProgram && row.period_id===state.selectedPeriod);

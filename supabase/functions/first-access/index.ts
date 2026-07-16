@@ -14,6 +14,17 @@ const codeHashes: Record<string, string> = {
   "bastian@telluscoop.org": "dc31af65a2a6df324e52ef3a36ea3b51624f93df6384d29a9bd1a4bc9b11d806",
   "kohcuendepau@gmail.com": "a318f0501415dd51cc4d8da0a680ad52a8aa6b3c0f861dc1e4b72aba0fa82c5d",
   "inboxblessedux@gmail.com": "e26e66d1e454fc6b1e8826095bf2c9f2832fd3a111737779b22348f8a92fb1f9",
+  "alexbnjmnch@gmail.com": "247345a6b7f2235ee03a884eafbfc0f9ed927bd4f6b34a8cdeb29073646eafef",
+};
+
+const displayNames: Record<string, string> = {
+  "hola@telluscoop.org": "Tellus Cooperative Admin",
+  "kohcuendedani@gmail.com": "Daniel",
+  "mishekoh@gmail.com": "Mishelle",
+  "bastian@telluscoop.org": "Bastian",
+  "kohcuendepau@gmail.com": "Pau Koh",
+  "inboxblessedux@gmail.com": "Joaquín Farfán",
+  "alexbnjmnch@gmail.com": "Alex Hernández",
 };
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
@@ -66,7 +77,7 @@ Deno.serve(async (request) => {
         email,
         password,
         email_confirm: true,
-        user_metadata: { password_configured: true },
+        user_metadata: { password_configured: true, full_name: displayNames[email] },
       });
       if (createError) throw createError;
       return json({ ok: true });
@@ -78,7 +89,7 @@ Deno.serve(async (request) => {
     const { error: updateError } = await admin.auth.admin.updateUserById(user.id, {
       password,
       email_confirm: true,
-      user_metadata: { ...user.user_metadata, password_configured: true },
+      user_metadata: { ...user.user_metadata, password_configured: true, full_name: displayNames[email] },
     });
     if (updateError) throw updateError;
     return json({ ok: true });
