@@ -28,6 +28,7 @@
     view: "dashboard", preview: PREVIEW,
     participantFilters: { search:"", rank:"all", city:"all", country:"all", from:"", to:"" },
     participantPage: 1,
+    initiativeFilter: "all",
   };
   let participantSearchTimer;
 
@@ -384,7 +385,7 @@
       const pct = Math.min(100, Math.round(Number(m.update.actual) / Number(m.target || 1) * 100));
       const isEventMetric = m.code === "events" || /eventos calificables/i.test(m.label || "");
       const remaining = Math.max(0, Number(m.target || 0) - Number(m.update.actual || 0));
-      return `<article class="card metric-card"><div class="metric-head"><h3>${esc(m.label)}</h3>${status(m.update.status)}</div><div class="metric-value">${esc(m.update.actual)} <small>/ ${esc(m.target)} ${esc(m.unit)}</small></div>${isEventMetric?`<p class="metric-hint">${remaining ? `Faltan ${remaining} eventos enviados o aceptados.` : "Meta de eventos completada."}</p>`:""}<div class="bar" aria-label="${pct}% cumplido"><span style="width:${pct}%"></span></div><div class="metric-foot"><span>${pct}%</span>${isEventMetric?`<button class="table-link" data-view-link="initiatives">Ver eventos</button>`:`<button class="table-link" data-edit-metric="${esc(m.id)}">Actualizar</button>`}</div></article>`;
+      return `<article class="card metric-card"><div class="metric-head"><h3>${esc(m.label)}</h3>${status(m.update.status)}</div><div class="metric-value">${esc(m.update.actual)} <small>/ ${esc(m.target)} ${esc(m.unit)}</small></div>${isEventMetric?`<p class="metric-hint">${remaining ? `Faltan ${remaining} eventos enviados o aceptados.` : "Meta de eventos completada."}</p>`:""}<div class="bar" aria-label="${pct}% cumplido"><span style="width:${pct}%"></span></div><div class="metric-foot"><span>${pct}%</span>${isEventMetric?`<button class="table-link" data-view-link="initiatives" data-initiative-filter="qualifying">Ver eventos</button>`:`<button class="table-link" data-edit-metric="${esc(m.id)}">Actualizar</button>`}</div></article>`;
     }).join("") || `<article class="card metric-card"><div class="metric-head"><h3>Sin métricas configuradas</h3></div><p>Define las metas independientes de este programa para comenzar a medir su avance.</p><button class="button button-secondary" data-view-link="program_metrics">Configurar métricas</button></article>`;
     return `<section class="hero"><article class="card hero-card"><div><span class="eyebrow">${esc(period?.label || "Período")}</span><h2>${completion >= 100 ? "Objetivos cubiertos" : completion >= 70 ? "Buen avance, quedan brechas" : "Necesitamos acelerar"}</h2><p>${metrics.filter((m) => ["at_risk","blocked"].includes(m.update.status)).length} métricas requieren atención. Cada valor debe quedar respaldado por evidencia verificable.</p></div><div class="progress-ring" style="--progress:${completion}" aria-label="Cumplimiento ${completion}%"><strong>${completion}%</strong></div></article><article class="card deadline-card"><div><span class="eyebrow">Próximo vencimiento</span><div class="date">${next ? fmtDate(next.due_on) : "Al día"}</div><p>${next ? esc(next.title) : "No hay entregables pendientes."}</p></div>${next ? status(next.status) : ""}</article></section><article class="card program-owner-card"><div><span class="eyebrow">Responsable principal</span><strong>${esc(leadName(selectedProgram()))}</strong></div><button class="button button-secondary" id="manage-program-leads">${icon("users-round")} Elegir responsables</button></article><section class="metric-grid">${metricCards}</section><section class="section-grid"><article class="card section-card"><div class="section-head"><div><h2>Entregables próximos</h2><p>De ejecutar a aceptar, sin perder trazabilidad.</p></div><button class="table-link" data-view-link="deliverables">Ver todos</button></div>${deliverablesTable(scopedDeliverables.slice(0,5))}</article><article class="card section-card"><div class="section-head"><div><h2>Acciones prioritarias</h2><p>Selecciona una alerta para resolverla directamente.</p></div></div><div class="mini-list">${priorityItems(metrics, next)}</div></article></section>`;
   }
@@ -423,8 +424,19 @@
   }
 
   function initiativesView() {
-    const groups = ["not_started","in_progress","at_risk","submitted"];
-    return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Eventos y actividades</h2></div><div class="topbar-actions"><button class="button button-secondary" id="sync-luma">${icon("calendar-sync")} Importar desde Luma</button><button class="button button-primary" id="add-initiative">${icon("plus")} Nueva actividad</button></div></div><div class="kanban">${groups.map((g) => `<section class="kanban-column"><div class="kanban-title">${statusLabels[g]} <span class="kanban-count">${periodInitiatives().filter((i) => i.status === g).length}</span></div>${periodInitiatives().filter((i) => i.status === g).map(workCard).join("") || `<div class="empty">Sin actividades</div>`}</section>`).join("")}</div>`;
+    const allItems = periodInitiatives();
+    const filterGroups = { all:["not_started","in_progress","at_risk","submitted","accepted","blocked"], active:["not_started","in_progress","at_risk"], qualifying:["submitted","accepted"], completed:["accepted"], blocked:["blocked"] };
+    const groups = filterGroups[state.initiativeFilter] || filterGroups.all;
+    const typeFiltered = state.initiativeFilter === "qualifying" ? allItems.filter((item) => item.type === "event") : allItems;
+    const filters = [
+      ["all","Todos",allItems.length],
+      ["active","Activos",allItems.filter((item) => ["not_started","in_progress","at_risk"].includes(item.status)).length],
+      ["qualifying","Calificables",allItems.filter((item) => item.type === "event" && ["submitted","accepted"].includes(item.status)).length],
+      ["completed","Completados",allItems.filter((item) => item.status === "accepted").length],
+      ["blocked","Bloqueados",allItems.filter((item) => item.status === "blocked").length],
+    ];
+    const columns = groups.map((group) => { const rows=typeFiltered.filter((item) => item.status === group); return `<section class="kanban-column"><div class="kanban-title">${statusLabels[group]} <span class="kanban-count">${rows.length}</span></div>${rows.map(workCard).join("") || `<div class="empty compact-empty">Sin actividades</div>`}</section>`; }).join("");
+    return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Eventos y actividades</h2></div><div class="topbar-actions"><button class="button button-secondary" id="sync-luma">${icon("calendar-sync")} Importar desde Luma</button><button class="button button-primary" id="add-initiative">${icon("plus")} Nueva actividad</button></div></div><div class="initiative-filters" role="group" aria-label="Filtrar eventos por estado">${filters.map(([value,label,count])=>`<button class="initiative-filter ${state.initiativeFilter===value?"active":""}" data-initiative-status="${value}" aria-pressed="${state.initiativeFilter===value}">${label}<span>${count}</span></button>`).join("")}</div>${state.initiativeFilter==="qualifying"?`<div class="filter-note">${icon("badge-check")} Solo aparecen eventos enviados o aceptados, que son los que cuentan para la métrica.</div>`:""}<div class="kanban kanban-${groups.length}">${columns}</div>`;
   }
   function workCard(item) { return `<article class="work-card"><span class="type-chip">${esc(programName(item.program_id))}</span><span class="type-chip">${esc(typeLabels[item.type] || item.type)}</span><h3>${esc(item.title)}</h3><div class="work-meta"><span>${icon("user-round")} ${esc(ownerName(item.owner_email || item.owner_id))}</span><span>${icon("mail")} ${state.contacts.filter((contact) => contact.initiative_id === item.id).length} contactos</span></div>${item.luma_event_id ? `<div class="work-meta"><span>${icon("users")} ${esc(item.luma_registered_count)} registrados · ${esc(item.luma_checked_in_count)} check-ins</span></div>` : ""}<div class="work-meta"><span>${icon("calendar")} ${fmtDate(item.due_on || item.occurred_on)}</span>${item.luma_url ? `<a class="table-link" href="${esc(item.luma_url)}" target="_blank" rel="noopener">Luma</a>` : ""}${resourceLinks(item.resource_links)}<button class="table-link" data-edit-initiative="${esc(item.id)}">Editar</button></div></article>`; }
 
@@ -471,7 +483,7 @@
   function evidenceView() { const rows=state.evidence.filter(inProgram); return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Evidencias</h2></div></div><section class="resource-grid">${rows.map((row)=>`<article class="card resource-card"><span class="type-chip">${esc(row.kind)}</span><h3>${esc(row.title)}</h3>${row.url ? `<a class="table-link" href="${esc(row.url)}" target="_blank" rel="noopener">Abrir evidencia</a>` : `<p>Archivo privado</p>`}</article>`).join("") || `<div class="empty">No hay evidencias cargadas.</div>`}</section>`; }
 
   function wireShell() {
-    document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.view; renderShell(); }));
+    document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.view; if(state.view === "initiatives") state.initiativeFilter="all"; renderShell(); }));
     document.querySelector("#period")?.addEventListener("change", (e) => { state.selectedPeriod = e.target.value; renderShell(); });
     document.querySelector("#program-scope")?.addEventListener("change", (e) => { state.selectedProgram = e.target.value; state.view = "dashboard"; renderShell(); });
     document.querySelectorAll("[data-open-program]").forEach((button) => button.addEventListener("click", () => { state.selectedProgram=button.dataset.openProgram; state.view="dashboard"; renderShell(); }));
@@ -493,7 +505,8 @@
     document.querySelectorAll("[data-roster-page]").forEach((button)=>button.addEventListener("click",()=>{state.participantPage=Number(button.dataset.rosterPage);renderShell();document.querySelector(".roster-table-card")?.scrollIntoView({behavior:"smooth",block:"start"});}));
     document.querySelectorAll("[data-edit-participant]").forEach((button) => button.addEventListener("click", () => openParticipantEditModal(button.dataset.editParticipant)));
     document.querySelectorAll("[data-manage-rank]").forEach((button) => button.addEventListener("click", () => openRankModal(button.dataset.manageRank)));
-    document.querySelectorAll("[data-view-link]").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.viewLink; renderShell(); }));
+    document.querySelectorAll("[data-view-link]").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.viewLink; if(b.dataset.initiativeFilter) state.initiativeFilter=b.dataset.initiativeFilter; renderShell(); }));
+    document.querySelectorAll("[data-initiative-status]").forEach((button)=>button.addEventListener("click",()=>{state.initiativeFilter=button.dataset.initiativeStatus;renderShell();}));
     document.querySelector("#manage-program-leads")?.addEventListener("click", openProgramLeadsModal);
     document.querySelectorAll("[data-priority-type]").forEach((button) => button.addEventListener("click", () => {
       if (button.dataset.priorityType === "metric") openMetricModal(button.dataset.priorityId);

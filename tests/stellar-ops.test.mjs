@@ -32,6 +32,11 @@ test("events require and inherit an operational program", () => {
 test("event KPI counts only submitted or accepted work", () => {
   assert.match(app, /\["submitted","accepted"\]\.includes\(item\.status\)/);
   assert.match(app, /Faltan \$\{remaining\} eventos enviados o aceptados/);
+  assert.match(app, /data-initiative-filter="qualifying"/);
+  assert.match(app, /\["not_started","in_progress","at_risk","submitted","accepted","blocked"\]/);
+  assert.match(app, /Calificables/);
+  assert.match(app, /Completados/);
+  assert.match(app, /Bloqueados/);
 });
 
 test("Luma calls refresh an expired session once", () => {
