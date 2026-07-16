@@ -18,7 +18,7 @@
   };
   const state = {
     session: null, membership: null, organization: null, periods: [], selectedPeriod: null,
-    metrics: [], updates: [], initiatives: [], deliverables: [], payments: [], funds: [],
+    metrics: [], updates: [], initiatives: [], deliverables: [], payments: [], funds: [], members: [], programs: [], contacts: [], programFilter:"all",
     view: "dashboard", sidebarOpen: false, preview: PREVIEW,
   };
 
@@ -242,7 +242,7 @@
     state.membership = membership;
     state.organization = membership.organizations;
     const orgId = membership.organization_id;
-    const [periods, metrics, updates, initiatives, deliverables, payments, funds] = await Promise.all([
+    const [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts] = await Promise.all([
       supabase.from("reporting_periods").select("*").eq("organization_id", orgId).order("starts_on"),
       supabase.from("metric_definitions").select("*").eq("organization_id", orgId).order("sort_order"),
       supabase.from("metric_updates").select("*").eq("organization_id", orgId),
@@ -250,10 +250,13 @@
       supabase.from("deliverables").select("*").eq("organization_id", orgId).order("due_on"),
       supabase.from("payment_milestones").select("*").eq("organization_id", orgId).order("sort_order"),
       supabase.from("fund_transactions").select("*").eq("organization_id", orgId).order("occurred_on", { ascending:false }),
+      supabase.from("profiles").select("id,full_name").order("full_name"),
+      supabase.from("programs").select("*").eq("organization_id", orgId).eq("active", true).order("name"),
+      supabase.from("event_contacts").select("id,initiative_id,email,attendance_status,consent_recorded").eq("organization_id", orgId),
     ]);
-    const failed = [periods, metrics, updates, initiatives, deliverables, payments, funds].find((r) => r.error);
+    const failed = [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts].find((r) => r.error);
     if (failed) throw failed.error;
-    Object.assign(state, { periods:periods.data, metrics:metrics.data, updates:updates.data, initiatives:initiatives.data, deliverables:deliverables.data, payments:payments.data, funds:funds.data });
+    Object.assign(state, { periods:periods.data, metrics:metrics.data, updates:updates.data, initiatives:initiatives.data, deliverables:deliverables.data, payments:payments.data, funds:funds.data, members:members.data, programs:programs.data, contacts:contacts.data });
     state.selectedPeriod ||= state.periods.find((p) => new Date(p.starts_on) <= new Date() && new Date(p.ends_on) >= new Date())?.id || state.periods[0]?.id;
     return true;
   }
@@ -269,17 +272,32 @@
     state.deliverables = previewData.deliverables;
     state.payments = previewData.payments.map((p, i) => ({ id:`p${i}`, label:p[0], amount_usd:p[1], status:p[2] }));
     state.funds = previewData.funds;
+    state.members = [
+      { id:"preview-1", full_name:"Responsable Tellus" },
+      { id:"preview-2", full_name:"Equipo Comunidad" },
+    ];
+    state.programs = ["Stellar Chile","Stellar Barrio","Stellar Academy","Coffee Breaks"].map((name, index) => ({ id:`program-${index}`, name }));
+    state.contacts = [];
   }
 
   function currentPeriod() { return state.periods.find((p) => p.id === state.selectedPeriod) || state.periods[0]; }
   function periodUpdates() { return state.updates.filter((u) => u.period_id === state.selectedPeriod); }
   function metricWithUpdate(metric) { return { ...metric, update: periodUpdates().find((u) => u.metric_id === metric.id) || { actual:0, status:"not_started" } }; }
-  function periodInitiatives() { return state.initiatives.filter((i) => !i.period_id || i.period_id === state.selectedPeriod); }
+  function periodInitiatives() { return state.initiatives.filter((i) => (!i.period_id || i.period_id === state.selectedPeriod) && (state.programFilter === "all" || i.program_id === state.programFilter)); }
+  function programName(id) { return state.programs.find((program) => program.id === id)?.name || "Sin programa"; }
+  function programOptions(selected) { return `<option value="">Sin programa</option>${state.programs.map((program) => `<option value="${esc(program.id)}" ${selected === program.id ? "selected" : ""}>${esc(program.name)}</option>`).join("")}`; }
+  function contactEmails(itemId) { return state.contacts.filter((contact) => contact.initiative_id === itemId).map((contact) => contact.email).join("\n"); }
+  function ownerName(id) { return state.members.find((member) => member.id === id)?.full_name || "Sin asignar"; }
+  function ownerOptions(selected) { return `<option value="">Sin asignar</option>${state.members.map((member) => `<option value="${esc(member.id)}" ${selected === member.id ? "selected" : ""}>${esc(member.full_name)}</option>`).join("")}`; }
+  function linksFromText(value) { return String(value || "").split(/\r?\n/).map((url) => url.trim()).filter(Boolean).map((url) => ({ url })); }
+  function linksText(links) { return Array.isArray(links) ? links.map((link) => link.url || "").filter(Boolean).join("\n") : ""; }
+  function resourceLinks(links) { return Array.isArray(links) ? links.slice(0,3).map((link) => `<a class="table-link" href="${esc(link.url)}" target="_blank" rel="noopener">${icon("link")} Recurso</a>`).join("") : ""; }
 
   function renderShell() {
     const viewLabels = { dashboard:"Resumen", initiatives:"Operación", deliverables:"Entregables", finance:"Finanzas" };
     $app.innerHTML = `
       <div class="app-shell">
+        <button class="sidebar-backdrop ${state.sidebarOpen ? "visible" : ""}" id="sidebar-backdrop" aria-label="Cerrar menú"></button>
         <aside class="sidebar ${state.sidebarOpen ? "open" : ""}" id="sidebar">
           <div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Stellar Ops</div>
           <nav class="nav" aria-label="Principal">
@@ -319,14 +337,14 @@
 
   function deliverablesTable(rows) {
     if (!rows.length) return `<div class="empty">${icon("inbox")}<div>No hay entregables.</div></div>`;
-    return `<div class="table-wrap"><table><thead><tr><th>Entregable</th><th>Vence</th><th>Estado</th><th></th></tr></thead><tbody>${rows.map((d) => `<tr><td><button class="table-link" data-edit-deliverable="${esc(d.id)}">${esc(d.title)}</button></td><td>${fmtDate(d.due_on)}</td><td>${status(d.status)}</td><td><button class="icon-button" data-edit-deliverable="${esc(d.id)}" aria-label="Editar ${esc(d.title)}">${icon("pencil")}</button></td></tr>`).join("")}</tbody></table></div>`;
+    return `<div class="table-wrap"><table><thead><tr><th>Entregable</th><th>Responsable</th><th>Vence</th><th>Estado</th><th></th></tr></thead><tbody>${rows.map((d) => `<tr><td><button class="table-link" data-edit-deliverable="${esc(d.id)}">${esc(d.title)}</button>${resourceLinks(d.resource_links)}</td><td>${esc(ownerName(d.owner_id))}</td><td>${fmtDate(d.due_on)}</td><td>${status(d.status)}</td><td><button class="icon-button" data-edit-deliverable="${esc(d.id)}" aria-label="Editar ${esc(d.title)}">${icon("pencil")}</button></td></tr>`).join("")}</tbody></table></div>`;
   }
 
   function initiativesView() {
     const groups = ["not_started","in_progress","at_risk","submitted"];
-    return `<div class="toolbar"><div><span class="eyebrow">Ejecución mensual</span><h2>Pipeline operativo</h2></div><div class="topbar-actions"><button class="button button-secondary" id="sync-luma">${icon("calendar-sync")} Importar desde Luma</button><button class="button button-primary" id="add-initiative">${icon("plus")} Nueva actividad</button></div></div><div class="kanban">${groups.map((g) => `<section class="kanban-column"><div class="kanban-title">${statusLabels[g]} <span class="kanban-count">${periodInitiatives().filter((i) => i.status === g).length}</span></div>${periodInitiatives().filter((i) => i.status === g).map(workCard).join("") || `<div class="empty">Sin actividades</div>`}</section>`).join("")}</div>`;
+    return `<div class="toolbar"><div><span class="eyebrow">Ejecución mensual</span><h2>Pipeline operativo</h2></div><div class="topbar-actions"><label class="sr-only" for="program-filter">Programa</label><select class="period-select" id="program-filter"><option value="all">Todos los programas</option>${state.programs.map((program) => `<option value="${esc(program.id)}" ${state.programFilter === program.id ? "selected" : ""}>${esc(program.name)}</option>`).join("")}</select><button class="button button-secondary" id="sync-luma">${icon("calendar-sync")} Importar desde Luma</button><button class="button button-primary" id="add-initiative">${icon("plus")} Nueva actividad</button></div></div><div class="kanban">${groups.map((g) => `<section class="kanban-column"><div class="kanban-title">${statusLabels[g]} <span class="kanban-count">${periodInitiatives().filter((i) => i.status === g).length}</span></div>${periodInitiatives().filter((i) => i.status === g).map(workCard).join("") || `<div class="empty">Sin actividades</div>`}</section>`).join("")}</div>`;
   }
-  function workCard(item) { return `<article class="work-card"><span class="type-chip">${esc(typeLabels[item.type] || item.type)}</span><h3>${esc(item.title)}</h3>${item.luma_event_id ? `<div class="work-meta"><span>${icon("users")} ${esc(item.luma_registered_count)} registrados · ${esc(item.luma_checked_in_count)} check-ins</span></div>` : ""}<div class="work-meta"><span>${icon("calendar")} ${fmtDate(item.due_on || item.occurred_on)}</span>${item.luma_url ? `<a class="table-link" href="${esc(item.luma_url)}" target="_blank" rel="noopener">Luma</a>` : ""}<button class="table-link" data-edit-initiative="${esc(item.id)}">Editar</button></div></article>`; }
+  function workCard(item) { return `<article class="work-card"><span class="type-chip">${esc(programName(item.program_id))}</span><span class="type-chip">${esc(typeLabels[item.type] || item.type)}</span><h3>${esc(item.title)}</h3><div class="work-meta"><span>${icon("user-round")} ${esc(ownerName(item.owner_id))}</span><span>${icon("mail")} ${state.contacts.filter((contact) => contact.initiative_id === item.id).length} contactos</span></div>${item.luma_event_id ? `<div class="work-meta"><span>${icon("users")} ${esc(item.luma_registered_count)} registrados · ${esc(item.luma_checked_in_count)} check-ins</span></div>` : ""}<div class="work-meta"><span>${icon("calendar")} ${fmtDate(item.due_on || item.occurred_on)}</span>${item.luma_url ? `<a class="table-link" href="${esc(item.luma_url)}" target="_blank" rel="noopener">Luma</a>` : ""}${resourceLinks(item.resource_links)}<button class="table-link" data-edit-initiative="${esc(item.id)}">Editar</button></div></article>`; }
 
   function deliverablesView() {
     return `<div class="toolbar"><div><span class="eyebrow">Contrato y aceptación</span><h2>Entregables</h2></div><button class="button button-primary" id="add-deliverable">${icon("plus")} Nuevo entregable</button></div><article class="card section-card">${deliverablesTable(state.deliverables)}</article>`;
@@ -342,7 +360,9 @@
   function wireShell() {
     document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.view; state.sidebarOpen = false; renderShell(); }));
     document.querySelector("#period")?.addEventListener("change", (e) => { state.selectedPeriod = e.target.value; renderShell(); });
-    document.querySelector("#menu")?.addEventListener("click", () => { state.sidebarOpen = !state.sidebarOpen; document.querySelector("#sidebar").classList.toggle("open", state.sidebarOpen); });
+    document.querySelector("#program-filter")?.addEventListener("change", (e) => { state.programFilter = e.target.value; renderShell(); });
+    document.querySelector("#menu")?.addEventListener("click", () => { state.sidebarOpen = !state.sidebarOpen; document.querySelector("#sidebar").classList.toggle("open", state.sidebarOpen); document.querySelector("#sidebar-backdrop").classList.toggle("visible", state.sidebarOpen); document.querySelector("#menu").setAttribute("aria-expanded", String(state.sidebarOpen)); });
+    document.querySelector("#sidebar-backdrop")?.addEventListener("click", () => { state.sidebarOpen = false; renderShell(); });
     document.querySelector("#signout")?.addEventListener("click", () => supabase.auth.signOut());
     document.querySelector("#quick-add")?.addEventListener("click", () => openInitiativeModal());
     document.querySelector("#add-initiative")?.addEventListener("click", () => openInitiativeModal());
@@ -372,9 +392,10 @@
   }
 
   function openInitiativeModal(item = {}) {
-    modal(item.id ? "Editar actividad" : "Nueva actividad", `<form id="initiative-form"><div class="field"><label for="type">Tipo</label><select id="type" name="type">${Object.entries(typeLabels).map(([v,l]) => `<option value="${v}" ${item.type === v ? "selected" : ""}>${l}</option>`).join("")}</select></div><div class="field"><label for="title">Nombre</label><input id="title" name="title" value="${esc(item.title || "")}" required /></div><div class="field"><label for="due_on">Fecha objetivo</label><input id="due_on" name="due_on" type="date" value="${esc(item.due_on || "")}" /></div><div class="field"><label for="status">Estado</label><select id="status" name="status">${statusOptions(item.status || "not_started")}</select></div><div class="field"><label for="notes">Notas</label><textarea id="notes" name="notes">${esc(item.notes || "")}</textarea></div><div class="modal-actions"><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" type="submit">Guardar actividad</button></div></form>`);
+    modal(item.id ? "Editar actividad" : "Nueva actividad", `<form id="initiative-form"><div class="field"><label for="program_id">Programa</label><select id="program_id" name="program_id">${programOptions(item.program_id)}</select></div><div class="field"><label for="type">Tipo</label><select id="type" name="type">${Object.entries(typeLabels).map(([v,l]) => `<option value="${v}" ${item.type === v ? "selected" : ""}>${l}</option>`).join("")}</select></div><div class="field"><label for="title">Nombre</label><input id="title" name="title" value="${esc(item.title || "")}" required /></div><div class="field"><label for="owner_id">Responsable principal</label><select id="owner_id" name="owner_id">${ownerOptions(item.owner_id)}</select></div><div class="field"><label for="due_on">Fecha objetivo</label><input id="due_on" name="due_on" type="date" value="${esc(item.due_on || "")}" /></div><div class="field"><label for="luma_url">Enlace del evento en Luma</label><input id="luma_url" name="luma_url" type="url" value="${esc(item.luma_url || "")}" placeholder="https://lu.ma/..." /></div><div class="field"><label for="resource_links">Enlaces de trabajo</label><textarea id="resource_links" name="resource_links" placeholder="Un enlace por línea: Google Sheets, Drive, Notion…">${esc(linksText(item.resource_links))}</textarea><small>Un enlace por línea.</small></div><div class="field"><label for="contact_emails">Lista de correos</label><textarea id="contact_emails" name="contact_emails" placeholder="Un correo por línea">${esc(contactEmails(item.id))}</textarea><small>Datos privados del evento. Registra sólo contactos con base legal o consentimiento.</small></div><div class="field"><label for="status">Estado</label><select id="status" name="status">${statusOptions(item.status || "not_started")}</select></div><div class="field"><label for="notes">Notas</label><textarea id="notes" name="notes">${esc(item.notes || "")}</textarea></div><div class="modal-actions">${item.id ? `<button type="button" class="button button-danger" id="delete-initiative">${icon("trash-2")} Eliminar</button>` : ""}<span class="modal-actions-spacer"></span><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" type="submit">Guardar actividad</button></div></form>`);
     document.querySelector("#cancel").onclick = closeModal;
-    document.querySelector("#initiative-form").onsubmit = async (e) => { e.preventDefault(); if (lockedPreview()) return; const v = Object.fromEntries(new FormData(e.currentTarget)); const payload = { organization_id:state.organization.id, period_id:state.selectedPeriod, type:v.type, title:v.title, due_on:v.due_on || null, status:v.status, notes:v.notes, created_by:state.session.user.id }; const query = item.id ? supabase.from("initiatives").update(payload).eq("id", item.id) : supabase.from("initiatives").insert(payload); const { error } = await query; await afterMutation(error, "Actividad guardada"); };
+    document.querySelector("#delete-initiative")?.addEventListener("click", async (event) => { if (lockedPreview()) return; if (!window.confirm(`¿Eliminar “${item.title}”? Esta acción no se puede deshacer.`)) return; const button = event.currentTarget; setButtonLoading(button, "Eliminando…"); const { error } = await supabase.from("initiatives").delete().eq("id", item.id); await afterMutation(error, "Actividad eliminada"); });
+    document.querySelector("#initiative-form").onsubmit = async (e) => { e.preventDefault(); if (lockedPreview()) return; const button=e.currentTarget.querySelector("button[type=submit]"); setButtonLoading(button, "Guardando…"); const v = Object.fromEntries(new FormData(e.currentTarget)); const payload = { organization_id:state.organization.id, period_id:state.selectedPeriod, program_id:v.program_id || null, type:v.type, title:v.title, owner_id:v.owner_id || null, due_on:v.due_on || null, luma_url:v.luma_url || null, resource_links:linksFromText(v.resource_links), status:v.status, notes:v.notes, created_by:state.session.user.id }; const query = item.id ? supabase.from("initiatives").update(payload).eq("id", item.id) : supabase.from("initiatives").insert(payload); const { data:saved, error } = await query.select("id").single(); if (error) return afterMutation(error, "Actividad guardada"); const initiativeId=saved.id; const emails=[...new Set(String(v.contact_emails || "").split(/\r?\n|,/).map((email)=>email.trim().toLowerCase()).filter(Boolean))]; const { error:deleteContactsError }=await supabase.from("event_contacts").delete().eq("initiative_id", initiativeId); if (deleteContactsError) return afterMutation(deleteContactsError, "Actividad guardada"); const contactsError=emails.length ? (await supabase.from("event_contacts").insert(emails.map((email)=>({organization_id:state.organization.id,initiative_id:initiativeId,email})))).error : null; await afterMutation(contactsError, "Actividad guardada"); };
   }
 
   async function openLumaModal() {
@@ -415,9 +436,9 @@
   }
 
   function openDeliverableModal(item = {}) {
-    modal(item.id ? "Editar entregable" : "Nuevo entregable", `<form id="deliverable-form"><div class="field"><label for="title">Entregable</label><input id="title" name="title" value="${esc(item.title || "")}" required /></div><div class="field"><label for="due_on">Fecha límite</label><input id="due_on" name="due_on" type="date" value="${esc(item.due_on || "")}" required /></div><div class="field"><label for="status">Estado</label><select id="status" name="status">${statusOptions(item.status || "not_started")}</select></div><div class="field"><label for="acceptance_notes">Notas de aceptación o corrección</label><textarea id="acceptance_notes" name="acceptance_notes">${esc(item.acceptance_notes || "")}</textarea></div><div class="modal-actions"><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" type="submit">Guardar entregable</button></div></form>`);
+    modal(item.id ? "Editar entregable" : "Nuevo entregable", `<form id="deliverable-form"><div class="field"><label for="title">Entregable</label><input id="title" name="title" value="${esc(item.title || "")}" required /></div><div class="field"><label for="owner_id">Responsable principal</label><select id="owner_id" name="owner_id">${ownerOptions(item.owner_id)}</select></div><div class="field"><label for="due_on">Fecha límite</label><input id="due_on" name="due_on" type="date" value="${esc(item.due_on || "")}" required /></div><div class="field"><label for="resource_links">Enlaces de trabajo</label><textarea id="resource_links" name="resource_links" placeholder="Un enlace por línea: Google Sheets, Drive, Notion…">${esc(linksText(item.resource_links))}</textarea><small>Un enlace por línea.</small></div><div class="field"><label for="status">Estado</label><select id="status" name="status">${statusOptions(item.status || "not_started")}</select></div><div class="field"><label for="acceptance_notes">Notas de aceptación o corrección</label><textarea id="acceptance_notes" name="acceptance_notes">${esc(item.acceptance_notes || "")}</textarea></div><div class="modal-actions"><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" type="submit">Guardar entregable</button></div></form>`);
     document.querySelector("#cancel").onclick = closeModal;
-    document.querySelector("#deliverable-form").onsubmit = async (e) => { e.preventDefault(); if (lockedPreview()) return; const v = Object.fromEntries(new FormData(e.currentTarget)); const payload = { organization_id:state.organization.id, period_id:state.selectedPeriod, title:v.title, due_on:v.due_on, status:v.status, acceptance_notes:v.acceptance_notes, submitted_at:v.status === "submitted" ? new Date().toISOString() : item.submitted_at || null, accepted_at:v.status === "accepted" ? new Date().toISOString() : item.accepted_at || null }; const query = item.id ? supabase.from("deliverables").update(payload).eq("id", item.id) : supabase.from("deliverables").insert(payload); const { error } = await query; await afterMutation(error, "Entregable guardado"); };
+    document.querySelector("#deliverable-form").onsubmit = async (e) => { e.preventDefault(); if (lockedPreview()) return; const v = Object.fromEntries(new FormData(e.currentTarget)); const payload = { organization_id:state.organization.id, period_id:state.selectedPeriod, title:v.title, owner_id:v.owner_id || null, due_on:v.due_on, resource_links:linksFromText(v.resource_links), status:v.status, acceptance_notes:v.acceptance_notes, submitted_at:v.status === "submitted" ? new Date().toISOString() : item.submitted_at || null, accepted_at:v.status === "accepted" ? new Date().toISOString() : item.accepted_at || null }; const query = item.id ? supabase.from("deliverables").update(payload).eq("id", item.id) : supabase.from("deliverables").insert(payload); const { error } = await query; await afterMutation(error, "Entregable guardado"); };
   }
 
   function openTransactionModal() {
@@ -427,6 +448,7 @@
   }
 
   function statusOptions(selected) { return Object.entries(statusLabels).map(([v,l]) => `<option value="${v}" ${selected === v ? "selected" : ""}>${l}</option>`).join(""); }
+  function setButtonLoading(button, label) { button.disabled = true; button.innerHTML = `<span class="button-spinner" aria-hidden="true"></span>${esc(label)}`; }
   async function afterMutation(error, message) { if (error) return notify(error.message, true); closeModal(); notify(message); await loadLiveData(); renderShell(); }
 
   async function boot() {
