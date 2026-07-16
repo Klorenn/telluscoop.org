@@ -104,8 +104,7 @@
       <main class="auth-shell" id="main">
         <section class="auth-brand" aria-labelledby="auth-brand-title">
           <div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Tellus Cooperative</div>
-          <div><span class="eyebrow" style="color:#f1a479">Tellus Cooperative</span><h1 id="auth-brand-title">Gestión de programas.</h1><p>Organiza personas, actividades, recursos y resultados desde un mismo espacio.</p></div>
-          <p>Plataforma interna de operaciones.</p>
+          <div><span class="eyebrow" style="color:#f1a479">Operaciones</span><h1 id="auth-brand-title">Gestión Tellus Cooperative.</h1></div>
         </section>
         <section class="auth-panel">
           <form class="auth-card" id="login-form">
