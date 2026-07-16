@@ -13,6 +13,7 @@ const codeHashes: Record<string, string> = {
   "mishekoh@gmail.com": "b65ff71a8dfc5bc87078ed98a9c1fa7bf32c431576c10fc790809cfbe79a3ac8",
   "bastian@telluscoop.org": "dc31af65a2a6df324e52ef3a36ea3b51624f93df6384d29a9bd1a4bc9b11d806",
   "kohcuendepau@gmail.com": "a318f0501415dd51cc4d8da0a680ad52a8aa6b3c0f861dc1e4b72aba0fa82c5d",
+  "inboxblessedux@gmail.com": "e26e66d1e454fc6b1e8826095bf2c9f2832fd3a111737779b22348f8a92fb1f9",
 };
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
