@@ -157,6 +157,9 @@ a { color: inherit; }
 .table-contacts { display: grid; gap: .3rem; min-width: 220px; }
 .table-contacts .contact-link { width: fit-content; max-width: 280px; }
 .event-count { display: inline-flex; align-items: center; gap: .35rem; }
+.row-actions { display: flex; align-items: center; gap: .4rem; }
+.participant-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+.participant-edit-grid .field-wide { grid-column: 1 / -1; }
 .participant-row { border: 1px solid var(--line); border-radius: 13px; padding: .9rem 1rem; background: #fff; }
 .participant-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
 .participant-identity { min-width: 0; }
@@ -181,6 +184,7 @@ a { color: inherit; }
 .contact-link:hover { color: var(--clay); }
 .contact-static { cursor: default; }
 .contact-static:hover { color: var(--teal-dark); }
+.brand-icon { width: 16px; height: 16px; flex: 0 0 16px; opacity: .82; }
 .contact-link svg { width: 16px; height: 16px; flex: 0 0 16px; }
 .participant-details { margin-top: .65rem; border-top: 1px solid var(--line); padding-top: .55rem; }
 .participant-details summary { cursor: pointer; color: var(--muted); font-size: .74rem; font-weight: 700; }
@@ -330,6 +334,8 @@ tr:last-child td { border-bottom: 0; }
   .roster-filter-grid .filter-search, .roster-filter-grid .filter-actions { grid-column: auto; }
   .roster-filter-grid .filter-actions { display: grid; grid-template-columns: 1fr; }
   .roster-table-card { padding-left: .85rem; padding-right: .85rem; }
+  .participant-edit-grid { grid-template-columns: 1fr; }
+  .participant-edit-grid .field-wide { grid-column: auto; }
 }
 
 @media (max-width: 560px) {
