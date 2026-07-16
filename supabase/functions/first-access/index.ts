@@ -30,7 +30,24 @@ Deno.serve(async (request) => {
   if (request.method !== "POST") return json({ error: "Método no permitido" }, 405);
 
   try {
-    const { email: rawEmail, code, password } = await request.json();
+    const body = await request.json();
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+    const { data: listed, error: listError } = await admin.auth.admin.listUsers({ page: 1, perPage: 100 });
+    if (listError) throw listError;
+
+    if (body.action === "status") {
+      const available = Object.keys(codeHashes).some((email) => {
+        const user = listed.users.find((candidate) => candidate.email?.toLowerCase() === email);
+        return Boolean(user && !user.user_metadata?.password_configured);
+      });
+      return json({ available });
+    }
+
+    const { email: rawEmail, code, password } = body;
     const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "";
     if (!email || typeof code !== "string" || typeof password !== "string") {
       return json({ error: "Completa todos los campos" }, 400);
@@ -41,13 +58,6 @@ Deno.serve(async (request) => {
       return json({ error: "Correo o código temporal inválido" }, 403);
     }
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { autoRefreshToken: false, persistSession: false } },
-    );
-    const { data: listed, error: listError } = await admin.auth.admin.listUsers({ page: 1, perPage: 100 });
-    if (listError) throw listError;
     const user = listed.users.find((candidate) => candidate.email?.toLowerCase() === email);
     if (!user) return json({ error: "La cuenta todavía no está provisionada" }, 404);
     if (user.user_metadata?.password_configured) {

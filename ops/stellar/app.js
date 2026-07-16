@@ -100,7 +100,7 @@
             <div class="field"><label for="password">Contraseña</label><input id="password" name="password" type="password" autocomplete="current-password" minlength="8" /></div>
             <div class="auth-actions">
               <button class="button button-primary button-block" type="submit">${icon("log-in")} Entrar</button>
-              <button class="button button-secondary button-block" type="button" id="first-access">Crear contraseña por primera vez</button>
+              <button class="button button-secondary button-block" type="button" id="first-access" hidden>Crear contraseña por primera vez</button>
               <a class="button button-ghost" href="?preview=1">Ver vista previa del contrato</a>
             </div><div class="form-message" id="auth-message" role="alert"></div>
           </form>
@@ -109,6 +109,14 @@
     hydrateIcons();
     document.querySelector("#login-form").addEventListener("submit", signIn);
     document.querySelector("#first-access").addEventListener("click", renderFirstAccess);
+    updateFirstAccessAvailability();
+  }
+
+  async function updateFirstAccessAvailability() {
+    const button = document.querySelector("#first-access");
+    if (!button) return;
+    const { data, error } = await supabase.functions.invoke("first-access", { body: { action: "status" } });
+    button.hidden = !error && data?.available === false;
   }
 
   function renderFirstAccess() {
