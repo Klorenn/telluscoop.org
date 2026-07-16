@@ -144,6 +144,19 @@ a { color: inherit; }
 .filter-input-icon svg { position: absolute; left: .75rem; top: 50%; width: 17px; height: 17px; color: var(--muted); transform: translateY(-50%); pointer-events: none; }
 .filter-input-icon input { padding-left: 2.25rem; }
 .filter-actions { display: flex; align-items: center; gap: .45rem; grid-column: span 2; }
+.roster-filter-card { padding: 1rem; margin-bottom: 1rem; }
+.roster-filter-grid { display: grid; grid-template-columns: minmax(220px,2fr) repeat(5,minmax(120px,1fr)) auto; gap: .65rem; align-items: end; }
+.roster-filter-grid .field { min-width: 0; margin: 0; }
+.roster-filter-grid .filter-actions { grid-column: auto; }
+.roster-table-card { margin: 0; }
+.participant-table { min-width: 980px; }
+.participant-table td { vertical-align: middle; }
+.participant-table td > strong, .participant-table td > small { display: block; }
+.participant-table td > small { max-width: 220px; margin-top: .2rem; color: var(--muted); font-size: .68rem; overflow-wrap: anywhere; }
+.participant-table td > svg, .event-count svg { width: 16px; height: 16px; vertical-align: -3px; color: var(--teal); }
+.table-contacts { display: grid; gap: .3rem; min-width: 220px; }
+.table-contacts .contact-link { width: fit-content; max-width: 280px; }
+.event-count { display: inline-flex; align-items: center; gap: .35rem; }
 .participant-row { border: 1px solid var(--line); border-radius: 13px; padding: .9rem 1rem; background: #fff; }
 .participant-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
 .participant-identity { min-width: 0; }
@@ -271,6 +284,8 @@ tr:last-child td { border-bottom: 0; }
   .section-grid { grid-template-columns: 1fr; }
   .participant-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .participant-overview { grid-template-columns: 1fr; }
+  .roster-filter-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .roster-filter-grid .filter-search, .roster-filter-grid .filter-actions { grid-column: span 3; }
 }
 @media (max-width: 820px) {
   .loading-shell { display: block; }
@@ -311,6 +326,10 @@ tr:last-child td { border-bottom: 0; }
   .rank-rule { align-items: flex-start; line-height: 1.5; }
   .rank-meta > span:not(.rank-badge) + span:not(.rank-badge)::before { content: none; }
   .topbar-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .roster-filter-grid { grid-template-columns: 1fr; }
+  .roster-filter-grid .filter-search, .roster-filter-grid .filter-actions { grid-column: auto; }
+  .roster-filter-grid .filter-actions { display: grid; grid-template-columns: 1fr; }
+  .roster-table-card { padding-left: .85rem; padding-right: .85rem; }
 }
 
 @media (max-width: 560px) {

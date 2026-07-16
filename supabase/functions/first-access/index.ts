@@ -21,7 +21,7 @@ const displayNames: Record<string, string> = {
   "hola@telluscoop.org": "Tellus Cooperative Admin",
   "kohcuendedani@gmail.com": "Daniel",
   "mishekoh@gmail.com": "Mishelle",
-  "bastian@telluscoop.org": "Bastian",
+  "bastian@telluscoop.org": "Bastian Koh",
   "kohcuendepau@gmail.com": "Pau Koh",
   "inboxblessedux@gmail.com": "Joaquín Farfán",
   "alexbnjmnch@gmail.com": "Alex Hernández",
