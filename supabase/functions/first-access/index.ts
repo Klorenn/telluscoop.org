@@ -11,7 +11,7 @@ const codeHashes: Record<string, string> = {
   "hola@telluscoop.org": "500027fa5c387fa1942f89c688f82c13178084a9e6cda2ec2a0b49c6b4c8d3d5",
   "kohcuendedani@gmail.com": "2b31c0be63416ad2fe80ee3ca3a64237199679eef0109ee509f1ebda73d56ac4",
   "mishekoh@gmail.com": "b65ff71a8dfc5bc87078ed98a9c1fa7bf32c431576c10fc790809cfbe79a3ac8",
-  "bastian@telluscoop.org": "dc31af65a2a6df324e52ef3a36ea3b51624f93df6384d29a9bd1a4bc9b11d806",
+  "bastian@telluscoop.org": "37a130e6022a865f820fab4024233669e4ba4a1d88baa877648bb7ea1f9ead18",
   "kohcuendepau@gmail.com": "a318f0501415dd51cc4d8da0a680ad52a8aa6b3c0f861dc1e4b72aba0fa82c5d",
   "inboxblessedux@gmail.com": "e26e66d1e454fc6b1e8826095bf2c9f2832fd3a111737779b22348f8a92fb1f9",
   "alexbnjmnch@gmail.com": "247345a6b7f2235ee03a884eafbfc0f9ed927bd4f6b34a8cdeb29073646eafef",
