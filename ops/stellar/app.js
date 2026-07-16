@@ -456,7 +456,7 @@
     document.querySelector("#add-deliverable")?.addEventListener("click", () => openDeliverableModal());
     document.querySelector("#add-transaction")?.addEventListener("click", () => openTransactionModal());
     document.querySelector("#set-budget")?.addEventListener("click", openBudgetModal);
-    document.querySelector("#add-resource")?.addEventListener("click", openResourceModal);
+    document.querySelector("#add-resource")?.addEventListener("click", () => openResourceModal());
     document.querySelectorAll("[data-edit-resource]").forEach((button)=>button.addEventListener("click",()=>openResourceModal(state.resources.find((row)=>row.id===button.dataset.editResource))));
     document.querySelector("#import-participants")?.addEventListener("click", openParticipantImportModal);
     document.querySelector("#export-participants")?.addEventListener("click", exportParticipantsCsv);
@@ -587,7 +587,7 @@
   }
 
   function openResourceModal(item = {}) {
-    if (state.selectedProgram === "global") return;
+    if (state.selectedProgram === "global" && !item.id) return;
     modal(item.id?"Editar recurso":"Añadir planilla o recurso", `<form id="resource-form"><div class="field"><label for="resource_type">Tipo</label><select id="resource_type" name="resource_type">${[["google_sheets","Google Sheets"],["google_drive","Google Drive o carpeta"],["notion","Notion"],["form","Formulario"],["presentation","Presentación"],["github","GitHub"],["other","Otro"]].map(([value,label])=>`<option value="${value}" ${item.resource_type===value?"selected":""}>${label}</option>`).join("")}</select><small>Detectamos automáticamente el tipo al pegar el enlace.</small></div><div class="field"><label for="title">Nombre</label><input id="title" name="title" value="${esc(item.title||"")}" required /></div><div class="field"><label for="url">Enlace</label><input id="url" name="url" type="url" value="${esc(item.url||"")}" placeholder="https://" required /></div><div class="field"><label for="description">Descripción</label><textarea id="description" name="description">${esc(item.description||"")}</textarea></div><div class="modal-actions">${item.id?`<button type="button" class="button button-danger" id="delete-resource">${icon("trash-2")} Eliminar</button>`:""}<span class="modal-actions-spacer"></span><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" type="submit">Guardar recurso</button></div></form>`);
     document.querySelector("#cancel").onclick = closeModal;
     document.querySelector("#url").addEventListener("input",event=>{const detected=resourceTypeFromUrl(event.target.value);if(detected!=="other")document.querySelector("#resource_type").value=detected;});
