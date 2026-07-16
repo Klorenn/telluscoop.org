@@ -18,7 +18,7 @@
   };
   const state = {
     session: null, membership: null, organization: null, periods: [], selectedPeriod: null,
-    metrics: [], updates: [], initiatives: [], deliverables: [], payments: [], funds: [], members: [], programs: [], contacts: [], budgets: [], resources: [], evidence: [], selectedProgram:"global",
+    metrics: [], updates: [], initiatives: [], deliverables: [], payments: [], funds: [], members: [], programs: [], contacts: [], participants: [], budgets: [], resources: [], evidence: [], selectedProgram:"global", importRows:[],
     view: "dashboard", sidebarOpen: false, preview: PREVIEW,
   };
 
@@ -238,7 +238,7 @@
     state.membership = membership;
     state.organization = membership.organizations;
     const orgId = membership.organization_id;
-    const [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, budgets, resources, evidence] = await Promise.all([
+    const [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, participants, budgets, resources, evidence] = await Promise.all([
       supabase.from("reporting_periods").select("*").eq("organization_id", orgId).order("starts_on"),
       supabase.from("metric_definitions").select("*").eq("organization_id", orgId).order("sort_order"),
       supabase.from("metric_updates").select("*").eq("organization_id", orgId),
@@ -249,13 +249,14 @@
       supabase.from("profiles").select("id,full_name").order("full_name"),
       supabase.from("programs").select("*").eq("organization_id", orgId).eq("active", true).order("name"),
       supabase.from("event_contacts").select("id,initiative_id,email,attendance_status,consent_recorded").eq("organization_id", orgId),
+      supabase.from("program_participants").select("*").eq("organization_id", orgId).order("full_name"),
       supabase.from("program_budgets").select("*").eq("organization_id", orgId),
       supabase.from("program_resources").select("*").eq("organization_id", orgId).order("created_at", { ascending:false }),
       supabase.from("evidence").select("id,program_id,initiative_id,deliverable_id,title,kind,url,storage_path,created_at").eq("organization_id", orgId).order("created_at", { ascending:false }),
     ]);
-    const failed = [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, budgets, resources, evidence].find((r) => r.error);
+    const failed = [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, participants, budgets, resources, evidence].find((r) => r.error);
     if (failed) throw failed.error;
-    Object.assign(state, { periods:periods.data, metrics:metrics.data, updates:updates.data, initiatives:initiatives.data, deliverables:deliverables.data, payments:payments.data, funds:funds.data, members:members.data, programs:programs.data, contacts:contacts.data, budgets:budgets.data, resources:resources.data, evidence:evidence.data });
+    Object.assign(state, { periods:periods.data, metrics:metrics.data, updates:updates.data, initiatives:initiatives.data, deliverables:deliverables.data, payments:payments.data, funds:funds.data, members:members.data, programs:programs.data, contacts:contacts.data, participants:participants.data, budgets:budgets.data, resources:resources.data, evidence:evidence.data });
     state.selectedPeriod ||= state.periods.find((p) => new Date(p.starts_on) <= new Date() && new Date(p.ends_on) >= new Date())?.id || state.periods[0]?.id;
     return true;
   }
@@ -277,7 +278,7 @@
     ];
     state.programs = ["Stellar Chile","Stellar Barrio","Stellar Academy","Coffee Breaks"].map((name, index) => ({ id:`program-${index}`, name }));
     state.contacts = [];
-    state.budgets = []; state.resources = []; state.evidence = [];
+    state.participants = []; state.budgets = []; state.resources = []; state.evidence = [];
   }
 
   function currentPeriod() { return state.periods.find((p) => p.id === state.selectedPeriod) || state.periods[0]; }
@@ -388,7 +389,7 @@
   }
 
   function resourcesView() { const rows=state.resources.filter(inProgram); return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Planillas y recursos</h2></div>${state.selectedProgram !== "global" ? `<button class="button button-primary" id="add-resource">${icon("plus")} Añadir enlace</button>` : ""}</div><section class="resource-grid">${rows.map((row)=>`<a class="card resource-card" href="${esc(row.url)}" target="_blank" rel="noopener"><span class="type-chip">${esc(row.resource_type.replaceAll("_"," "))}</span><h3>${esc(row.title)}</h3><p>${esc(row.description || "Abrir recurso")}</p></a>`).join("") || `<div class="empty">No hay planillas o recursos en este espacio.</div>`}</section>`; }
-  function participantsView() { const initiativeIds=new Set(state.initiatives.filter(inProgram).map((item)=>item.id)); const rows=state.contacts.filter((contact)=>initiativeIds.has(contact.initiative_id)); return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Participantes</h2></div></div><article class="card section-card"><div class="metric-value">${rows.length} <small>contactos registrados</small></div><div class="table-wrap"><table><thead><tr><th>Correo</th><th>Estado</th><th>Consentimiento</th></tr></thead><tbody>${rows.map((row)=>`<tr><td>${esc(row.email)}</td><td>${esc(row.attendance_status)}</td><td>${row.consent_recorded ? "Registrado" : "Pendiente"}</td></tr>`).join("")}</tbody></table></div>${rows.length ? "" : `<div class="empty">No hay participantes cargados.</div>`}</article>`; }
+  function participantsView() { const rows=state.participants.filter(inProgram); const actions=`<button class="button button-secondary" id="export-participants">${icon("download")} Exportar CSV</button>${state.selectedProgram !== "global" ? `<button class="button button-primary" id="import-participants">${icon("file-up")} Importar planilla</button>` : ""}`; return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Participantes</h2></div><div class="topbar-actions">${actions}</div></div><article class="card section-card"><div class="metric-value">${rows.length} <small>participantes guardados</small></div><div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Correo</th><th>GitHub</th><th>Rango / tier</th><th>Fuente</th></tr></thead><tbody>${rows.map((row)=>`<tr><td>${esc(row.full_name || "—")}</td><td>${esc(row.email)}</td><td>${row.github ? `<a class="table-link" href="${esc(row.github.startsWith("http") ? row.github : `https://github.com/${row.github.replace(/^@/,"")}`)}" target="_blank" rel="noopener">${esc(row.github)}</a>` : "—"}</td><td>${esc(row.participant_rank || "—")}</td><td>${esc(row.source_name || "Manual")}</td></tr>`).join("")}</tbody></table></div>${rows.length ? "" : `<div class="empty">No hay participantes cargados.</div>`}</article>`; }
   function evidenceView() { const rows=state.evidence.filter(inProgram); return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Evidencias</h2></div></div><section class="resource-grid">${rows.map((row)=>`<article class="card resource-card"><span class="type-chip">${esc(row.kind)}</span><h3>${esc(row.title)}</h3>${row.url ? `<a class="table-link" href="${esc(row.url)}" target="_blank" rel="noopener">Abrir evidencia</a>` : `<p>Archivo privado</p>`}</article>`).join("") || `<div class="empty">No hay evidencias cargadas.</div>`}</section>`; }
 
   function wireShell() {
@@ -407,6 +408,8 @@
     document.querySelector("#add-transaction")?.addEventListener("click", () => openTransactionModal());
     document.querySelector("#set-budget")?.addEventListener("click", openBudgetModal);
     document.querySelector("#add-resource")?.addEventListener("click", openResourceModal);
+    document.querySelector("#import-participants")?.addEventListener("click", openParticipantImportModal);
+    document.querySelector("#export-participants")?.addEventListener("click", exportParticipantsCsv);
     document.querySelectorAll("[data-view-link]").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.viewLink; renderShell(); }));
     document.querySelectorAll("[data-edit-metric]").forEach((b) => b.addEventListener("click", () => openMetricModal(b.dataset.editMetric)));
     document.querySelector("#add-metric")?.addEventListener("click", openNewMetricModal);
@@ -499,6 +502,40 @@
     document.querySelector("#cancel").onclick = closeModal;
     document.querySelector("#resource-form").onsubmit = async (event) => { event.preventDefault(); if (lockedPreview()) return; const button=event.currentTarget.querySelector("button[type=submit]"); setButtonLoading(button,"Guardando…"); const values=Object.fromEntries(new FormData(event.currentTarget)); const { error }=await supabase.from("program_resources").insert({ organization_id:state.organization.id, program_id:state.selectedProgram, resource_type:values.resource_type, title:values.title, url:values.url, description:values.description, created_by:state.session.user.id }); await afterMutation(error,"Recurso guardado"); };
   }
+
+  function normalizeColumn(value) { return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""); }
+  function participantRowsFromSheet(rawRows, sourceName) {
+    const aliases={full_name:["nombre","name","full_name","nombre_completo","participant_name"],email:["correo","email","e_mail","mail","correo_electronico"],github:["github","github_user","github_username","usuario_github","perfil_github"],participant_rank:["rango","rank","tier","nivel","level","ambassador_tier"]};
+    const normalized=rawRows.map((row)=>Object.fromEntries(Object.entries(row).map(([key,value])=>[normalizeColumn(key),String(value ?? "").trim()])));
+    const valueFor=(row,keys)=>keys.map((key)=>row[key]).find(Boolean) || "";
+    const emailPattern=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const deduped=new Map();
+    for(const row of normalized){const email=valueFor(row,aliases.email).toLowerCase();if(!emailPattern.test(email))continue;deduped.set(email,{full_name:valueFor(row,aliases.full_name),email,github:valueFor(row,aliases.github),participant_rank:valueFor(row,aliases.participant_rank),source_name:sourceName});}
+    return [...deduped.values()];
+  }
+
+  function workbookRows(buffer) { const workbook=XLSX.read(buffer,{type:"array",cellDates:false}); const sheet=workbook.Sheets[workbook.SheetNames[0]]; return XLSX.utils.sheet_to_json(sheet,{defval:"",raw:false}); }
+
+  function openParticipantImportModal() {
+    state.importRows=[];
+    modal("Importar participantes", `<form id="participant-import-form"><div class="field"><label for="participant-file">Excel o CSV</label><input id="participant-file" type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" /><small>Se leerá la primera hoja. Columnas reconocidas: nombre, correo/email, GitHub y rango/tier.</small></div><div class="field"><label for="google-sheet-url">Google Sheets público</label><input id="google-sheet-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/..." /><button class="button button-secondary" type="button" id="load-google-sheet">${icon("sheet")} Cargar enlace</button><small>La hoja debe permitir acceso mediante enlace.</small></div><div id="import-preview"><div class="empty">Selecciona una planilla para revisar los datos antes de guardarlos.</div></div><div class="modal-actions"><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" id="save-import" type="submit" disabled>Importar participantes</button></div></form>`);
+    document.querySelector("#cancel").onclick=closeModal;
+    document.querySelector("#participant-file").addEventListener("change",readParticipantFile);
+    document.querySelector("#load-google-sheet").addEventListener("click",readGoogleSheet);
+    document.querySelector("#participant-import-form").onsubmit=saveParticipantImport;
+    hydrateIcons();
+  }
+
+  async function readParticipantFile(event) { const file=event.target.files?.[0]; if(!file)return; const button=document.querySelector("#save-import"); button.disabled=true; try{const rows=workbookRows(await file.arrayBuffer()); state.importRows=participantRowsFromSheet(rows,file.name);renderParticipantPreview();}catch(error){console.error(error);document.querySelector("#import-preview").innerHTML=`<div class="form-message">No pudimos leer el archivo. Revisa su formato.</div>`;} }
+
+  function googleSheetCsvUrl(value) { const match=String(value).match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/); if(!match)return value; const gid=String(value).match(/[?&#]gid=(\d+)/)?.[1] || "0"; return `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv&gid=${gid}`; }
+  async function readGoogleSheet() { const url=document.querySelector("#google-sheet-url").value.trim(); if(!url)return notify("Pega un enlace de Google Sheets.",true); const button=document.querySelector("#load-google-sheet");setButtonLoading(button,"Cargando…");try{const response=await fetch(googleSheetCsvUrl(url));if(!response.ok)throw new Error(String(response.status));state.importRows=participantRowsFromSheet(workbookRows(await response.arrayBuffer()),"Google Sheets");renderParticipantPreview();resetButton(button,"Cargar enlace");}catch(error){console.error(error);resetButton(button,"Cargar enlace");document.querySelector("#import-preview").innerHTML=`<div class="form-message">No pudimos leer la hoja. Confirma que sea pública o descarga el archivo como Excel/CSV.</div>`;} }
+
+  function renderParticipantPreview() { const preview=document.querySelector("#import-preview"); const rows=state.importRows; document.querySelector("#save-import").disabled=!rows.length; preview.innerHTML=rows.length ? `<div class="import-summary"><strong>${rows.length} participantes válidos</strong><span>Se actualizarán los correos que ya existan.</span></div><div class="table-wrap import-table"><table><thead><tr><th>Nombre</th><th>Correo</th><th>GitHub</th><th>Rango</th></tr></thead><tbody>${rows.slice(0,8).map((row)=>`<tr><td>${esc(row.full_name||"—")}</td><td>${esc(row.email)}</td><td>${esc(row.github||"—")}</td><td>${esc(row.participant_rank||"—")}</td></tr>`).join("")}</tbody></table></div>${rows.length>8?`<small>Vista previa de 8 filas.</small>`:""}` : `<div class="form-message">No encontramos correos válidos. Revisa los encabezados de la planilla.</div>`; }
+
+  async function saveParticipantImport(event) { event.preventDefault(); if(lockedPreview())return; const button=document.querySelector("#save-import");setButtonLoading(button,"Importando…");const payload=state.importRows.map((row)=>({...row,organization_id:state.organization.id,program_id:state.selectedProgram,imported_by:state.session.user.id,imported_at:new Date().toISOString(),updated_at:new Date().toISOString()}));let error=null;for(let index=0;index<payload.length;index+=200){const result=await supabase.from("program_participants").upsert(payload.slice(index,index+200),{onConflict:"program_id,email"});if(result.error){error=result.error;break;}}await afterMutation(error,`${payload.length} participantes importados`); }
+
+  function exportParticipantsCsv() { const rows=state.participants.filter(inProgram); if(!rows.length)return notify("No hay participantes para exportar.",true); const csvValue=(value)=>{let safe=String(value??"");if(/^[=+\-@]/.test(safe))safe=`'${safe}`;return `"${safe.replaceAll('"','""')}"`;}; const csv=["Nombre,Correo,GitHub,Rango/Tier,Fuente",...rows.map((row)=>[row.full_name,row.email,row.github,row.participant_rank,row.source_name].map(csvValue).join(","))].join("\r\n"); const blob=new Blob(["\ufeff",csv],{type:"text/csv;charset=utf-8"}); const url=URL.createObjectURL(blob); const link=document.createElement("a");link.href=url;link.download=`participantes-${selectedProgram()?.code||"tellus"}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }
 
   function openBudgetModal() {
     const current=state.budgets.find((row)=>row.program_id===state.selectedProgram && row.period_id===state.selectedPeriod);

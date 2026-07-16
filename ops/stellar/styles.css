@@ -113,6 +113,11 @@ a { color: inherit; }
 .resource-card:hover { border-color: var(--teal); }
 .resource-card h3 { margin: .7rem 0 .4rem; }
 .resource-card p { color: var(--muted); margin: 0; font-size: .8rem; }
+.import-summary { display: flex; justify-content: space-between; gap: 1rem; padding: .8rem; margin: .5rem 0; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-2); }
+.import-summary strong, .import-summary span { display: block; font-size: .78rem; }
+.import-summary span { color: var(--muted); }
+.import-table { max-height: 290px; border: 1px solid var(--line); border-radius: 11px; }
+.import-table th { position: sticky; top: 0; background: var(--surface); }
 .metric-card { padding: 1.15rem; min-width: 0; }
 .metric-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .7rem; }
 .metric-card h3 { font-size: .86rem; line-height: 1.35; margin: 0; }
