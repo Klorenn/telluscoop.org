@@ -334,10 +334,17 @@
   function resourceLinks(links) { return Array.isArray(links) ? links.slice(0,3).map((link) => `<a class="table-link" href="${esc(link.url)}" target="_blank" rel="noopener">${icon("link")} Recurso</a>`).join("") : ""; }
 
   async function invokeEdge(name, body) {
-    let result = await supabase.functions.invoke(name, { body });
+    const invoke = async () => {
+      const { data:{ session } } = await supabase.auth.getSession();
+      return supabase.functions.invoke(name, {
+        body,
+        headers: session?.access_token ? { Authorization:`Bearer ${session.access_token}` } : {},
+      });
+    };
+    let result = await invoke();
     if (result.error?.context?.status === 401) {
       const { error:refreshError } = await supabase.auth.refreshSession();
-      if (!refreshError) result = await supabase.functions.invoke(name, { body });
+      if (!refreshError) result = await invoke();
     }
     return result;
   }
