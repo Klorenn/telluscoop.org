@@ -5,5 +5,9 @@
   "scripts": {
     "dev": "npx serve . --listen 8080 --no-clipboard",
     "start": "npm run dev"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.7"
   }
 }
