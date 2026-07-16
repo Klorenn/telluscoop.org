@@ -145,10 +145,16 @@ a { color: inherit; }
 .filter-input-icon input { padding-left: 2.25rem; }
 .filter-actions { display: flex; align-items: center; gap: .45rem; grid-column: span 2; }
 .roster-filter-card { padding: 1rem; margin-bottom: 1rem; }
-.roster-filter-grid { display: grid; grid-template-columns: minmax(220px,2fr) repeat(5,minmax(120px,1fr)) auto; gap: .65rem; align-items: end; }
+.roster-filter-grid { display: grid; grid-template-columns: minmax(260px,2fr) repeat(3,minmax(130px,1fr)) repeat(2,minmax(170px,1fr)); gap: .65rem; align-items: end; }
 .roster-filter-grid .field { min-width: 0; margin: 0; }
-.roster-filter-grid .filter-actions { grid-column: auto; }
+.roster-filter-grid .filter-actions { grid-column: 1 / -1; justify-content: flex-end; }
 .roster-table-card { margin: 0; }
+.roster-table-scroll { max-height: min(62vh,680px); overflow: auto; overscroll-behavior: contain; border: 1px solid var(--line); border-radius: 12px; }
+.roster-table-scroll thead th { position: sticky; top: 0; z-index: 2; background: var(--surface); box-shadow: 0 1px 0 var(--line); }
+.roster-pagination { display: flex; align-items: center; justify-content: center; gap: .7rem; padding: .75rem 0 0; color: var(--muted); font-size: .7rem; }
+.roster-pagination button { display: inline-flex; align-items: center; gap: .25rem; min-height: 30px; padding: .25rem .5rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--teal-dark); font: inherit; font-weight: 700; }
+.roster-pagination button:disabled { opacity: .4; cursor: not-allowed; }
+.roster-pagination svg { width: 14px; height: 14px; }
 .participant-table { min-width: 980px; }
 .participant-table td { vertical-align: middle; }
 .participant-table td > strong, .participant-table td > small { display: block; }
@@ -243,6 +249,29 @@ tr:last-child td { border-bottom: 0; }
 .mini-item strong, .mini-item span { display: block; }
 .mini-item strong { font-size: .82rem; }
 .mini-item span { color: var(--muted); font-size: .72rem; margin-top: .22rem; }
+.priority-action { width: 100%; grid-template-columns: 38px minmax(0,1fr) 20px; background: var(--surface); color: inherit; text-align: left; cursor: pointer; }
+.priority-action:hover { border-color: var(--teal); transform: translateY(-1px); }
+.priority-action > svg { width: 18px; color: var(--teal); }
+.program-owner-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.15rem; margin-bottom: 1rem; }
+.program-owner-card strong { display: block; margin-top: .25rem; }
+.lead-options { display: grid; gap: .55rem; margin: 1rem 0; }
+.lead-option { display: flex; align-items: center; gap: .7rem; padding: .7rem; border: 1px solid var(--line); border-radius: 11px; cursor: pointer; }
+.lead-option input { width: 18px; height: 18px; }
+.lead-option strong, .lead-option small { display: block; }
+.lead-option small { color: var(--muted); margin-top: .15rem; }
+.input-action-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: .55rem; align-items: center; }
+.file-action-row { margin-top: .55rem; }
+.luma-picker-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: .55rem; align-items: center; margin-top: .55rem; }
+.form-message.success { color: var(--green); }
+.deliverable-copy { min-width: 360px; max-width: 700px; }
+.deliverable-copy p { margin: .45rem 0; color: var(--muted); font-size: .73rem; line-height: 1.55; white-space: normal; }
+.resource-group { margin-bottom: 1.5rem; }
+.resource-card { display: flex; flex-direction: column; }
+.resource-card-head, .resource-actions { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.resource-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 10px; color: var(--teal); background: #e6f0ef; }
+.resource-icon svg { width: 20px; height: 20px; }
+.resource-actions { margin-top: auto; padding-top: 1rem; justify-content: flex-start; }
+.resource-actions .button { min-height: 44px; }
 .empty { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
 .empty svg { width: 38px; height: 38px; color: var(--teal); margin-bottom: .7rem; }
 
@@ -352,6 +381,9 @@ tr:last-child td { border-bottom: 0; }
   .participant-edit-grid .field-wide { grid-column: auto; }
   .roster-stat-grid { grid-template-columns: 1fr 1fr; }
   .compact-rank-row { grid-template-columns: 100px minmax(50px,1fr) 28px; }
+  .input-action-row, .luma-picker-row { grid-template-columns: 1fr; }
+  .program-owner-card { align-items: flex-start; flex-direction: column; }
+  .program-owner-card .button { width: 100%; }
 }
 
 @media (max-width: 560px) {
