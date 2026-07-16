@@ -22,9 +22,9 @@ Open `http://localhost:8080/ops/stellar/?preview=1` for the clearly labeled cont
 4. Add `https://telluscoop.org/ops/stellar/` to the Auth redirect allow list.
 5. Add the two public environment variables to Vercel. Never add a service-role key to frontend code.
 
-The initial master administrators are `hola@telluscoop.org`, `kohcuendedani@gmail.com`, `mishekoh@gmail.com`, and `bastian@telluscoop.org`. The private Auth trigger assigns authorized addresses to Tellus automatically. On first access, each administrator enters their email, unique one-time code and a password of at least 10 characters; subsequent access uses email and password without sending email.
+The master administrators are `hola@telluscoop.org`, `kohcuendedani@gmail.com`, `mishekoh@gmail.com`, `bastian@telluscoop.org`, and `kohcuendepau@gmail.com`. The private Auth trigger assigns authorized addresses to Tellus automatically. On first access, each administrator enters their email, unique one-time code and a password of at least 10 characters; subsequent access uses email and password without sending email.
 
-The first-access button is displayed only while at least one initial administrator still needs to create a password. Once all four accounts have `password_configured`, the button disappears automatically from the public login screen.
+The first-access button is displayed only while at least one master administrator still needs to create a password. Once all five accounts have `password_configured`, the button disappears automatically from the public login screen.
 
 ## Security model
 

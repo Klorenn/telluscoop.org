@@ -12,6 +12,7 @@ const codeHashes: Record<string, string> = {
   "kohcuendedani@gmail.com": "2b31c0be63416ad2fe80ee3ca3a64237199679eef0109ee509f1ebda73d56ac4",
   "mishekoh@gmail.com": "b65ff71a8dfc5bc87078ed98a9c1fa7bf32c431576c10fc790809cfbe79a3ac8",
   "bastian@telluscoop.org": "dc31af65a2a6df324e52ef3a36ea3b51624f93df6384d29a9bd1a4bc9b11d806",
+  "kohcuendepau@gmail.com": "a318f0501415dd51cc4d8da0a680ad52a8aa6b3c0f861dc1e4b72aba0fa82c5d",
 };
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
@@ -42,7 +43,7 @@ Deno.serve(async (request) => {
     if (body.action === "status") {
       const available = Object.keys(codeHashes).some((email) => {
         const user = listed.users.find((candidate) => candidate.email?.toLowerCase() === email);
-        return Boolean(user && !user.user_metadata?.password_configured);
+        return !user || !user.user_metadata?.password_configured;
       });
       return json({ available });
     }
@@ -59,7 +60,16 @@ Deno.serve(async (request) => {
     }
 
     const user = listed.users.find((candidate) => candidate.email?.toLowerCase() === email);
-    if (!user) return json({ error: "La cuenta todavía no está provisionada" }, 404);
+    if (!user) {
+      const { error: createError } = await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { password_configured: true },
+      });
+      if (createError) throw createError;
+      return json({ ok: true });
+    }
     if (user.user_metadata?.password_configured) {
       return json({ error: "Este código ya fue utilizado. Entra con tu contraseña." }, 409);
     }
