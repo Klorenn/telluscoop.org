@@ -18,7 +18,7 @@
   };
   const state = {
     session: null, membership: null, organization: null, periods: [], selectedPeriod: null,
-    metrics: [], updates: [], initiatives: [], deliverables: [], payments: [], funds: [], members: [], programs: [], contacts: [], programFilter:"all",
+    metrics: [], updates: [], initiatives: [], deliverables: [], payments: [], funds: [], members: [], programs: [], contacts: [], budgets: [], resources: [], evidence: [], selectedProgram:"global",
     view: "dashboard", sidebarOpen: false, preview: PREVIEW,
   };
 
@@ -242,7 +242,7 @@
     state.membership = membership;
     state.organization = membership.organizations;
     const orgId = membership.organization_id;
-    const [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts] = await Promise.all([
+    const [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, budgets, resources, evidence] = await Promise.all([
       supabase.from("reporting_periods").select("*").eq("organization_id", orgId).order("starts_on"),
       supabase.from("metric_definitions").select("*").eq("organization_id", orgId).order("sort_order"),
       supabase.from("metric_updates").select("*").eq("organization_id", orgId),
@@ -253,10 +253,13 @@
       supabase.from("profiles").select("id,full_name").order("full_name"),
       supabase.from("programs").select("*").eq("organization_id", orgId).eq("active", true).order("name"),
       supabase.from("event_contacts").select("id,initiative_id,email,attendance_status,consent_recorded").eq("organization_id", orgId),
+      supabase.from("program_budgets").select("*").eq("organization_id", orgId),
+      supabase.from("program_resources").select("*").eq("organization_id", orgId).order("created_at", { ascending:false }),
+      supabase.from("evidence").select("id,program_id,initiative_id,deliverable_id,title,kind,url,storage_path,created_at").eq("organization_id", orgId).order("created_at", { ascending:false }),
     ]);
-    const failed = [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts].find((r) => r.error);
+    const failed = [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, budgets, resources, evidence].find((r) => r.error);
     if (failed) throw failed.error;
-    Object.assign(state, { periods:periods.data, metrics:metrics.data, updates:updates.data, initiatives:initiatives.data, deliverables:deliverables.data, payments:payments.data, funds:funds.data, members:members.data, programs:programs.data, contacts:contacts.data });
+    Object.assign(state, { periods:periods.data, metrics:metrics.data, updates:updates.data, initiatives:initiatives.data, deliverables:deliverables.data, payments:payments.data, funds:funds.data, members:members.data, programs:programs.data, contacts:contacts.data, budgets:budgets.data, resources:resources.data, evidence:evidence.data });
     state.selectedPeriod ||= state.periods.find((p) => new Date(p.starts_on) <= new Date() && new Date(p.ends_on) >= new Date())?.id || state.periods[0]?.id;
     return true;
   }
@@ -278,12 +281,16 @@
     ];
     state.programs = ["Stellar Chile","Stellar Barrio","Stellar Academy","Coffee Breaks"].map((name, index) => ({ id:`program-${index}`, name }));
     state.contacts = [];
+    state.budgets = []; state.resources = []; state.evidence = [];
   }
 
   function currentPeriod() { return state.periods.find((p) => p.id === state.selectedPeriod) || state.periods[0]; }
   function periodUpdates() { return state.updates.filter((u) => u.period_id === state.selectedPeriod); }
   function metricWithUpdate(metric) { return { ...metric, update: periodUpdates().find((u) => u.metric_id === metric.id) || { actual:0, status:"not_started" } }; }
-  function periodInitiatives() { return state.initiatives.filter((i) => (!i.period_id || i.period_id === state.selectedPeriod) && (state.programFilter === "all" || i.program_id === state.programFilter)); }
+  function selectedProgram() { return state.programs.find((program) => program.id === state.selectedProgram); }
+  function inProgram(row) { return state.selectedProgram === "global" || row.program_id === state.selectedProgram; }
+  function periodInitiatives() { return state.initiatives.filter((i) => (!i.period_id || i.period_id === state.selectedPeriod) && inProgram(i)); }
+  function programDeliverables() { return state.deliverables.filter(inProgram); }
   function programName(id) { return state.programs.find((program) => program.id === id)?.name || "Sin programa"; }
   function programOptions(selected) { return `<option value="">Sin programa</option>${state.programs.map((program) => `<option value="${esc(program.id)}" ${selected === program.id ? "selected" : ""}>${esc(program.name)}</option>`).join("")}`; }
   function contactEmails(itemId) { return state.contacts.filter((contact) => contact.initiative_id === itemId).map((contact) => contact.email).join("\n"); }
@@ -294,14 +301,15 @@
   function resourceLinks(links) { return Array.isArray(links) ? links.slice(0,3).map((link) => `<a class="table-link" href="${esc(link.url)}" target="_blank" rel="noopener">${icon("link")} Recurso</a>`).join("") : ""; }
 
   function renderShell() {
-    const viewLabels = { dashboard:"Resumen", initiatives:"Operación", deliverables:"Entregables", finance:"Finanzas" };
+    const viewLabels = { dashboard:state.selectedProgram === "global" ? "Resumen global" : "Resumen", program_metrics:"Métricas", initiatives:"Eventos", deliverables:"Entregables", finance:"Gastos", resources:"Planillas y recursos", participants:"Participantes", evidence:"Evidencias" };
     $app.innerHTML = `
       <div class="app-shell">
         <button class="sidebar-backdrop ${state.sidebarOpen ? "visible" : ""}" id="sidebar-backdrop" aria-label="Cerrar menú"></button>
         <aside class="sidebar ${state.sidebarOpen ? "open" : ""}" id="sidebar">
           <div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Stellar Ops</div>
+          <div class="program-switcher"><label for="program-scope">Espacio operativo</label><select id="program-scope"><option value="global" ${state.selectedProgram === "global" ? "selected" : ""}>Toda la operación</option>${state.programs.map((program) => `<option value="${esc(program.id)}" ${state.selectedProgram === program.id ? "selected" : ""}>${esc(program.name)}</option>`).join("")}</select></div>
           <nav class="nav" aria-label="Principal">
-            ${navButton("dashboard","layout-dashboard","Resumen")}${navButton("initiatives","kanban","Operación")}${navButton("deliverables","file-check-2","Entregables")}${navButton("finance","circle-dollar-sign","Finanzas")}
+            ${navButton("dashboard","layout-dashboard",state.selectedProgram === "global" ? "Resumen global" : "Resumen")}${navButton("program_metrics","gauge","Métricas")}${navButton("initiatives","calendar-days","Eventos")}${navButton("finance","circle-dollar-sign","Gastos")}${navButton("resources","table-properties","Planillas")}${navButton("participants","users","Participantes")}${navButton("evidence","folder-check","Evidencias")}${navButton("deliverables","file-check-2","Entregables")}
           </nav>
           <div class="sidebar-footer"><div class="user-meta"><strong>${esc(state.preview ? "Vista previa" : state.session?.user?.email)}</strong><span>${esc(state.membership?.role || "")}</span></div>${state.preview ? `<a class="button button-ghost" href="./">${icon("log-in")} Ir al acceso</a>` : `<button class="button button-ghost" id="signout">${icon("log-out")} Cerrar sesión</button>`}</div>
         </aside>
@@ -314,18 +322,41 @@
   }
 
   function navButton(view, iconName, label) { return `<button data-view="${view}" class="${state.view === view ? "active" : ""}">${icon(iconName)} ${label}</button>`; }
-  function renderView() { return state.view === "dashboard" ? dashboardView() : state.view === "initiatives" ? initiativesView() : state.view === "deliverables" ? deliverablesView() : financeView(); }
+  function renderView() { return state.view === "dashboard" ? dashboardView() : state.view === "program_metrics" ? metricsView() : state.view === "initiatives" ? initiativesView() : state.view === "deliverables" ? deliverablesView() : state.view === "finance" ? financeView() : state.view === "resources" ? resourcesView() : state.view === "participants" ? participantsView() : evidenceView(); }
 
   function dashboardView() {
-    const metrics = state.metrics.map(metricWithUpdate);
+    if (state.selectedProgram === "global") return globalDashboardView();
+    const metrics = state.metrics.filter(inProgram).map(metricWithUpdate);
     const completion = metrics.length ? Math.round(metrics.reduce((sum,m) => sum + Math.min(1, Number(m.update.actual)/Number(m.target || 1)), 0) / metrics.length * 100) : 0;
     const period = currentPeriod();
-    const next = state.deliverables.filter((d) => d.status !== "accepted").sort((a,b) => String(a.due_on).localeCompare(String(b.due_on)))[0];
+    const scopedDeliverables = state.deliverables.filter(inProgram);
+    const next = scopedDeliverables.filter((d) => d.status !== "accepted").sort((a,b) => String(a.due_on).localeCompare(String(b.due_on)))[0];
     const metricCards = metrics.map((m) => {
       const pct = Math.min(100, Math.round(Number(m.update.actual) / Number(m.target || 1) * 100));
       return `<article class="card metric-card"><div class="metric-head"><h3>${esc(m.label)}</h3>${status(m.update.status)}</div><div class="metric-value">${esc(m.update.actual)} <small>/ ${esc(m.target)} ${esc(m.unit)}</small></div><div class="bar" aria-label="${pct}% cumplido"><span style="width:${pct}%"></span></div><div class="metric-foot"><span>${pct}%</span><button class="table-link" data-edit-metric="${esc(m.id)}">Actualizar</button></div></article>`;
     }).join("");
     return `<section class="hero"><article class="card hero-card"><div><span class="eyebrow">${esc(period?.label || "Período")}</span><h2>${completion >= 100 ? "Objetivos cubiertos" : completion >= 70 ? "Buen avance, quedan brechas" : "Necesitamos acelerar"}</h2><p>${metrics.filter((m) => ["at_risk","blocked"].includes(m.update.status)).length} métricas requieren atención. Cada valor debe quedar respaldado por evidencia verificable.</p></div><div class="progress-ring" style="--progress:${completion}" aria-label="Cumplimiento ${completion}%"><strong>${completion}%</strong></div></article><article class="card deadline-card"><div><span class="eyebrow">Próximo vencimiento</span><div class="date">${next ? fmtDate(next.due_on) : "Al día"}</div><p>${next ? esc(next.title) : "No hay entregables pendientes."}</p></div>${next ? status(next.status) : ""}</article></section><section class="metric-grid">${metricCards}</section><section class="section-grid"><article class="card section-card"><div class="section-head"><div><h2>Entregables próximos</h2><p>De ejecutar a aceptar, sin perder trazabilidad.</p></div><button class="table-link" data-view-link="deliverables">Ver todos</button></div>${deliverablesTable(state.deliverables.slice(0,5))}</article><article class="card section-card"><div class="section-head"><div><h2>Acciones prioritarias</h2><p>Lo que puede afectar cumplimiento o pago.</p></div></div><div class="mini-list">${priorityItems(metrics, next)}</div></article></section>`;
+  }
+
+  function globalDashboardView() {
+    const cards = state.programs.map((program) => {
+      const events = state.initiatives.filter((item) => item.program_id === program.id && item.type === "event").length;
+      const initiativeIds = new Set(state.initiatives.filter((item) => item.program_id === program.id).map((item) => item.id));
+      const contacts = state.contacts.filter((contact) => initiativeIds.has(contact.initiative_id)).length;
+      const budget = state.budgets.filter((row) => row.program_id === program.id && row.period_id === state.selectedPeriod).reduce((sum,row) => sum + Number(row.allocated_usd), 0);
+      const spent = state.funds.filter((row) => row.program_id === program.id && row.direction === "debit").reduce((sum,row) => sum + Number(row.amount_usd), 0);
+      return `<button class="card program-card" data-open-program="${esc(program.id)}"><span class="eyebrow">Programa</span><h2>${esc(program.name)}</h2><div class="program-stats"><span><strong>${events}</strong> eventos</span><span><strong>${contacts}</strong> participantes</span><span><strong>${fmtMoney(spent)}</strong> gastado</span><span><strong>${fmtMoney(budget)}</strong> presupuesto del período</span></div></button>`;
+    }).join("");
+    const totalSpent = state.funds.filter((row) => row.direction === "debit").reduce((sum,row) => sum + Number(row.amount_usd), 0);
+    const totalBudget = state.budgets.filter((row) => row.period_id === state.selectedPeriod).reduce((sum,row) => sum + Number(row.allocated_usd), 0);
+    return `<section class="hero"><article class="card hero-card"><div><span class="eyebrow">Toda la operación</span><h2>Programas Tellus</h2><p>Visión consolidada sin mezclar la ejecución interna de cada programa.</p></div></article><article class="card deadline-card"><div><span class="eyebrow">Presupuesto consolidado</span><div class="date">${fmtMoney(totalSpent)} / ${fmtMoney(totalBudget)}</div><p>Gasto ejecutado frente al presupuesto del período.</p></div></article></section><section class="program-grid">${cards}</section>`;
+  }
+
+  function metricsView() {
+    const metrics = state.metrics.filter(inProgram).map(metricWithUpdate);
+    const addButton = state.selectedProgram !== "global" ? `<button class="button button-primary" id="add-metric">${icon("plus")} Nueva métrica</button>` : "";
+    if (!metrics.length) return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Métricas</h2></div>${addButton}</div><div class="empty">Todavía no hay métricas configuradas para este espacio.</div>`;
+    return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Métricas del período</h2></div>${addButton}</div><section class="metric-grid">${metrics.map((m) => { const pct=Math.min(100,Math.round(Number(m.update.actual)/Number(m.target||1)*100)); return `<article class="card metric-card"><div class="metric-head"><h3>${esc(m.label)}</h3>${status(m.update.status)}</div><div class="metric-value">${esc(m.update.actual)} <small>/ ${esc(m.target)} ${esc(m.unit)}</small></div><div class="bar"><span style="width:${pct}%"></span></div><div class="metric-foot"><span>${pct}%</span><button class="table-link" data-edit-metric="${esc(m.id)}">Actualizar</button></div></article>`; }).join("")}</section>`;
   }
 
   function priorityItems(metrics, next) {
@@ -342,25 +373,33 @@
 
   function initiativesView() {
     const groups = ["not_started","in_progress","at_risk","submitted"];
-    return `<div class="toolbar"><div><span class="eyebrow">Ejecución mensual</span><h2>Pipeline operativo</h2></div><div class="topbar-actions"><label class="sr-only" for="program-filter">Programa</label><select class="period-select" id="program-filter"><option value="all">Todos los programas</option>${state.programs.map((program) => `<option value="${esc(program.id)}" ${state.programFilter === program.id ? "selected" : ""}>${esc(program.name)}</option>`).join("")}</select><button class="button button-secondary" id="sync-luma">${icon("calendar-sync")} Importar desde Luma</button><button class="button button-primary" id="add-initiative">${icon("plus")} Nueva actividad</button></div></div><div class="kanban">${groups.map((g) => `<section class="kanban-column"><div class="kanban-title">${statusLabels[g]} <span class="kanban-count">${periodInitiatives().filter((i) => i.status === g).length}</span></div>${periodInitiatives().filter((i) => i.status === g).map(workCard).join("") || `<div class="empty">Sin actividades</div>`}</section>`).join("")}</div>`;
+    return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Eventos y actividades</h2></div><div class="topbar-actions"><button class="button button-secondary" id="sync-luma">${icon("calendar-sync")} Importar desde Luma</button><button class="button button-primary" id="add-initiative">${icon("plus")} Nueva actividad</button></div></div><div class="kanban">${groups.map((g) => `<section class="kanban-column"><div class="kanban-title">${statusLabels[g]} <span class="kanban-count">${periodInitiatives().filter((i) => i.status === g).length}</span></div>${periodInitiatives().filter((i) => i.status === g).map(workCard).join("") || `<div class="empty">Sin actividades</div>`}</section>`).join("")}</div>`;
   }
   function workCard(item) { return `<article class="work-card"><span class="type-chip">${esc(programName(item.program_id))}</span><span class="type-chip">${esc(typeLabels[item.type] || item.type)}</span><h3>${esc(item.title)}</h3><div class="work-meta"><span>${icon("user-round")} ${esc(ownerName(item.owner_id))}</span><span>${icon("mail")} ${state.contacts.filter((contact) => contact.initiative_id === item.id).length} contactos</span></div>${item.luma_event_id ? `<div class="work-meta"><span>${icon("users")} ${esc(item.luma_registered_count)} registrados · ${esc(item.luma_checked_in_count)} check-ins</span></div>` : ""}<div class="work-meta"><span>${icon("calendar")} ${fmtDate(item.due_on || item.occurred_on)}</span>${item.luma_url ? `<a class="table-link" href="${esc(item.luma_url)}" target="_blank" rel="noopener">Luma</a>` : ""}${resourceLinks(item.resource_links)}<button class="table-link" data-edit-initiative="${esc(item.id)}">Editar</button></div></article>`; }
 
   function deliverablesView() {
-    return `<div class="toolbar"><div><span class="eyebrow">Contrato y aceptación</span><h2>Entregables</h2></div><button class="button button-primary" id="add-deliverable">${icon("plus")} Nuevo entregable</button></div><article class="card section-card">${deliverablesTable(state.deliverables)}</article>`;
+    return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Entregables</h2></div><button class="button button-primary" id="add-deliverable">${icon("plus")} Nuevo entregable</button></div><article class="card section-card">${deliverablesTable(programDeliverables())}</article>`;
   }
 
   function financeView() {
-    const paid = state.payments.filter((p) => p.status === "paid").reduce((s,p) => s + Number(p.amount_usd), 0);
-    const credits = state.funds.filter((f) => f.direction === "credit").reduce((s,f) => s + Number(f.amount_usd), 0);
-    const debits = state.funds.filter((f) => f.direction === "debit").reduce((s,f) => s + Number(f.amount_usd), 0);
-    return `<div class="toolbar"><div><span class="eyebrow">Compensación y operación</span><h2>Finanzas</h2></div><button class="button button-primary" id="add-transaction">${icon("plus")} Registrar movimiento</button></div><section class="metric-grid"><article class="card metric-card"><h3>Compensación pagada</h3><div class="metric-value">${fmtMoney(paid)}</div><div class="metric-foot"><span>Máximo ${fmtMoney(15000)}</span></div></article><article class="card metric-card"><h3>Fondo recibido</h3><div class="metric-value">${fmtMoney(credits)}</div></article><article class="card metric-card"><h3>Gasto ejecutado</h3><div class="metric-value">${fmtMoney(debits)}</div></article><article class="card metric-card"><h3>Saldo operativo</h3><div class="metric-value">${fmtMoney(credits-debits)}</div></article></section><section class="section-grid"><article class="card section-card"><div class="section-head"><h2>Hitos de pago</h2></div><div class="table-wrap"><table><thead><tr><th>Hito</th><th>Monto</th><th>Estado</th></tr></thead><tbody>${state.payments.map((p) => `<tr><td>${esc(p.label)}</td><td>${fmtMoney(p.amount_usd)}</td><td><span class="status status-${p.status === "paid" ? "accepted" : p.status === "triggered" ? "submitted" : "not_started"}">${esc(p.status)}</span></td></tr>`).join("")}</tbody></table></div></article><article class="card section-card"><div class="section-head"><h2>Últimos movimientos</h2></div><div class="mini-list">${state.funds.slice(0,5).map((f) => `<div class="mini-item"><div class="mini-icon">${icon(f.direction === "credit" ? "arrow-down-left" : "arrow-up-right")}</div><div><strong>${esc(f.description)}</strong><span>${fmtMoney(f.amount_usd)} · ${fmtDate(f.occurred_on)}${f.approved ? "" : " · respaldo pendiente"}</span></div></div>`).join("") || `<div class="empty">Sin movimientos.</div>`}</div></article></section>`;
+    const scopedFunds = state.funds.filter(inProgram);
+    const credits = scopedFunds.filter((f) => f.direction === "credit").reduce((s,f) => s + Number(f.amount_usd), 0);
+    const debits = scopedFunds.filter((f) => f.direction === "debit").reduce((s,f) => s + Number(f.amount_usd), 0);
+    const budget = state.budgets.filter((row) => inProgram(row) && row.period_id === state.selectedPeriod).reduce((sum,row) => sum + Number(row.allocated_usd),0);
+    const actions = `${state.selectedProgram !== "global" ? `<button class="button button-secondary" id="set-budget">${icon("wallet-cards")} Definir presupuesto</button>` : ""}<button class="button button-primary" id="add-transaction">${icon("plus")} Registrar movimiento</button>`;
+    const movements = scopedFunds.slice(0,10).map((f) => `<div class="mini-item"><div class="mini-icon">${icon(f.direction === "credit" ? "arrow-down-left" : "arrow-up-right")}</div><div><strong>${esc(f.description)}</strong><span>${fmtMoney(f.amount_usd)} · ${fmtDate(f.occurred_on)}${f.approved ? "" : " · respaldo pendiente"}</span></div></div>`).join("") || `<div class="empty">Sin movimientos.</div>`;
+    return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Gastos y presupuesto</h2></div><div class="topbar-actions">${actions}</div></div><section class="metric-grid"><article class="card metric-card"><h3>Presupuesto del período</h3><div class="metric-value">${fmtMoney(budget)}</div></article><article class="card metric-card"><h3>Fondo recibido</h3><div class="metric-value">${fmtMoney(credits)}</div></article><article class="card metric-card"><h3>Gasto ejecutado</h3><div class="metric-value">${fmtMoney(debits)}</div></article><article class="card metric-card"><h3>Disponible</h3><div class="metric-value">${fmtMoney(budget-debits)}</div></article></section><article class="card section-card"><div class="section-head"><h2>Últimos movimientos</h2></div><div class="mini-list">${movements}</div></article>`;
   }
+
+  function resourcesView() { const rows=state.resources.filter(inProgram); return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Planillas y recursos</h2></div>${state.selectedProgram !== "global" ? `<button class="button button-primary" id="add-resource">${icon("plus")} Añadir enlace</button>` : ""}</div><section class="resource-grid">${rows.map((row)=>`<a class="card resource-card" href="${esc(row.url)}" target="_blank" rel="noopener"><span class="type-chip">${esc(row.resource_type.replaceAll("_"," "))}</span><h3>${esc(row.title)}</h3><p>${esc(row.description || "Abrir recurso")}</p></a>`).join("") || `<div class="empty">No hay planillas o recursos en este espacio.</div>`}</section>`; }
+  function participantsView() { const initiativeIds=new Set(state.initiatives.filter(inProgram).map((item)=>item.id)); const rows=state.contacts.filter((contact)=>initiativeIds.has(contact.initiative_id)); return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Participantes</h2></div></div><article class="card section-card"><div class="metric-value">${rows.length} <small>contactos registrados</small></div><div class="table-wrap"><table><thead><tr><th>Correo</th><th>Estado</th><th>Consentimiento</th></tr></thead><tbody>${rows.map((row)=>`<tr><td>${esc(row.email)}</td><td>${esc(row.attendance_status)}</td><td>${row.consent_recorded ? "Registrado" : "Pendiente"}</td></tr>`).join("")}</tbody></table></div>${rows.length ? "" : `<div class="empty">No hay participantes cargados.</div>`}</article>`; }
+  function evidenceView() { const rows=state.evidence.filter(inProgram); return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Evidencias</h2></div></div><section class="resource-grid">${rows.map((row)=>`<article class="card resource-card"><span class="type-chip">${esc(row.kind)}</span><h3>${esc(row.title)}</h3>${row.url ? `<a class="table-link" href="${esc(row.url)}" target="_blank" rel="noopener">Abrir evidencia</a>` : `<p>Archivo privado</p>`}</article>`).join("") || `<div class="empty">No hay evidencias cargadas.</div>`}</section>`; }
 
   function wireShell() {
     document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.view; state.sidebarOpen = false; renderShell(); }));
     document.querySelector("#period")?.addEventListener("change", (e) => { state.selectedPeriod = e.target.value; renderShell(); });
-    document.querySelector("#program-filter")?.addEventListener("change", (e) => { state.programFilter = e.target.value; renderShell(); });
+    document.querySelector("#program-scope")?.addEventListener("change", (e) => { state.selectedProgram = e.target.value; state.view = "dashboard"; renderShell(); });
+    document.querySelectorAll("[data-open-program]").forEach((button) => button.addEventListener("click", () => { state.selectedProgram=button.dataset.openProgram; state.view="dashboard"; renderShell(); }));
     document.querySelector("#menu")?.addEventListener("click", () => { state.sidebarOpen = !state.sidebarOpen; document.querySelector("#sidebar").classList.toggle("open", state.sidebarOpen); document.querySelector("#sidebar-backdrop").classList.toggle("visible", state.sidebarOpen); document.querySelector("#menu").setAttribute("aria-expanded", String(state.sidebarOpen)); });
     document.querySelector("#sidebar-backdrop")?.addEventListener("click", () => { state.sidebarOpen = false; renderShell(); });
     document.querySelector("#signout")?.addEventListener("click", () => supabase.auth.signOut());
@@ -369,8 +408,11 @@
     document.querySelector("#sync-luma")?.addEventListener("click", openLumaModal);
     document.querySelector("#add-deliverable")?.addEventListener("click", () => openDeliverableModal());
     document.querySelector("#add-transaction")?.addEventListener("click", () => openTransactionModal());
+    document.querySelector("#set-budget")?.addEventListener("click", openBudgetModal);
+    document.querySelector("#add-resource")?.addEventListener("click", openResourceModal);
     document.querySelectorAll("[data-view-link]").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.viewLink; renderShell(); }));
     document.querySelectorAll("[data-edit-metric]").forEach((b) => b.addEventListener("click", () => openMetricModal(b.dataset.editMetric)));
+    document.querySelector("#add-metric")?.addEventListener("click", openNewMetricModal);
     document.querySelectorAll("[data-edit-initiative]").forEach((b) => b.addEventListener("click", () => openInitiativeModal(state.initiatives.find((i) => i.id === b.dataset.editInitiative))));
     document.querySelectorAll("[data-edit-deliverable]").forEach((b) => b.addEventListener("click", () => openDeliverableModal(state.deliverables.find((d) => d.id === b.dataset.editDeliverable))));
   }
@@ -383,6 +425,12 @@
   }
   function closeModal() { document.querySelector("#modal")?.remove(); }
   const lockedPreview = () => { if (!state.preview) return false; notify("La vista previa no escribe en Supabase."); closeModal(); return true; };
+
+  function openNewMetricModal() {
+    modal("Nueva métrica", `<form id="new-metric-form"><div class="field"><label for="label">Nombre de la métrica</label><input id="label" name="label" required /></div><div class="field"><label for="category">Categoría</label><input id="category" name="category" value="Operación" required /></div><div class="field"><label for="target">Meta del período</label><input id="target" name="target" type="number" min="0" step="1" required /></div><div class="field"><label for="unit">Unidad</label><input id="unit" name="unit" placeholder="eventos, personas, piezas…" required /></div><div class="field"><label for="validation_method">Cómo se valida</label><textarea id="validation_method" name="validation_method"></textarea></div><div class="modal-actions"><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" type="submit">Crear métrica</button></div></form>`);
+    document.querySelector("#cancel").onclick=closeModal;
+    document.querySelector("#new-metric-form").onsubmit=async(event)=>{ event.preventDefault(); if(lockedPreview()) return; const button=event.currentTarget.querySelector("button[type=submit]"); setButtonLoading(button,"Creando…"); const values=Object.fromEntries(new FormData(event.currentTarget)); const code=`${selectedProgram()?.code || "metric"}_${Date.now()}`; const {data:metric,error}=await supabase.from("metric_definitions").insert({organization_id:state.organization.id,program_id:state.selectedProgram,label:values.label,category:values.category,target:Number(values.target),unit:values.unit,validation_method:values.validation_method,code,sort_order:state.metrics.filter(inProgram).length}).select("id").single(); if(error) return afterMutation(error,"Métrica creada"); const {error:updateError}=await supabase.from("metric_updates").insert({organization_id:state.organization.id,period_id:state.selectedPeriod,metric_id:metric.id,actual:0,status:"not_started",owner_id:state.session.user.id,updated_by:state.session.user.id}); await afterMutation(updateError,"Métrica creada"); };
+  }
 
   function openMetricModal(metricId) {
     const m = metricWithUpdate(state.metrics.find((x) => x.id === metricId));
@@ -426,6 +474,7 @@
     const period = state.periods.find((p) => occurredOn && occurredOn >= p.starts_on && occurredOn <= p.ends_on);
     const payload = {
       organization_id:state.organization.id, period_id:period?.id || state.selectedPeriod, type:"event",
+      program_id:state.selectedProgram === "global" ? state.programs.find((program)=>program.code === "stellar_chile")?.id || null : state.selectedProgram,
       title:lumaEvent.name, occurred_on:occurredOn, due_on:occurredOn, status:"in_progress",
       luma_event_id:lumaEvent.id, luma_url:lumaEvent.url,
       luma_registered_count:data.registered_count, luma_checked_in_count:data.checked_in_count,
@@ -438,13 +487,27 @@
   function openDeliverableModal(item = {}) {
     modal(item.id ? "Editar entregable" : "Nuevo entregable", `<form id="deliverable-form"><div class="field"><label for="title">Entregable</label><input id="title" name="title" value="${esc(item.title || "")}" required /></div><div class="field"><label for="owner_id">Responsable principal</label><select id="owner_id" name="owner_id">${ownerOptions(item.owner_id)}</select></div><div class="field"><label for="due_on">Fecha límite</label><input id="due_on" name="due_on" type="date" value="${esc(item.due_on || "")}" required /></div><div class="field"><label for="resource_links">Enlaces de trabajo</label><textarea id="resource_links" name="resource_links" placeholder="Un enlace por línea: Google Sheets, Drive, Notion…">${esc(linksText(item.resource_links))}</textarea><small>Un enlace por línea.</small></div><div class="field"><label for="status">Estado</label><select id="status" name="status">${statusOptions(item.status || "not_started")}</select></div><div class="field"><label for="acceptance_notes">Notas de aceptación o corrección</label><textarea id="acceptance_notes" name="acceptance_notes">${esc(item.acceptance_notes || "")}</textarea></div><div class="modal-actions"><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" type="submit">Guardar entregable</button></div></form>`);
     document.querySelector("#cancel").onclick = closeModal;
-    document.querySelector("#deliverable-form").onsubmit = async (e) => { e.preventDefault(); if (lockedPreview()) return; const v = Object.fromEntries(new FormData(e.currentTarget)); const payload = { organization_id:state.organization.id, period_id:state.selectedPeriod, title:v.title, owner_id:v.owner_id || null, due_on:v.due_on, resource_links:linksFromText(v.resource_links), status:v.status, acceptance_notes:v.acceptance_notes, submitted_at:v.status === "submitted" ? new Date().toISOString() : item.submitted_at || null, accepted_at:v.status === "accepted" ? new Date().toISOString() : item.accepted_at || null }; const query = item.id ? supabase.from("deliverables").update(payload).eq("id", item.id) : supabase.from("deliverables").insert(payload); const { error } = await query; await afterMutation(error, "Entregable guardado"); };
+    document.querySelector("#deliverable-form").onsubmit = async (e) => { e.preventDefault(); if (lockedPreview()) return; const button=e.currentTarget.querySelector("button[type=submit]");setButtonLoading(button,"Guardando…"); const v = Object.fromEntries(new FormData(e.currentTarget)); const payload = { organization_id:state.organization.id, program_id:item.program_id || (state.selectedProgram === "global" ? null : state.selectedProgram), period_id:state.selectedPeriod, title:v.title, owner_id:v.owner_id || null, due_on:v.due_on, resource_links:linksFromText(v.resource_links), status:v.status, acceptance_notes:v.acceptance_notes, submitted_at:v.status === "submitted" ? new Date().toISOString() : item.submitted_at || null, accepted_at:v.status === "accepted" ? new Date().toISOString() : item.accepted_at || null }; const query = item.id ? supabase.from("deliverables").update(payload).eq("id", item.id) : supabase.from("deliverables").insert(payload); const { error } = await query; await afterMutation(error, "Entregable guardado"); };
   }
 
   function openTransactionModal() {
     modal("Registrar movimiento", `<form id="transaction-form"><div class="field"><label for="occurred_on">Fecha</label><input id="occurred_on" name="occurred_on" type="date" value="${new Date().toISOString().slice(0,10)}" required /></div><div class="field"><label for="direction">Movimiento</label><select id="direction" name="direction"><option value="debit">Gasto</option><option value="credit">Ingreso de fondo</option></select></div><div class="field"><label for="category">Categoría</label><input id="category" name="category" required /></div><div class="field"><label for="description">Descripción</label><input id="description" name="description" required /></div><div class="field"><label for="amount_usd">Monto USD</label><input id="amount_usd" name="amount_usd" type="number" min="0" step="0.01" required /></div><div class="modal-actions"><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" type="submit">Registrar</button></div></form>`);
     document.querySelector("#cancel").onclick = closeModal;
-    document.querySelector("#transaction-form").onsubmit = async (e) => { e.preventDefault(); if (lockedPreview()) return; const v = Object.fromEntries(new FormData(e.currentTarget)); const { error } = await supabase.from("fund_transactions").insert({ organization_id:state.organization.id, occurred_on:v.occurred_on, direction:v.direction, category:v.category, description:v.description, amount_usd:Number(v.amount_usd), created_by:state.session.user.id }); await afterMutation(error, "Movimiento registrado"); };
+    document.querySelector("#transaction-form").onsubmit = async (e) => { e.preventDefault(); if (lockedPreview()) return; const v = Object.fromEntries(new FormData(e.currentTarget)); const { error } = await supabase.from("fund_transactions").insert({ organization_id:state.organization.id, program_id:state.selectedProgram === "global" ? null : state.selectedProgram, occurred_on:v.occurred_on, direction:v.direction, category:v.category, description:v.description, amount_usd:Number(v.amount_usd), created_by:state.session.user.id }); await afterMutation(error, "Movimiento registrado"); };
+  }
+
+  function openResourceModal() {
+    if (state.selectedProgram === "global") return;
+    modal("Añadir planilla o recurso", `<form id="resource-form"><div class="field"><label for="resource_type">Tipo</label><select id="resource_type" name="resource_type"><option value="google_sheets">Google Sheets</option><option value="google_drive">Google Drive</option><option value="notion">Notion</option><option value="form">Formulario</option><option value="presentation">Presentación</option><option value="github">GitHub</option><option value="other">Otro</option></select></div><div class="field"><label for="title">Nombre</label><input id="title" name="title" required /></div><div class="field"><label for="url">Enlace</label><input id="url" name="url" type="url" placeholder="https://" required /></div><div class="field"><label for="description">Descripción</label><textarea id="description" name="description"></textarea></div><div class="modal-actions"><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" type="submit">Guardar recurso</button></div></form>`);
+    document.querySelector("#cancel").onclick = closeModal;
+    document.querySelector("#resource-form").onsubmit = async (event) => { event.preventDefault(); if (lockedPreview()) return; const button=event.currentTarget.querySelector("button[type=submit]"); setButtonLoading(button,"Guardando…"); const values=Object.fromEntries(new FormData(event.currentTarget)); const { error }=await supabase.from("program_resources").insert({ organization_id:state.organization.id, program_id:state.selectedProgram, resource_type:values.resource_type, title:values.title, url:values.url, description:values.description, created_by:state.session.user.id }); await afterMutation(error,"Recurso guardado"); };
+  }
+
+  function openBudgetModal() {
+    const current=state.budgets.find((row)=>row.program_id===state.selectedProgram && row.period_id===state.selectedPeriod);
+    modal("Presupuesto del período", `<form id="budget-form"><div class="field"><label for="allocated_usd">Presupuesto USD</label><input id="allocated_usd" name="allocated_usd" type="number" min="0" step="0.01" value="${esc(current?.allocated_usd || 0)}" required /></div><div class="field"><label for="notes">Notas</label><textarea id="notes" name="notes">${esc(current?.notes || "")}</textarea></div><div class="modal-actions"><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" type="submit">Guardar presupuesto</button></div></form>`);
+    document.querySelector("#cancel").onclick=closeModal;
+    document.querySelector("#budget-form").onsubmit=async(event)=>{event.preventDefault();if(lockedPreview())return;const button=event.currentTarget.querySelector("button[type=submit]");setButtonLoading(button,"Guardando…");const values=Object.fromEntries(new FormData(event.currentTarget));const {error}=await supabase.from("program_budgets").upsert({organization_id:state.organization.id,program_id:state.selectedProgram,period_id:state.selectedPeriod,allocated_usd:Number(values.allocated_usd),notes:values.notes,updated_at:new Date().toISOString()},{onConflict:"program_id,period_id"});await afterMutation(error,"Presupuesto guardado");};
   }
 
   function statusOptions(selected) { return Object.entries(statusLabels).map(([v,l]) => `<option value="${v}" ${selected === v ? "selected" : ""}>${l}</option>`).join(""); }
