@@ -100,7 +100,7 @@
             <div class="field"><label for="password">Contraseña</label><input id="password" name="password" type="password" autocomplete="current-password" minlength="8" /></div>
             <div class="auth-actions">
               <button class="button button-primary button-block" type="submit">${icon("log-in")} Entrar</button>
-              <button class="button button-secondary button-block" type="button" id="magic-link">Enviar enlace mágico</button>
+              <button class="button button-secondary button-block" type="button" id="first-access">Crear contraseña por primera vez</button>
               <a class="button button-ghost" href="?preview=1">Ver vista previa del contrato</a>
             </div><div class="form-message" id="auth-message" role="alert"></div>
           </form>
@@ -108,7 +108,62 @@
       </main>`;
     hydrateIcons();
     document.querySelector("#login-form").addEventListener("submit", signIn);
-    document.querySelector("#magic-link").addEventListener("click", sendMagicLink);
+    document.querySelector("#first-access").addEventListener("click", renderFirstAccess);
+  }
+
+  function renderFirstAccess() {
+    $app.innerHTML = `
+      <main class="auth-shell" id="main">
+        <section class="auth-brand" aria-labelledby="first-access-title">
+          <div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Tellus Cooperative</div>
+          <div><span class="eyebrow" style="color:#f1a479">Primer acceso</span><h1 id="first-access-title">Crea tu contraseña sin correo.</h1><p>Usa el código temporal entregado por Tellus. Solo funciona una vez.</p></div>
+          <p>Tu contraseña se almacena cifrada por Supabase Auth.</p>
+        </section>
+        <section class="auth-panel">
+          <form class="auth-card" id="first-access-form">
+            <span class="eyebrow">Cuenta autorizada</span><h2>Configurar acceso</h2><p>No enviaremos ningún email.</p>
+            <div class="field"><label for="setup-email">Correo</label><input id="setup-email" name="email" type="email" autocomplete="email" required /></div>
+            <div class="field"><label for="access-code">Código temporal</label><input id="access-code" name="code" type="text" autocomplete="one-time-code" required /></div>
+            <div class="field"><label for="setup-password">Nueva contraseña</label><input id="setup-password" name="password" type="password" autocomplete="new-password" minlength="10" required /><small>Mínimo 10 caracteres.</small></div>
+            <div class="field"><label for="setup-confirmation">Confirmar contraseña</label><input id="setup-confirmation" name="confirmation" type="password" autocomplete="new-password" minlength="10" required /></div>
+            <button class="button button-primary button-block" type="submit">Crear contraseña y entrar</button>
+            <button class="button button-ghost button-block" type="button" id="back-to-login">Volver al acceso</button>
+            <div class="form-message" id="auth-message" role="alert"></div>
+          </form>
+        </section>
+      </main>`;
+    document.querySelector("#first-access-form").addEventListener("submit", createFirstPassword);
+    document.querySelector("#back-to-login").addEventListener("click", renderAuth);
+  }
+
+  async function createFirstPassword(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const message = document.querySelector("#auth-message");
+    if (form.password.value !== form.confirmation.value) {
+      message.textContent = "Las contraseñas no coinciden.";
+      return;
+    }
+    const button = form.querySelector("button[type=submit]");
+    button.disabled = true;
+    button.textContent = "Configurando…";
+    const email = form.email.value.trim().toLowerCase();
+    const password = form.password.value;
+    const { data, error } = await supabase.functions.invoke("first-access", {
+      body: { email, code: form.code.value.trim(), password },
+    });
+    if (error || data?.error) {
+      message.textContent = data?.error || "No pudimos configurar la cuenta.";
+      button.disabled = false;
+      button.textContent = "Crear contraseña y entrar";
+      return;
+    }
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      message.textContent = "Contraseña creada. Vuelve al acceso e inicia sesión.";
+      button.disabled = false;
+      button.textContent = "Crear contraseña y entrar";
+    }
   }
 
   function renderPasswordSetup() {
@@ -164,14 +219,7 @@
     button.disabled = true;
     const { error } = await supabase.auth.signInWithPassword({ email: form.email.value.trim(), password: form.password.value });
     button.disabled = false;
-    if (error) document.querySelector("#auth-message").textContent = "No pudimos iniciar sesión. Revisa tus datos o usa el enlace mágico.";
-  }
-
-  async function sendMagicLink() {
-    const email = document.querySelector("#email").value.trim();
-    if (!email) return document.querySelector("#auth-message").textContent = "Ingresa tu correo primero.";
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: `${location.origin}/ops/stellar/` } });
-    document.querySelector("#auth-message").textContent = error ? "No pudimos enviar el enlace." : "Enlace enviado. Revisa tu correo.";
+    if (error) document.querySelector("#auth-message").textContent = "No pudimos iniciar sesión. Revisa tu correo y contraseña.";
   }
 
   async function loadLiveData() {

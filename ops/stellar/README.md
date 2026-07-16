@@ -18,11 +18,11 @@ Open `http://localhost:8080/ops/stellar/?preview=1` for the clearly labeled cont
 
 1. Apply `supabase/migrations/20260716183821_create_stellar_ops_dashboard.sql` to project `rhzanxzoqmbxptvxgnfj`.
 2. Authorize team emails in the private allowlist before they request access.
-3. Send each authorized user their first magic link from the dashboard.
+3. Give each authorized user their one-time first-access code through a secure channel.
 4. Add `https://telluscoop.org/ops/stellar/` to the Auth redirect allow list.
 5. Add the two public environment variables to Vercel. Never add a service-role key to frontend code.
 
-The initial master administrators are `hola@telluscoop.org`, `kohcuendedani@gmail.com`, `mishekoh@gmail.com`, and `bastian@telluscoop.org`. The private Auth trigger assigns authorized addresses to Tellus automatically. On first access through a magic link, the dashboard requires a password of at least 10 characters and stores it through Supabase Auth; subsequent access uses email and password.
+The initial master administrators are `hola@telluscoop.org`, `kohcuendedani@gmail.com`, `mishekoh@gmail.com`, and `bastian@telluscoop.org`. The private Auth trigger assigns authorized addresses to Tellus automatically. On first access, each administrator enters their email, unique one-time code and a password of at least 10 characters; subsequent access uses email and password without sending email.
 
 ## Security model
 
