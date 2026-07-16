@@ -25,7 +25,7 @@
   const state = {
     session: null, membership: null, organization: null, periods: [], selectedPeriod: null,
     metrics: [], updates: [], initiatives: [], deliverables: [], payments: [], funds: [], members: [], programs: [], contacts: [], participants: [], budgets: [], resources: [], evidence: [], audit: [], selectedProgram:"global", importRows:[],
-    view: "dashboard", sidebarOpen: false, preview: PREVIEW,
+    view: "dashboard", preview: PREVIEW,
     participantFilters: { search:"", rank:"all", city:"all", country:"all", from:"", to:"" },
     participantPage: 1,
   };
@@ -330,7 +330,7 @@
     const userIdentity=currentUserIdentity();
     $app.innerHTML = `
       <div class="app-shell">
-        <aside class="sidebar ${state.sidebarOpen ? "open" : ""}" id="sidebar">
+        <aside class="sidebar" id="sidebar">
           <div class="sidebar-head"><div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Stellar Ops</div></div>
           <div class="program-switcher"><label for="program-scope">Espacio operativo</label><select id="program-scope"><option value="global" ${state.selectedProgram === "global" ? "selected" : ""}>Toda la operación</option>${state.programs.map((program) => `<option value="${esc(program.id)}" ${state.selectedProgram === program.id ? "selected" : ""}>${esc(program.name)}</option>`).join("")}</select></div>
           <nav class="nav" aria-label="Principal">
@@ -445,12 +445,10 @@
   function evidenceView() { const rows=state.evidence.filter(inProgram); return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Evidencias</h2></div></div><section class="resource-grid">${rows.map((row)=>`<article class="card resource-card"><span class="type-chip">${esc(row.kind)}</span><h3>${esc(row.title)}</h3>${row.url ? `<a class="table-link" href="${esc(row.url)}" target="_blank" rel="noopener">Abrir evidencia</a>` : `<p>Archivo privado</p>`}</article>`).join("") || `<div class="empty">No hay evidencias cargadas.</div>`}</section>`; }
 
   function wireShell() {
-    document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.view; state.sidebarOpen = false; renderShell(); }));
+    document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.view; renderShell(); }));
     document.querySelector("#period")?.addEventListener("change", (e) => { state.selectedPeriod = e.target.value; renderShell(); });
     document.querySelector("#program-scope")?.addEventListener("change", (e) => { state.selectedProgram = e.target.value; state.view = "dashboard"; renderShell(); });
     document.querySelectorAll("[data-open-program]").forEach((button) => button.addEventListener("click", () => { state.selectedProgram=button.dataset.openProgram; state.view="dashboard"; renderShell(); }));
-    document.querySelector("#menu")?.addEventListener("click", () => { state.sidebarOpen = !state.sidebarOpen; document.querySelector("#sidebar").classList.toggle("open", state.sidebarOpen); document.querySelector("#sidebar-backdrop").classList.toggle("visible", state.sidebarOpen); document.querySelector("#menu").setAttribute("aria-expanded", String(state.sidebarOpen)); });
-    document.querySelector("#sidebar-backdrop")?.addEventListener("click", () => { state.sidebarOpen = false; renderShell(); });
     document.querySelector("#signout")?.addEventListener("click", () => supabase.auth.signOut());
     document.querySelector("#quick-add")?.addEventListener("click", () => openInitiativeModal());
     document.querySelector("#add-initiative")?.addEventListener("click", () => openInitiativeModal());
