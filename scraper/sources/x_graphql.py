@@ -34,6 +34,7 @@ def _query_ids() -> dict[str, str]:
     return {
         "user_by_screen_name": os.environ.get("X_QID_USER") or data.get("user_by_screen_name", ""),
         "user_tweets": os.environ.get("X_QID_TWEETS") or data.get("user_tweets", ""),
+        "search": os.environ.get("X_QID_SEARCH") or data.get("search", ""),
     }
 
 

@@ -34,6 +34,23 @@ class Store:
         )
         return res.data or []
 
+    def active_topics(self, organization_id: str) -> list[dict[str, Any]]:
+        res = (
+            self._client.table("social_topics")
+            .select("id, label, query")
+            .eq("organization_id", organization_id)
+            .eq("active", True)
+            .order("label")
+            .execute()
+        )
+        return res.data or []
+
+    def touch_topic(self, topic_id: str) -> None:
+        from datetime import datetime, timezone
+        self._client.table("social_topics").update(
+            {"last_run_at": datetime.now(timezone.utc).isoformat()}
+        ).eq("id", topic_id).execute()
+
     def upsert_posts(self, rows: list[dict[str, Any]]) -> int:
         """Upsert on (organization_id, url); refresh metrics on repeat captures."""
         if not rows:

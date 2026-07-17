@@ -28,6 +28,7 @@
     repoPostDraft: null, repoPostBusy: false,
     prompts: [], articles: [], drafts: [], articleBusy: false,
     articleForm: { prompt_key: "crypto", count: 1, prompt_md: "" },
+    topics: [], topicBusy: false,
   };
 
   const esc = (value = "") => String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
@@ -127,22 +128,25 @@
   // ---------- data ----------
 
   async function loadLiveData() {
-    const [orgs, accounts, posts, repos, prompts, articles] = await Promise.all([
-      supabase.from("organizations").select("id, name, slug").limit(1),
-      supabase.from("social_accounts").select("*").order("category").order("handle"),
-      supabase.from("social_posts").select("*").order("posted_at", { ascending: false, nullsFirst: false }).limit(300),
-      supabase.from("repo_picks").select("*").order("created_at", { ascending: false }),
-      supabase.from("article_prompts").select("*").eq("active", true).order("key"),
-      supabase.from("articles").select("*").order("created_at", { ascending: false }).limit(100),
+    const safe = async (query) => { try { return await query; } catch { return { data: [], error: null }; } };
+    const [orgs, accounts, posts, repos, prompts, articles, topics] = await Promise.all([
+      safe(supabase.from("organizations").select("id, name, slug").limit(1)),
+      safe(supabase.from("social_accounts").select("*").order("category").order("handle")),
+      safe(supabase.from("social_posts").select("*").order("posted_at", { ascending: false, nullsFirst: false }).limit(300)),
+      safe(supabase.from("repo_picks").select("*").order("created_at", { ascending: false })),
+      safe(supabase.from("article_prompts").select("*").eq("active", true).order("key")),
+      safe(supabase.from("articles").select("*").order("created_at", { ascending: false }).limit(100)),
+      safe(supabase.from("social_topics").select("*").order("label")),
     ]);
-    const failed = [orgs, accounts, posts, repos, prompts, articles].find((r) => r.error);
-    if (failed) throw failed.error;
+    const critical = [orgs, accounts, posts].find((r) => r.error);
+    if (critical) throw critical.error;
     state.org = orgs.data[0] || null;
     state.accounts = accounts.data;
     state.posts = posts.data;
-    state.repos = repos.data;
-    state.prompts = prompts.data;
-    state.articles = articles.data;
+    state.repos = repos.data || [];
+    state.prompts = prompts.data || [];
+    state.articles = articles.data || [];
+    state.topics = topics.data || [];
     if (state.prompts[0]) state.articleForm.prompt_key = state.prompts[0].key;
   }
 
@@ -179,6 +183,10 @@
     state.prompts = [
       { id: "pr1", key: "crypto", name: "Cripto diario (Beehiiv)", prompt_md: "Escribe una nota diaria de noticias cripto en español LATAM, con la voz editorial de Tellus…", active: true },
       { id: "pr2", key: "ai", name: "IA diario (Beehiiv)", prompt_md: "Escribe una nota diaria de noticias de IA en español LATAM, con la voz editorial de Tellus…", active: true },
+    ];
+    state.topics = [
+      { id: "pt-1", label: "Stellar", query: "Stellar OR Soroban lang:es", active: true, last_run_at: new Date().toISOString() },
+      { id: "pt-2", label: "Agentes IA", query: '"AI agents" OR "agentes de IA"', active: true, last_run_at: null },
     ];
     state.articles = [
       { id: "ar1", prompt_key: "crypto", title: "Bitcoin sube tras dato de inflación", subtitle: "El mercado reacciona al IPC de EE.UU., un exchange anuncia licencia en Brasil y la minería marca récord.", summary: ["El IPC bajó y el mercado cripto respiró: por qué importa para LATAM.", "Un exchange sumó licencia regional: más acceso, más competencia."], body_md: "## Qué pasó\n\nEl dato de inflación…\n\n## Por qué importa\n\nPara la región…\n\n## Cierre Tellus\n\nQuién controla la infraestructura…", sources: [{ url: "https://example.com/ipc", title: "Comunicado oficial" }], model: "gemini-3.5-flash", status: "draft", created_at: new Date().toISOString() },
@@ -240,7 +248,37 @@
     const posts = filteredPosts();
     const categories = [...new Set(state.accounts.map((a) => a.category || "general"))].sort();
     return `
-      <div class="toolbar"><div><span class="eyebrow">${esc(state.org?.name || "")}</span><h2>Feed capturado</h2></div></div>
+      <div class="toolbar"><div><span class="eyebrow">${esc(state.org?.name || "")}</span><h2>Feed por temas</h2></div></div>
+
+      <section class="card" style="margin-bottom:1.2rem">
+        <h3>Buscar un tema en X</h3>
+        <p style="color:var(--muted);margin:.2rem 0 .8rem;line-height:1.5">Escribí un tema y traé los posts al instante. Se guardan en el feed para que los revises.</p>
+        <form id="topic-search-form" class="form-grid">
+          <div class="field span-all"><label for="topic-query">Tema</label>
+            <input id="topic-query" name="query" placeholder='ej: Kimi K3   ·   Stellar lang:es   ·   "AI agents"' required /></div>
+          <div class="form-foot span-all">
+            <label style="display:flex;align-items:center;gap:.4rem;color:var(--muted);font-size:.85rem">
+              <input type="checkbox" id="topic-save" style="min-height:auto;width:auto" /> Guardar como tema fijo (cron cada 6h)</label>
+            <button class="button button-primary" type="submit" ${state.topicBusy || state.preview ? "disabled" : ""}>${icon("search")} ${state.topicBusy ? "Buscando…" : "Buscar ahora"}</button>
+          </div>
+        </form>
+      </section>
+
+      ${(state.topics || []).length ? `<section class="card" style="margin-bottom:1.2rem">
+        <h3>Temas fijos</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tema</th><th>Query</th><th>Última búsqueda</th><th></th></tr></thead>
+          <tbody>${state.topics.map((topic) => `<tr>
+            <td><strong>${esc(topic.label)}</strong>${topic.active ? "" : ` <span class="chip">pausado</span>`}</td>
+            <td style="color:var(--muted)">${esc(topic.query)}</td>
+            <td>${topic.last_run_at ? fmtDate(topic.last_run_at) : "Nunca"}</td>
+            <td>${state.preview ? "" : `<button class="table-link" data-run-topic="${esc(topic.id)}" ${state.topicBusy ? "disabled" : ""}>${icon("search")} Buscar ahora</button>
+              <button class="table-link" data-toggle-topic="${esc(topic.id)}" style="margin-top:.3rem">${topic.active ? "Pausar" : "Activar"}</button>
+              <button class="table-link" data-delete-topic="${esc(topic.id)}" style="margin-top:.3rem;color:var(--red)">Borrar</button>`}</td>
+          </tr>`).join("")}</tbody>
+        </table></div>
+      </section>` : ""}
+
       <div class="filters">
         <select id="filter-platform" aria-label="Plataforma">
           <option value="">Todas las plataformas</option>
@@ -250,26 +288,29 @@
           <option value="">Todas las categorías</option>
           ${categories.map((c) => `<option value="${esc(c)}" ${state.filters.category === c ? "selected" : ""}>${esc(categoryLabel(c))}</option>`).join("")}
         </select>
-        <input id="filter-search" type="search" placeholder="Buscar texto o autor…" value="${esc(state.filters.search)}" aria-label="Buscar" />
+        <input id="filter-search" type="search" placeholder="Filtrar texto o autor…" value="${esc(state.filters.search)}" aria-label="Filtrar" />
       </div>
-      <section class="card" style="margin-bottom:1.2rem">
-        <h3>Capturar publicación</h3>
-        <form id="post-form" class="form-grid">
-          <div class="field"><label for="post-platform">Plataforma</label>
-            <select id="post-platform" name="platform" required>${Object.entries(platformLabels).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></div>
-          <div class="field"><label for="post-author">Autor (@handle)</label><input id="post-author" name="author" required placeholder="midudev" /></div>
-          <div class="field"><label for="post-url">URL</label><input id="post-url" name="url" type="url" placeholder="https://x.com/…" /></div>
-          <div class="field"><label for="post-date">Fecha</label><input id="post-date" name="posted_at" type="datetime-local" /></div>
-          <div class="field span-all"><label for="post-content">Contenido</label><textarea id="post-content" name="content" required placeholder="Texto del post…"></textarea></div>
-          <div class="field"><label for="post-likes">Likes</label><input id="post-likes" name="likes" type="number" min="0" value="0" /></div>
-          <div class="field"><label for="post-reposts">Reposts</label><input id="post-reposts" name="reposts" type="number" min="0" value="0" /></div>
-          <div class="field"><label for="post-replies">Respuestas</label><input id="post-replies" name="replies" type="number" min="0" value="0" /></div>
-          <div class="field"><label for="post-views">Vistas</label><input id="post-views" name="views" type="number" min="0" value="0" /></div>
-          <div class="form-foot span-all"><button class="button button-primary" type="submit">Guardar</button></div>
-        </form>
-      </section>
       ${posts.length ? `<div class="grid grid-2">${posts.map(postCard).join("")}</div>`
-        : `<div class="empty">Sin publicaciones con estos filtros. Capturá la primera arriba — el scraper automático llega en la Fase 2.</div>`}`;
+        : `<div class="empty">Sin publicaciones todavía. Buscá un tema arriba para llenar el feed.</div>`}
+
+      <details style="margin-top:1.4rem">
+        <summary style="cursor:pointer;color:var(--muted);font-weight:600">Captura manual (opcional)</summary>
+        <section class="card" style="margin-top:.8rem">
+          <form id="post-form" class="form-grid">
+            <div class="field"><label for="post-platform">Plataforma</label>
+              <select id="post-platform" name="platform" required>${Object.entries(platformLabels).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></div>
+            <div class="field"><label for="post-author">Autor (@handle)</label><input id="post-author" name="author" required placeholder="midudev" /></div>
+            <div class="field"><label for="post-url">URL</label><input id="post-url" name="url" type="url" placeholder="https://x.com/…" /></div>
+            <div class="field"><label for="post-date">Fecha</label><input id="post-date" name="posted_at" type="datetime-local" /></div>
+            <div class="field span-all"><label for="post-content">Contenido</label><textarea id="post-content" name="content" required placeholder="Texto del post…"></textarea></div>
+            <div class="field"><label for="post-likes">Likes</label><input id="post-likes" name="likes" type="number" min="0" value="0" /></div>
+            <div class="field"><label for="post-reposts">Reposts</label><input id="post-reposts" name="reposts" type="number" min="0" value="0" /></div>
+            <div class="field"><label for="post-replies">Respuestas</label><input id="post-replies" name="replies" type="number" min="0" value="0" /></div>
+            <div class="field"><label for="post-views">Vistas</label><input id="post-views" name="views" type="number" min="0" value="0" /></div>
+            <div class="form-foot span-all"><button class="button button-secondary" type="submit">Guardar manual</button></div>
+          </form>
+        </section>
+      </details>`;
   }
 
   function postCard(post) {
@@ -309,6 +350,65 @@
       state.posts = state.posts.filter((p) => p.id !== button.dataset.deletePost);
       renderShell();
     }));
+    document.querySelector("#topic-search-form")?.addEventListener("submit", runTopicSearch);
+    document.querySelectorAll("[data-run-topic]").forEach((b) => b.addEventListener("click", () => runTopicSearchById(b.dataset.runTopic)));
+    document.querySelectorAll("[data-toggle-topic]").forEach((b) => b.addEventListener("click", () => toggleTopic(b.dataset.toggleTopic)));
+    document.querySelectorAll("[data-delete-topic]").forEach((b) => b.addEventListener("click", () => deleteTopic(b.dataset.deleteTopic)));
+  }
+
+  async function runTopicSearch(event) {
+    event.preventDefault();
+    if (state.preview || state.topicBusy) return;
+    const form = new FormData(event.target);
+    const query = String(form.get("query")).trim();
+    const saveAsTopic = document.querySelector("#topic-save")?.checked;
+    if (!query) return;
+    state.topicBusy = true;
+    renderShell();
+    const { data, error } = await invokeEdge("x-search", { query, count: 20 });
+    state.topicBusy = false;
+    if (error || data?.error) { notify(data?.error || error?.message || "No se pudo buscar.", true); renderShell(); return; }
+    if (saveAsTopic) {
+      const label = query.length > 40 ? query.slice(0, 40) + "…" : query;
+      const { error: topicError } = await supabase.from("social_topics").insert({ organization_id: state.org.id, label, query, active: true });
+      if (topicError) notify("Post guardados, pero no se pudo crear el tema: " + topicError.message, true);
+    }
+    notify(`${data.saved || 0} posts capturados de "${query}"`);
+    await loadLiveData();
+    renderShell();
+  }
+
+  async function runTopicSearchById(topicId) {
+    if (state.topicBusy) return;
+    const topic = state.topics.find((t) => t.id === topicId);
+    if (!topic) return;
+    state.topicBusy = true;
+    renderShell();
+    const { data, error } = await invokeEdge("x-search", { query: topic.query, count: 20 });
+    state.topicBusy = false;
+    if (error || data?.error) { notify(data?.error || error?.message || "No se pudo buscar.", true); renderShell(); return; }
+    await supabase.from("social_topics").update({ last_run_at: new Date().toISOString() }).eq("id", topicId);
+    notify(`${data.saved || 0} posts capturados de "${topic.label}"`);
+    await loadLiveData();
+    renderShell();
+  }
+
+  async function toggleTopic(topicId) {
+    const topic = state.topics.find((t) => t.id === topicId);
+    if (!topic) return;
+    const { error } = await supabase.from("social_topics").update({ active: !topic.active }).eq("id", topicId);
+    if (error) return notify("No se pudo actualizar.", true);
+    topic.active = !topic.active;
+    renderShell();
+  }
+
+  async function deleteTopic(topicId) {
+    const topic = state.topics.find((t) => t.id === topicId);
+    if (!topic || !confirm(`¿Borrar el tema "${topic.label}"?`)) return;
+    const { error } = await supabase.from("social_topics").delete().eq("id", topicId);
+    if (error) return notify("No se pudo borrar.", true);
+    state.topics = state.topics.filter((t) => t.id !== topicId);
+    renderShell();
   }
 
   async function savePost(event) {

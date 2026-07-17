@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 const app = await readFile(new URL("../ops/social/app.js", import.meta.url), "utf8");
 const page = await readFile(new URL("../ops/social/index.html", import.meta.url), "utf8");
 const migration = await readFile(new URL("../supabase/migrations/20260717120000_create_social_analyzer.sql", import.meta.url), "utf8");
+const topicsMigration = await readFile(new URL("../supabase/migrations/20260717150000_create_social_topics.sql", import.meta.url), "utf8");
 const articlesMigration = await readFile(new URL("../supabase/migrations/20260717140000_create_articles.sql", import.meta.url), "utf8");
 const edge = await readFile(new URL("../supabase/functions/generate-article/index.ts", import.meta.url), "utf8");
 
@@ -29,16 +30,17 @@ test("seed accounts cover every curated handle", () => {
 });
 
 test("every social table enables RLS", () => {
-  for (const table of ["social_accounts", "social_posts", "repo_picks"]) {
-    assert.match(migration, new RegExp(`alter table public\\.${table} enable row level security`));
-    assert.match(migration, new RegExp(`${table}_member_select`));
-    assert.match(migration, new RegExp(`${table}_member_all`));
+  const all = migration + topicsMigration;
+  for (const table of ["social_accounts", "social_posts", "repo_picks", "social_topics"]) {
+    assert.match(all, new RegExp(`alter table public\\.${table} enable row level security`));
+    assert.match(all, new RegExp(`${table}_member_select`));
+    assert.match(all, new RegExp(`${table}_member_all`));
   }
 });
 
 test("writes are blocked for viewer role", () => {
-  const writePolicies = migration.match(/_member_all[\s\S]*?with check[\s\S]*?;/g) || [];
-  assert.equal(writePolicies.length, 3);
+  const writePolicies = (migration + topicsMigration).match(/_member_all[\s\S]*?with check[\s\S]*?;/g) || [];
+  assert.equal(writePolicies.length, 4);
   for (const policy of writePolicies) assert.match(policy, /m\.role <> 'viewer'/);
 });
 

@@ -18,7 +18,7 @@ import time
 
 from config import Config
 from sources import SourceError
-from sources import nitter, x_graphql
+from sources import nitter, x_graphql, x_search
 from store import Store
 
 
@@ -70,7 +70,26 @@ def main() -> int:
             print(f"  sleeping {delay:.0f}s")
             time.sleep(delay)
 
-    print(f"Done. {total} posts upserted across {len(accounts)} accounts.")
+    # Topic search (needs cookies — Nitter has no search). Skipped without them.
+    if config.has_x_cookies and not only:
+        topics = store.active_topics(org_id)
+        for index, topic in enumerate(topics):
+            print(f"[topic {index + 1}/{len(topics)}] {topic['label']}: {topic['query']}")
+            try:
+                posts = x_search.fetch(topic["query"], config.x_auth_token, config.x_ct0, config.max_posts)
+                rows = [p.to_row(org_id, None) for p in posts]
+                saved = store.upsert_posts(rows)
+                store.touch_topic(topic["id"])
+                total += saved
+                print(f"  search: {saved} posts upserted")
+            except SourceError as exc:
+                print(f"  search: {exc}")
+            if index < len(topics) - 1:
+                delay = random.uniform(config.delay_min, config.delay_max)
+                print(f"  sleeping {delay:.0f}s")
+                time.sleep(delay)
+
+    print(f"Done. {total} posts upserted.")
     return 0
 
 

@@ -24,7 +24,7 @@
   ];
   const state = {
     session: null, membership: null, organization: null, periods: [], selectedPeriod: null,
-    metrics: [], updates: [], initiatives: [], deliverables: [], payments: [], funds: [], members: [], programs: [], contacts: [], participants: [], budgets: [], resources: [], evidence: [], audit: [], selectedProgram:"global", importRows:[],
+    metrics: [], updates: [], initiatives: [], deliverables: [], payments: [], funds: [], members: [], programs: [], contacts: [], participants: [], budgets: [], resources: [], evidence: [], audit: [], socialTopics: [], socialPosts: [], selectedProgram:"global", importRows:[],
     view: "dashboard", preview: PREVIEW,
     participantFilters: { search:"", rank:"all", city:"all", country:"all", from:"", to:"" },
     participantPage: 1,
@@ -280,10 +280,12 @@
       supabase.from("program_resources").select("*").eq("organization_id", orgId).order("created_at", { ascending:false }),
       supabase.from("evidence").select("id,program_id,initiative_id,deliverable_id,title,kind,url,storage_path,created_at").eq("organization_id", orgId).order("created_at", { ascending:false }),
       supabase.from("audit_log").select("id,program_id,actor_user_id,action,entity_table,entity_id,entity_label,created_at").eq("organization_id", orgId).order("created_at", { ascending:false }).limit(200),
+      supabase.from("social_topics").select("*").eq("organization_id", orgId).order("label"),
+      supabase.from("social_posts").select("*").eq("organization_id", orgId).order("posted_at", { ascending:false }).limit(100),
     ]);
-    const failed = [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, participants, budgets, resources, evidence, audit].find((r) => r.error);
+    const failed = [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, participants, budgets, resources, evidence, audit, socialTopics, socialPosts].find((r) => r.error);
     if (failed) throw failed.error;
-    Object.assign(state, { periods:periods.data, metrics:metrics.data, updates:updates.data, initiatives:initiatives.data, deliverables:deliverables.data, payments:payments.data, funds:funds.data, members:members.data, programs:programs.data, contacts:contacts.data, participants:participants.data, budgets:budgets.data, resources:resources.data, evidence:evidence.data, audit:audit.data });
+    Object.assign(state, { periods:periods.data, metrics:metrics.data, updates:updates.data, initiatives:initiatives.data, deliverables:deliverables.data, payments:payments.data, funds:funds.data, members:members.data, programs:programs.data, contacts:contacts.data, participants:participants.data, budgets:budgets.data, resources:resources.data, evidence:evidence.data, audit:audit.data, socialTopics:socialTopics.data||[], socialPosts:socialPosts.data||[] });
     state.selectedPeriod ||= state.periods.find((p) => new Date(p.starts_on) <= new Date() && new Date(p.ends_on) >= new Date())?.id || state.periods[0]?.id;
     return true;
   }
@@ -306,6 +308,14 @@
     state.programs = ["Stellar Chile","Stellar Barrio","Stellar Academy","Coffee Breaks"].map((name, index) => ({ id:`program-${index}`, name }));
     state.contacts = [];
     state.participants = []; state.budgets = []; state.resources = []; state.evidence = []; state.audit = [];
+    state.socialTopics = [
+      { id:"pt-1", label:"Stellar", query:"Stellar OR Soroban lang:es", active:true, last_run_at:"2026-07-17T14:00:00Z" },
+      { id:"pt-2", label:"Agentes IA", query:'"AI agents" OR "agentes de IA"', active:true, last_run_at:"2026-07-17T12:30:00Z" },
+    ];
+    state.socialPosts = [
+      { id:"sp-1", author_handle:"midudev", content:"Stellar Soroban ya soporta contratos inteligentes en Rust. El ecosistema crece rápido.", url:"https://x.com/midudev/status/123", posted_at:"2026-07-17T13:00:00Z", likes:142, reposts:38, replies:12, views:8400 },
+      { id:"sp-2", author_handle:"paukoh", content:"Arrancamos con los primeros repositorios de la comunidad Tellus. Indie hacking + Stellar = combo.", url:"https://x.com/paukoh/status/456", posted_at:"2026-07-17T10:15:00Z", likes:67, reposts:14, replies:8, views:3200 },
+    ];
   }
 
   function currentPeriod() { return state.periods.find((p) => p.id === state.selectedPeriod) || state.periods[0]; }
@@ -351,7 +361,7 @@
   }
 
   function renderShell() {
-    const viewLabels = { dashboard:state.selectedProgram === "global" ? "Resumen global" : "Resumen", program_metrics:"Métricas", initiatives:"Eventos", deliverables:"Entregables", finance:"Gastos", resources:"Planillas y recursos", participants:"Participantes", evidence:"Evidencias", activity:"Actividad" };
+    const viewLabels = { dashboard:state.selectedProgram === "global" ? "Resumen global" : "Resumen", program_metrics:"Métricas", initiatives:"Eventos", deliverables:"Entregables", finance:"Gastos", resources:"Planillas y recursos", participants:"Participantes", evidence:"Evidencias", activity:"Actividad", feed:"Feed social" };
     const userIdentity=currentUserIdentity();
     $app.innerHTML = `
       <div class="app-shell">
@@ -359,7 +369,7 @@
           <div class="sidebar-head"><div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Stellar Ops</div></div>
           <div class="program-switcher"><label for="program-scope">Espacio operativo</label><select id="program-scope"><option value="global" ${state.selectedProgram === "global" ? "selected" : ""}>Toda la operación</option>${state.programs.map((program) => `<option value="${esc(program.id)}" ${state.selectedProgram === program.id ? "selected" : ""}>${esc(program.name)}</option>`).join("")}</select></div>
           <nav class="nav" aria-label="Principal">
-            ${navButton("dashboard","layout-dashboard",state.selectedProgram === "global" ? "Resumen global" : "Resumen")}${navButton("program_metrics","gauge","Métricas")}${navButton("initiatives","calendar-days","Eventos")}${navButton("finance","circle-dollar-sign","Gastos")}${navButton("resources","table-properties","Planillas")}${navButton("participants","users","Participantes")}${navButton("evidence","folder-check","Evidencias")}${navButton("deliverables","file-check-2","Entregables")}${navButton("activity","history","Actividad")}
+            ${navButton("dashboard","layout-dashboard",state.selectedProgram === "global" ? "Resumen global" : "Resumen")}${navButton("program_metrics","gauge","Métricas")}${navButton("initiatives","calendar-days","Eventos")}${navButton("finance","circle-dollar-sign","Gastos")}${navButton("resources","table-properties","Planillas")}${navButton("participants","users","Participantes")}${navButton("evidence","folder-check","Evidencias")}${navButton("deliverables","file-check-2","Entregables")}${navButton("feed","rss","Feed social")}${navButton("activity","history","Actividad")}
           </nav>
           <div class="sidebar-footer"><div class="user-meta" title="${esc(state.preview?"Vista previa":state.session?.user?.email||"")}"><strong>${esc(userIdentity.name)}</strong><span>${esc(userIdentity.responsibility)}</span></div>${state.preview ? `<a class="button button-ghost" href="./">${icon("log-in")} Ir al acceso</a>` : `<button class="button button-ghost" id="signout">${icon("log-out")} Cerrar sesión</button>`}</div>
         </aside>
@@ -372,7 +382,7 @@
   }
 
   function navButton(view, iconName, label) { return `<button data-view="${view}" class="${state.view === view ? "active" : ""}">${icon(iconName)} ${label}</button>`; }
-  function renderView() { return state.view === "dashboard" ? dashboardView() : state.view === "program_metrics" ? metricsView() : state.view === "initiatives" ? initiativesView() : state.view === "deliverables" ? deliverablesView() : state.view === "finance" ? financeView() : state.view === "resources" ? resourcesView() : state.view === "participants" ? participantsView() : state.view === "activity" ? activityView() : evidenceView(); }
+  function renderView() { return state.view === "dashboard" ? dashboardView() : state.view === "program_metrics" ? metricsView() : state.view === "initiatives" ? initiativesView() : state.view === "deliverables" ? deliverablesView() : state.view === "finance" ? financeView() : state.view === "resources" ? resourcesView() : state.view === "participants" ? participantsView() : state.view === "feed" ? feedView() : state.view === "activity" ? activityView() : evidenceView(); }
 
   function dashboardView() {
     if (state.selectedProgram === "global") return globalDashboardView();
@@ -482,6 +492,64 @@
   function activityView() { const rows=state.audit.filter(inProgram); const actions={insert:"Creó",update:"Modificó",delete:"Eliminó"}; const entities={programs:"programa",program_budgets:"presupuesto",program_resources:"recurso",program_participants:"participante",initiatives:"evento",deliverables:"entregable",evidence:"evidencia",fund_transactions:"movimiento",metric_definitions:"métrica",metric_updates:"avance",event_contacts:"contacto"}; const actor=(id)=>id ? ownerName(id) : "Sistema"; const when=(value)=>new Intl.DateTimeFormat("es-CL",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value)); return `<div class="toolbar"><div><span class="eyebrow">Trazabilidad</span><h2>Actividad del equipo</h2></div></div><article class="card section-card"><div class="mini-list">${rows.map((row)=>`<div class="mini-item"><div class="mini-icon">${icon(row.action==="delete"?"trash-2":row.action==="insert"?"plus":"pencil")}</div><div><strong>${esc(actor(row.actor_user_id))} · ${esc(actions[row.action]||row.action)} ${esc(entities[row.entity_table]||row.entity_table)}</strong><span>${esc(row.entity_label||"Registro")} · ${esc(programName(row.program_id))} · ${esc(when(row.created_at))}</span></div></div>`).join("") || `<div class="empty">Todavía no hay actividad registrada.</div>`}</div></article>`; }
   function evidenceView() { const rows=state.evidence.filter(inProgram); return `<div class="toolbar"><div><span class="eyebrow">${esc(selectedProgram()?.name || "Toda la operación")}</span><h2>Evidencias</h2></div></div><section class="resource-grid">${rows.map((row)=>`<article class="card resource-card"><span class="type-chip">${esc(row.kind)}</span><h3>${esc(row.title)}</h3>${row.url ? `<a class="table-link" href="${esc(row.url)}" target="_blank" rel="noopener">Abrir evidencia</a>` : `<p>Archivo privado</p>`}</article>`).join("") || `<div class="empty">No hay evidencias cargadas.</div>`}</section>`; }
 
+  function feedView() {
+    const topics = state.socialTopics;
+    const posts = state.socialPosts;
+    const topicRows = topics.length ? topics.map((t) => {
+      const lastRun = t.last_run_at ? timeAgo(t.last_run_at) : "Nunca";
+      return `<article class="feed-topic"><div class="feed-topic-head"><div><strong>${esc(t.label)}</strong><code class="feed-query">${esc(t.query)}</code></div><div class="feed-topic-meta"><span class="muted-copy">${icon("clock")} ${lastRun}</span><button class="button button-secondary feed-search-btn" data-topic-search="${esc(t.id)}" data-topic-query="${esc(t.query)}">${icon("search")} Buscar ahora</button><button class="icon-button" data-edit-topic="${esc(t.id)}" aria-label="Editar tema">${icon("pencil")}</button><button class="icon-button" data-delete-topic="${esc(t.id)}" data-topic-label="${esc(t.label)}" aria-label="Eliminar tema">${icon("trash-2")}</button></div></div></article>`;
+    }).join("") : `<div class="empty">No hay temas de búsqueda configurados. Agregá uno para empezar a traer posts automáticamente.</div>`;
+    const postRows = posts.length ? posts.map((p) => {
+      const when = p.posted_at ? fmtDate(String(p.posted_at).slice(0,10)) : "";
+      const time = p.posted_at ? new Intl.DateTimeFormat("es-CL",{timeStyle:"short"}).format(new Date(p.posted_at)) : "";
+      return `<article class="feed-post"><div class="feed-post-head"><span class="feed-handle">@${esc(p.author_handle)}</span><span class="muted-copy">${when} ${time}</span></div><p class="feed-post-content">${esc(p.content)}</p><div class="feed-post-metrics"><span>${icon("heart")} ${fmtNum(p.likes)}</span><span>${icon("repeat")} ${fmtNum(p.reposts)}</span><span>${icon("message-circle")} ${fmtNum(p.replies)}</span><span>${icon("eye")} ${fmtNum(p.views)}</span>${p.url ? `<a class="table-link" href="${esc(p.url)}" target="_blank" rel="noopener">${icon("external-link")} Ver</a>` : ""}</div></article>`;
+    }).join("") : `<div class="empty">${icon("inbox")}<div>No hay posts en el feed. Buscá un tema o importá posts manualmente.</div></div>`;
+    return `<div class="toolbar"><div><span class="eyebrow">Social</span><h2>Feed y temas de búsqueda</h2></div><button class="button button-primary" id="add-topic">${icon("plus")} Nuevo tema</button></div><article class="card section-card feed-topics-card"><div class="section-head"><div><h2>Temas de búsqueda</h2><p>Busca posts en X por consulta. El cron los trae automáticamente.</p></div></div><div class="feed-topic-list">${topicRows}</div></article><article class="card section-card feed-posts-card"><div class="section-head"><div><h2>Posts recientes</h2><p>${posts.length} posts capturados.</p></div></div><div class="feed-post-list">${postRows}</div></article>`;
+  }
+
+  function timeAgo(dateString) {
+    const diff = Date.now() - new Date(dateString).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Ahora";
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    return `${days}d`;
+  }
+
+  function fmtNum(n) { return Number(n || 0).toLocaleString("es-CL"); }
+
+  function openTopicModal(topic = {}) {
+    modal(topic.id ? "Editar tema" : "Nuevo tema de búsqueda", `<form id="topic-form"><div class="field"><label for="topic-label">Nombre</label><input id="topic-label" name="label" value="${esc(topic.label || "")}" placeholder="Stellar, Agentes IA…" required /></div><div class="field"><label for="topic-query">Consulta de búsqueda en X</label><textarea id="topic-query" name="query" rows="2" placeholder="Stellar OR Soroban lang:es" required></textarea><small>Sintaxis de búsqueda de X. Usá comillas para frases exactas, OR para alternativas.</small></div><div class="field"><label for="topic-active">Activo</label><select id="topic-active" name="active"><option value="true" ${topic.active !== false ? "selected" : ""}>Sí — el cron lo busca automáticamente</option><option value="false" ${topic.active === false ? "selected" : ""}>No — pausado</option></select></div><div class="modal-actions"><button type="button" class="button button-secondary" id="cancel">Cancelar</button><button class="button button-primary" type="submit">${topic.id ? "Guardar" : "Crear tema"}</button></div></form>`);
+    document.querySelector("#topic-query").value = topic.query || "";
+    document.querySelector("#cancel").onclick = closeModal;
+    document.querySelector("#topic-form").onsubmit = async (e) => {
+      e.preventDefault();
+      if (lockedPreview()) return;
+      const button = e.currentTarget.querySelector("button[type=submit]");
+      setButtonLoading(button, "Guardando…");
+      const v = Object.fromEntries(new FormData(e.currentTarget));
+      const payload = { organization_id: state.organization.id, label: v.label, query: v.query, active: v.active === "true" };
+      const query = topic.id ? supabase.from("social_topics").update(payload).eq("id", topic.id) : supabase.from("social_topics").insert(payload);
+      const { error } = await query;
+      await afterMutation(error, topic.id ? "Tema actualizado" : "Tema creado");
+    };
+  }
+
+  async function runTopicSearch(button) {
+    if (lockedPreview()) return;
+    const query = button.dataset.topicQuery;
+    setButtonLoading(button, "Buscando…");
+    const { data, error } = await invokeEdge("x-search", { query, count: 20 });
+    resetButton(button, `${icon("search")} Buscar ahora`);
+    hydrateIcons();
+    if (error || data?.error) return notify(data?.error || error?.message || "No se pudo buscar.", true);
+    notify(`${data.saved || 0} posts capturados`);
+    await loadLiveData();
+    renderShell();
+  }
+
   function wireShell() {
     document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.view; if(state.view === "initiatives") state.initiativeFilter="all"; renderShell(); }));
     document.querySelector("#period")?.addEventListener("change", (e) => { state.selectedPeriod = e.target.value; renderShell(); });
@@ -516,6 +584,15 @@
     document.querySelector("#add-metric")?.addEventListener("click", openNewMetricModal);
     document.querySelectorAll("[data-edit-initiative]").forEach((b) => b.addEventListener("click", () => openInitiativeModal(state.initiatives.find((i) => i.id === b.dataset.editInitiative))));
     document.querySelectorAll("[data-edit-deliverable]").forEach((b) => b.addEventListener("click", () => openDeliverableModal(state.deliverables.find((d) => d.id === b.dataset.editDeliverable))));
+    document.querySelector("#add-topic")?.addEventListener("click", () => openTopicModal());
+    document.querySelectorAll("[data-edit-topic]").forEach((b) => b.addEventListener("click", () => openTopicModal(state.socialTopics.find((t) => t.id === b.dataset.editTopic))));
+    document.querySelectorAll("[data-delete-topic]").forEach((b) => b.addEventListener("click", async () => {
+      if (lockedPreview()) return;
+      if (!window.confirm(`¿Eliminar el tema "${b.dataset.topicLabel}"?`)) return;
+      const { error } = await supabase.from("social_topics").delete().eq("id", b.dataset.deleteTopic);
+      await afterMutation(error, "Tema eliminado");
+    }));
+    document.querySelectorAll("[data-topic-search]").forEach((b) => b.addEventListener("click", () => runTopicSearch(b)));
   }
 
   function modal(title, body) {

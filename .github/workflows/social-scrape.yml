@@ -42,5 +42,6 @@ jobs:
           X_SCRAPER_CT0: ${{ secrets.X_SCRAPER_CT0 }}
           X_QID_USER: ${{ secrets.X_QID_USER }}
           X_QID_TWEETS: ${{ secrets.X_QID_TWEETS }}
+          X_QID_SEARCH: ${{ secrets.X_QID_SEARCH }}
           NITTER_INSTANCES: ${{ secrets.NITTER_INSTANCES }}
         run: python main.py ${{ github.event.inputs.handle }}
