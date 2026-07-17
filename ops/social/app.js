@@ -28,7 +28,7 @@
     repoPostDraft: null, repoPostBusy: false,
     prompts: [], articles: [], drafts: [], articleBusy: false,
     articleForm: { prompt_key: "crypto", count: 1, prompt_md: "" },
-    topics: [], topicBusy: false,
+    topics: [], topicBusy: false, topicPosts: null,
     memes: { query: "", busy: false, info: null, gifs: [] },
   };
 
@@ -274,6 +274,15 @@
         </form>
       </section>
 
+      ${state.topicPosts ? `<section class="card" style="margin-bottom:1.2rem">
+        <h3>Posts nuestros sobre «${esc(state.topicPosts.query)}»</h3>
+        ${state.topicPosts.busy ? `<p style="color:var(--muted);margin:.4rem 0 0">Escribiendo posts con la voz de Tellus…</p>` : `
+        <div class="grid grid-3" style="margin-top:.8rem">${(state.topicPosts.posts || []).map((p) => `<article class="card">
+          <p class="post-content" style="margin:0 0 .6rem;white-space:pre-wrap">${esc(p)}</p>
+          <button class="table-link" data-copy-topic-post="${esc(p)}">Copiar post</button>
+        </article>`).join("")}</div>`}
+      </section>` : ""}
+
       ${(state.topics || []).length ? `<section class="card" style="margin-bottom:1.2rem">
         <h3>Temas fijos</h3>
         <div class="table-wrap"><table>
@@ -362,6 +371,7 @@
     }));
     document.querySelector("#topic-search-form")?.addEventListener("submit", runTopicSearch);
     document.querySelectorAll("[data-run-topic]").forEach((b) => b.addEventListener("click", () => runTopicSearchById(b.dataset.runTopic)));
+    document.querySelectorAll("[data-copy-topic-post]").forEach((b) => b.addEventListener("click", () => copyText(b.dataset.copyTopicPost)));
     document.querySelectorAll("[data-toggle-topic]").forEach((b) => b.addEventListener("click", () => toggleTopic(b.dataset.toggleTopic)));
     document.querySelectorAll("[data-delete-topic]").forEach((b) => b.addEventListener("click", () => deleteTopic(b.dataset.deleteTopic)));
   }
@@ -388,6 +398,23 @@
     notify(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts capturados de "${query}"`);
     await loadLiveData();
     renderShell();
+    generateTopicPosts(query, data.posts || []);
+  }
+
+  // After a topic search, write Tellus-voice posts about it using the captured
+  // tweets as context. Runs after render so the feed shows up immediately.
+  async function generateTopicPosts(query, capturedPosts) {
+    state.topicPosts = { query, posts: null, busy: true };
+    renderShell();
+    const samples = capturedPosts.map((p) => p.content).filter(Boolean).slice(0, 10);
+    const { data, error } = await invokeEdge("generate-article", { format: "topic_posts", query, posts: samples });
+    if (error || data?.error) {
+      state.topicPosts = null;
+      notify(data?.error || "No se pudieron generar posts del tema.", true);
+      return renderShell();
+    }
+    state.topicPosts = { query, posts: data.posts, busy: false };
+    renderShell();
   }
 
   async function runTopicSearchById(topicId) {
@@ -404,6 +431,7 @@
     notify(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts capturados de "${topic.label}"`);
     await loadLiveData();
     renderShell();
+    generateTopicPosts(topic.query, data.posts || []);
   }
 
   async function toggleTopic(topicId) {

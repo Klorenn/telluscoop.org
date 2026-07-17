@@ -237,6 +237,34 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
       }
     }
 
+    // Mode: Tellus-voice posts about a searched topic, grounded on the real
+    // tweets the feed just captured. No tools: fast and quota-free.
+    if (body.format === "topic_posts") {
+      const query = String(body.query ?? "").trim();
+      if (!query) return json({ error: "Falta query" }, 400);
+      const samples = Array.isArray(body.posts)
+        ? body.posts.slice(0, 10).map((p: unknown) => `- ${String(p).slice(0, 280)}`).join("\n")
+        : "";
+      const input = `Sos el equipo editorial de Tellus Cooperative. Tema buscado: "${query}".
+
+Posts reales que circulan ahora en X sobre el tema:
+${samples || "(sin ejemplos)"}
+
+Escribe 3 posts LISTOS para publicar en X con la voz de Tellus: español LATAM, claros y humanos, con gancho informativo, sin hype ni tono trader, <=270 caracteres, máximo 1 hashtag, sin emojis excesivos. Aporta ángulo propio, no repitas los posts de arriba.
+
+Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
+{"posts": ["post 1", "post 2", "post 3"]}`;
+      try {
+        const { data, model } = await callGemini(apiKey, input, false);
+        const parsed = parseJsonLoose(extractText(data));
+        const posts = Array.isArray(parsed.posts) ? parsed.posts.map((p: unknown) => String(p)).filter(Boolean) : [];
+        if (!posts.length) return json({ error: "El modelo devolvió una respuesta vacía" }, 502);
+        return json({ posts, model });
+      } catch (error) {
+        return json({ error: "No se pudieron generar los posts del tema", detail: [String(error)] }, 502);
+      }
+    }
+
     // Mode: X post about a repo (from the Repos finder).
     if (body.format === "x_post") {
       if (!body.repo || typeof body.repo !== "object") return json({ error: "Falta el repositorio" }, 400);
