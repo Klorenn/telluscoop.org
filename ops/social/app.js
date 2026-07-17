@@ -28,7 +28,7 @@
     repoPostDraft: null, repoPostBusy: false,
     prompts: [], articles: [], drafts: [], articleBusy: false,
     articleForm: { prompt_key: "crypto", count: 1, prompt_md: "" },
-    topics: [], topicBusy: false, topicPosts: null,
+    topics: [], topicBusy: false, topicPosts: null, feedPage: 0,
     memes: { query: "", busy: false, info: null, gifs: [] },
   };
 
@@ -270,6 +270,7 @@
             <label style="display:flex;align-items:center;gap:.4rem;color:var(--muted);font-size:.85rem">
               <input type="checkbox" id="topic-save" style="min-height:auto;width:auto" /> Guardar como tema fijo (cron cada 6h)</label>
             <button class="button button-primary" type="submit" ${state.topicBusy || state.preview ? "disabled" : ""}>${icon("search")} ${state.topicBusy ? "Buscando…" : "Buscar ahora"}</button>
+            <button class="button button-secondary" type="button" id="fetch-recent" ${state.topicBusy || state.preview ? "disabled" : ""}>${icon("users")} Recientes de mis cuentas</button>
           </div>
         </form>
       </section>
@@ -277,10 +278,17 @@
       ${state.topicPosts ? `<section class="card" style="margin-bottom:1.2rem">
         <h3>Posts nuestros sobre «${esc(state.topicPosts.query)}»</h3>
         ${state.topicPosts.busy ? `<p style="color:var(--muted);margin:.4rem 0 0">Escribiendo posts con la voz de Tellus…</p>` : `
-        <div class="grid grid-3" style="margin-top:.8rem">${(state.topicPosts.posts || []).map((p) => `<article class="card">
-          <p class="post-content" style="margin:0 0 .6rem;white-space:pre-wrap">${esc(p)}</p>
-          <button class="table-link" data-copy-topic-post="${esc(p)}">Copiar post</button>
-        </article>`).join("")}</div>`}
+        <div class="grid grid-3" style="margin-top:.8rem">${(state.topicPosts.posts || []).map((p, i) => {
+          const img = (state.topicPosts.images || [])[i];
+          return `<article class="card">
+            ${img ? `<a href="${esc(img.page || img.url)}" target="_blank" rel="noopener"><img src="${esc(img.thumbnail || img.url)}" alt="" style="width:100%;border-radius:8px;max-height:160px;object-fit:cover" loading="lazy" /></a>` : ""}
+            <p class="post-content" style="margin:.5rem 0 .6rem;white-space:pre-wrap">${esc(p)}</p>
+            <div class="form-foot" style="justify-content:start">
+              <button class="table-link" data-copy-topic-post="${esc(p)}">Copiar post</button>
+              ${img ? `<button class="table-link" data-copy-topic-post="${esc(img.url)}">Copiar imagen</button>` : ""}
+            </div>
+          </article>`;
+        }).join("")}</div>`}
       </section>` : ""}
 
       ${(state.topics || []).length ? `<section class="card" style="margin-bottom:1.2rem">
@@ -309,7 +317,17 @@
         </select>
         <input id="filter-search" type="search" placeholder="Filtrar texto o autor…" value="${esc(state.filters.search)}" aria-label="Filtrar" />
       </div>
-      ${posts.length ? `<div class="grid grid-2">${posts.map(postCard).join("")}</div>`
+      ${posts.length ? (() => {
+        const perPage = 20;
+        const pages = Math.max(1, Math.ceil(posts.length / perPage));
+        const page = Math.min(state.feedPage, pages - 1);
+        const pager = pages > 1 ? `<div class="form-foot" style="justify-content:center;gap:1rem;margin-top:1rem">
+          <button class="button button-secondary" data-feed-page="${page - 1}" ${page === 0 ? "disabled" : ""}>← Anterior</button>
+          <span style="color:var(--muted)">Página ${page + 1} de ${pages} · ${posts.length} posts</span>
+          <button class="button button-secondary" data-feed-page="${page + 1}" ${page >= pages - 1 ? "disabled" : ""}>Siguiente →</button>
+        </div>` : "";
+        return `<div class="grid grid-2">${posts.slice(page * perPage, (page + 1) * perPage).map(postCard).join("")}</div>${pager}`;
+      })()
         : `<div class="empty">Sin publicaciones todavía. Buscá un tema arriba para llenar el feed.</div>`}
 
       <details style="margin-top:1.4rem">
@@ -340,7 +358,7 @@
           ${account ? ` <span class="chip">${esc(categoryLabel(account.category))}</span>` : ""}</div>
         <span class="chip chip-platform-${esc(post.platform)}">${esc(platformLabels[post.platform] || post.platform)}</span>
       </div>
-      <p class="post-content">${esc(post.content)}</p>
+      <p class="post-content post-clamp" title="Click para expandir">${esc(post.content).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')}</p>
       <div class="post-stats">
         <span title="Likes">♥ ${fmtNum(post.likes)}</span><span title="Reposts">⇄ ${fmtNum(post.reposts)}</span>
         <span title="Respuestas">💬 ${fmtNum(post.replies)}</span><span title="Vistas">👁 ${fmtNum(post.views)}</span>
@@ -354,7 +372,7 @@
   }
 
   function wireFeed() {
-    const rerender = () => renderShell();
+    const rerender = () => { state.feedPage = 0; renderShell(); };
     document.querySelector("#filter-platform")?.addEventListener("change", (e) => { state.filters.platform = e.target.value; rerender(); });
     document.querySelector("#filter-category")?.addEventListener("change", (e) => { state.filters.category = e.target.value; rerender(); });
     document.querySelector("#filter-search")?.addEventListener("input", (e) => {
@@ -370,8 +388,17 @@
       renderShell();
     }));
     document.querySelector("#topic-search-form")?.addEventListener("submit", runTopicSearch);
+    document.querySelector("#fetch-recent")?.addEventListener("click", fetchRecentFromAccounts);
+    document.querySelectorAll("[data-feed-page]").forEach((b) => b.addEventListener("click", () => {
+      state.feedPage = Math.max(0, Number(b.dataset.feedPage) || 0);
+      renderShell();
+      document.querySelector(".filters")?.scrollIntoView({ behavior: "smooth" });
+    }));
     document.querySelectorAll("[data-run-topic]").forEach((b) => b.addEventListener("click", () => runTopicSearchById(b.dataset.runTopic)));
     document.querySelectorAll("[data-copy-topic-post]").forEach((b) => b.addEventListener("click", () => copyText(b.dataset.copyTopicPost)));
+    document.querySelectorAll(".post-clamp").forEach((el) => el.addEventListener("click", (e) => {
+      if (e.target.tagName !== "A") el.classList.toggle("expanded");
+    }));
     document.querySelectorAll("[data-toggle-topic]").forEach((b) => b.addEventListener("click", () => toggleTopic(b.dataset.toggleTopic)));
     document.querySelectorAll("[data-delete-topic]").forEach((b) => b.addEventListener("click", () => deleteTopic(b.dataset.deleteTopic)));
   }
@@ -402,18 +429,39 @@
   }
 
   // After a topic search, write Tellus-voice posts about it using the captured
-  // tweets as context. Runs after render so the feed shows up immediately.
+  // tweets as context, each paired with an image/GIF. Runs after render so the
+  // feed shows up immediately.
   async function generateTopicPosts(query, capturedPosts) {
-    state.topicPosts = { query, posts: null, busy: true };
+    state.topicPosts = { query, posts: null, images: [], busy: true };
     renderShell();
     const samples = capturedPosts.map((p) => p.content).filter(Boolean).slice(0, 10);
-    const { data, error } = await invokeEdge("generate-article", { format: "topic_posts", query, posts: samples });
-    if (error || data?.error) {
+    const [gen, media] = await Promise.all([
+      invokeEdge("generate-article", { format: "topic_posts", query, posts: samples }),
+      invokeEdge("reddit-search", { query, mode: "memes", count: 6 }),
+    ]);
+    if (gen.error || gen.data?.error) {
       state.topicPosts = null;
-      notify(data?.error || "No se pudieron generar posts del tema.", true);
+      notify(gen.data?.error || "No se pudieron generar posts del tema.", true);
       return renderShell();
     }
-    state.topicPosts = { query, posts: data.posts, busy: false };
+    state.topicPosts = { query, posts: gen.data.posts, images: media.data?.items || [], busy: false };
+    renderShell();
+  }
+
+  // Pull the latest posts from the curated accounts without picking a topic:
+  // one X search with "from:handle OR from:handle...".
+  async function fetchRecentFromAccounts() {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const handles = state.accounts.filter((a) => a.active && a.platform === "x").slice(0, 12).map((a) => `from:${a.handle}`);
+    if (!handles.length) return notify("No hay cuentas activas de X.", true);
+    state.topicBusy = true;
+    renderShell();
+    const { data, error } = await invokeEdge("x-search", { query: `(${handles.join(" OR ")})`, count: 40 });
+    state.topicBusy = false;
+    if (error || data?.error) { notify(data?.error || error?.message || "No se pudo buscar.", true); return renderShell(); }
+    notify(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts recientes de tus cuentas.`);
+    state.feedPage = 0;
+    await loadLiveData();
     renderShell();
   }
 

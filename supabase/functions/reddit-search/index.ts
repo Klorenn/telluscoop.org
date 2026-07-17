@@ -104,6 +104,19 @@ async function searchGifs(giphyKey: string, query: string, limit: number) {
   }).filter((g) => g.url);
 }
 
+async function searchOpenverse(query: string, limit: number) {
+  const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(query)}&page_size=${limit}&mature=false`;
+  const response = await fetch(url, { headers: { "User-Agent": "TellusSocialOps/1.0 (telluscoop.org)" } });
+  if (!response.ok) return [];
+  const data = await response.json();
+  return ((data.results ?? []) as Record<string, unknown>[]).map((r) => ({
+    title: String(r.title ?? ""),
+    url: String(r.url ?? ""),
+    thumbnail: String(r.thumbnail ?? r.url ?? ""),
+    page: String(r.foreign_landing_url ?? r.url ?? ""),
+  })).filter((r) => r.url);
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (request.method !== "POST") return json({ error: "Método no permitido" }, 405);
@@ -135,9 +148,19 @@ Deno.serve(async (request) => {
 
     if (body.mode === "memes") {
       const giphyKey = Deno.env.get("GIPHY_API_KEY");
-      if (!giphyKey) return json({ error: "Falta configurar GIPHY_API_KEY (gratis en developers.giphy.com) para buscar GIFs" }, 503);
-      const items = await searchGifs(giphyKey, query, limit);
-      return json({ items, mode: "memes" });
+      if (giphyKey) {
+        const items = await searchGifs(giphyKey, query, limit);
+        return json({ items, mode: "memes", via: "giphy" });
+      }
+      // No Giphy key yet: Openverse serves CC images keyless so every post
+      // still gets a visual. GIFs animados llegan cuando carguen GIPHY_API_KEY.
+      const items = await searchOpenverse(query, limit);
+      return json({
+        items,
+        mode: "memes",
+        via: "openverse",
+        ...(items.length ? {} : { message: "Sin imágenes para ese tema. Para GIFs animados configurá GIPHY_API_KEY (gratis)." }),
+      });
     }
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");
