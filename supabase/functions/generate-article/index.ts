@@ -73,7 +73,7 @@ const ARTICLE_JSON_CONTRACT = `Responde ÚNICAMENTE con un objeto JSON válido, 
 {"titulo": "Título SEO, 5-6 palabras, con el tema central del día", "subtitulo": "1 frase que resume los 2-3 hechos clave", "resumen": ["3 a 5 bullets: qué pasó y por qué importa"], "cuerpo_md": "Desarrollo + En foco + Cierre Tellus, en Markdown con subtítulos"}`;
 
 const POST_JSON_CONTRACT = `Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
-{"post": "Post principal para X en español LATAM, <=280 caracteres, con gancho y el enlace del repo", "thread": ["0-3 tweets extra de hilo, opcionales"], "hashtags": ["2-4 hashtags relevantes sin espacios"]}`;
+{"post": "Post principal para X en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), <=280 caracteres, con gancho y el enlace del repo", "thread": ["0-3 tweets extra de hilo, opcionales"], "hashtags": ["2-4 hashtags relevantes sin espacios"]}`;
 
 interface Draft {
   title: string;
@@ -136,7 +136,7 @@ async function generateOne(apiKey: string, promptMd: string, date: string): Prom
 }
 
 async function generatePost(apiKey: string, repo: RepoContext): Promise<Draft> {
-  const input = `Escribe un post para X (Twitter) en español LATAM con la voz editorial de Tellus Cooperative sobre este repositorio de GitHub.
+  const input = `Escribe un post para X (Twitter) en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos) con la voz editorial de Tellus Cooperative sobre este repositorio de GitHub.
 
 Repositorio: ${repo.full_name ?? ""}
 Descripción: ${repo.description ?? ""}
@@ -205,7 +205,7 @@ Deno.serve(async (request) => {
       if (!link) return json({ error: "Falta el link de Beehiiv" }, 400);
 
       const summary = Array.isArray(article.summary) ? article.summary.map((s: unknown) => `- ${String(s)}`).join("\n") : "";
-      const input = `Sos el equipo editorial de Tellus Cooperative. A partir de este artículo ya publicado, escribe un post para cada canal, en español LATAM, claro y humano (sin hype ni tono trader). Cada post DEBE incluir este enlace al artículo: ${link}
+      const input = `Eres el equipo editorial de Tellus Cooperative. A partir de este artículo ya publicado, escribe un post para cada canal, en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), claro y humano (sin hype ni tono trader). Cada post DEBE incluir este enlace al artículo: ${link}
 
 Título: ${String(article.title)}
 Subtítulo: ${String(article.subtitle ?? "")}
@@ -245,12 +245,12 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
       const samples = Array.isArray(body.posts)
         ? body.posts.slice(0, 10).map((p: unknown) => `- ${String(p).slice(0, 280)}`).join("\n")
         : "";
-      const input = `Sos el equipo editorial de Tellus Cooperative. Tema buscado: "${query}".
+      const input = `Eres el equipo editorial de Tellus Cooperative. Tema buscado: "${query}".
 
 Posts reales que circulan ahora en X sobre el tema:
 ${samples || "(sin ejemplos)"}
 
-Escribe 3 posts LISTOS para publicar en X con la voz de Tellus: español LATAM, claros y humanos, con gancho informativo, sin hype ni tono trader, <=270 caracteres, máximo 1 hashtag, sin emojis excesivos. Aporta ángulo propio, no repitas los posts de arriba.
+Escribe 3 posts LISTOS para publicar en X con la voz de Tellus: español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), claros y humanos, con gancho informativo, sin hype ni tono trader, <=270 caracteres, máximo 1 hashtag, sin emojis excesivos. Aporta ángulo propio, no repitas los posts de arriba.
 
 Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
 {"posts": ["post 1", "post 2", "post 3"]}`;
