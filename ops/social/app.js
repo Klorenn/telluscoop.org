@@ -385,7 +385,7 @@
       const { error: topicError } = await supabase.from("social_topics").insert({ organization_id: state.org.id, label, query, active: true });
       if (topicError) notify("Post guardados, pero no se pudo crear el tema: " + topicError.message, true);
     }
-    notify(`${data.saved || 0} posts capturados de "${query}"`);
+    notify(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts capturados de "${query}"`);
     await loadLiveData();
     renderShell();
   }
@@ -401,7 +401,7 @@
     state.topicBusy = false;
     if (error || data?.error) { notify(data?.error || error?.message || "No se pudo buscar.", true); renderShell(); return; }
     await supabase.from("social_topics").update({ last_run_at: new Date().toISOString() }).eq("id", topicId);
-    notify(`${data.saved || 0} posts capturados de "${topic.label}"`);
+    notify(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts capturados de "${topic.label}"`);
     await loadLiveData();
     renderShell();
   }
