@@ -720,7 +720,8 @@
           <td><span class="status status-${article.status === "draft" ? "inbox" : article.status === "discarded" ? "discarded" : "reviewed"}">${esc(articleStatusLabels[article.status] || article.status)}</span></td>
           <td>${fmtDate(article.created_at)}</td>
           <td>${state.preview ? "" : `<button class="table-link" data-copy-article="${esc(article.id)}">Copiar</button>
-            <button class="table-link" data-social-posts="${esc(article.id)}" ${state.socialPosts?.busy ? "disabled" : ""}>Posts</button>
+            ${article.social_posts ? `<button class="table-link" data-view-posts="${esc(article.id)}">Ver posts</button>` : ""}
+            <button class="table-link" data-social-posts="${esc(article.id)}" ${state.socialPosts?.busy ? "disabled" : ""}>${article.social_posts ? "Regenerar" : "Posts"}</button>
             <select data-article-status="${esc(article.id)}" aria-label="Estado" style="margin-top:.4rem">
               ${Object.entries(articleStatusLabels).map(([value, label]) => `<option value="${value}" ${article.status === value ? "selected" : ""}>${label}</option>`).join("")}
             </select>`}</td>
@@ -877,6 +878,7 @@
       if (article) copyText(draftToMarkdown(article));
     }));
     document.querySelectorAll("[data-social-posts]").forEach((button) => button.addEventListener("click", () => generateSocialPosts(button.dataset.socialPosts)));
+    document.querySelectorAll("[data-view-posts]").forEach((button) => button.addEventListener("click", () => viewSocialPosts(button.dataset.viewPosts)));
     document.querySelectorAll("[data-copy-social]").forEach((button) => button.addEventListener("click", () => {
       const post = state.socialPosts?.posts?.[button.dataset.copySocial];
       if (post) copyText(post);
@@ -914,7 +916,7 @@
     if (state.preview) return notify("La vista previa es de solo lectura.", true);
     const article = state.articles.find((a) => a.id === articleId);
     if (!article) return;
-    const link = window.prompt("Pegá el link del artículo en Beehiiv (va incluido en cada post):", state.socialPosts?.link || "");
+    const link = window.prompt("Pegá el link del artículo en Beehiiv (va incluido en cada post):", article.social_link || state.socialPosts?.link || "");
     if (!link || !link.trim()) return notify("Necesitás el link de Beehiiv para armar los posts.", true);
     state.socialPosts = { articleId, title: article.title, link: link.trim(), posts: null, busy: true };
     renderShell();
@@ -929,7 +931,23 @@
       return renderShell();
     }
     state.socialPosts = { articleId, title: article.title, link: link.trim(), posts: data.posts, busy: false };
-    notify("Posts generados para X, WhatsApp y LinkedIn.");
+    // Persist with the article so "Ver posts" works after a reload.
+    const { error: saveError } = await supabase.from("articles")
+      .update({ social_posts: data.posts, social_link: link.trim() })
+      .eq("id", articleId);
+    if (saveError) notify("Posts generados, pero no se pudieron guardar.", true);
+    else {
+      article.social_posts = data.posts;
+      article.social_link = link.trim();
+      notify("Posts generados y guardados.");
+    }
+    renderShell();
+  }
+
+  function viewSocialPosts(articleId) {
+    const article = state.articles.find((a) => a.id === articleId);
+    if (!article?.social_posts) return;
+    state.socialPosts = { articleId, title: article.title, link: article.social_link || "", posts: article.social_posts, busy: false };
     renderShell();
   }
 
