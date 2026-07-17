@@ -256,6 +256,7 @@
         <form id="topic-search-form" class="form-grid">
           <div class="field span-all"><label for="topic-query">Tema</label>
             <input id="topic-query" name="query" placeholder='ej: Kimi K3   ·   Stellar lang:es   ·   "AI agents"' required /></div>
+          <details class="span-all" style="margin-bottom:.6rem"><summary style="cursor:pointer;color:var(--muted);font-size:.78rem">Query ID de X (si cambió, actualizalo acá)</summary><div class="field" style="margin-top:.5rem"><label for="topic-qid">X_QID_SEARCH</label><input id="topic-qid" name="qid" placeholder="AQK...abc123" value="${esc(localStorage.getItem("x_qid_search") || "")}" /><small>Capturalo de la Network tab de x.com → SearchTimeline → el hash de la URL.</small></div></details>
           <div class="form-foot span-all">
             <label style="display:flex;align-items:center;gap:.4rem;color:var(--muted);font-size:.85rem">
               <input type="checkbox" id="topic-save" style="min-height:auto;width:auto" /> Guardar como tema fijo (cron cada 6h)</label>
@@ -362,10 +363,12 @@
     const form = new FormData(event.target);
     const query = String(form.get("query")).trim();
     const saveAsTopic = document.querySelector("#topic-save")?.checked;
+    const qid = String(form.get("qid") || "").trim();
+    if (qid) localStorage.setItem("x_qid_search", qid);
     if (!query) return;
     state.topicBusy = true;
     renderShell();
-    const { data, error } = await invokeEdge("x-search", { query, count: 20 });
+    const { data, error } = await invokeEdge("x-search", { query, count: 20, qid });
     state.topicBusy = false;
     if (error || data?.error) { notify(data?.error || error?.message || "No se pudo buscar.", true); renderShell(); return; }
     if (saveAsTopic) {
@@ -384,7 +387,8 @@
     if (!topic) return;
     state.topicBusy = true;
     renderShell();
-    const { data, error } = await invokeEdge("x-search", { query: topic.query, count: 20 });
+    const qid = localStorage.getItem("x_qid_search") || "";
+    const { data, error } = await invokeEdge("x-search", { query: topic.query, count: 20, qid });
     state.topicBusy = false;
     if (error || data?.error) { notify(data?.error || error?.message || "No se pudo buscar.", true); renderShell(); return; }
     await supabase.from("social_topics").update({ last_run_at: new Date().toISOString() }).eq("id", topicId);

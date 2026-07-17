@@ -541,7 +541,8 @@
     if (lockedPreview()) return;
     const query = button.dataset.topicQuery;
     setButtonLoading(button, "Buscando…");
-    const { data, error } = await invokeEdge("x-search", { query, count: 20 });
+    const qid = localStorage.getItem("x_qid_search") || "";
+    const { data, error } = await invokeEdge("x-search", { query, count: 20, qid });
     resetButton(button, `${icon("search")} Buscar ahora`);
     hydrateIcons();
     if (error || data?.error) return notify(data?.error || error?.message || "No se pudo buscar.", true);

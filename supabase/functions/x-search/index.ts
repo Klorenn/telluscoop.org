@@ -90,11 +90,13 @@ function parseSearch(data: Record<string, unknown>, orgId: string, max: number):
 }
 
 Deno.serve(async (request) => {
+  console.log("→ request received", request.method, request.url);
   if (request.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (request.method !== "POST") return json({ error: "Método no permitido" }, 405);
 
   try {
     const authorization = request.headers.get("Authorization");
+    console.log("→ auth present:", !!authorization);
     if (!authorization) return json({ error: "Sesión requerida" }, 401);
 
     const supabase = createClient(
@@ -103,6 +105,7 @@ Deno.serve(async (request) => {
       { global: { headers: { Authorization: authorization } } },
     );
     const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log("→ user:", user?.id, "error:", userError?.message);
     if (userError || !user) return json({ error: "Sesión inválida" }, 401);
 
     const { data: membership } = await supabase
@@ -114,14 +117,18 @@ Deno.serve(async (request) => {
 
     const authToken = Deno.env.get("X_SCRAPER_AUTH_TOKEN");
     const ct0 = Deno.env.get("X_SCRAPER_CT0");
-    const queryId = Deno.env.get("X_QID_SEARCH");
+    console.log("→ secrets present:", !!authToken, !!ct0);
     if (!authToken || !ct0) return json({ error: "Faltan las cookies de X (X_SCRAPER_AUTH_TOKEN / X_SCRAPER_CT0)" }, 503);
-    if (!queryId) return json({ error: "Falta el queryId de búsqueda de X (X_QID_SEARCH)" }, 503);
 
     const body = await request.json();
     const rawQuery = String(body.query ?? "").trim();
+    const qidBody = String(body.qid ?? "").trim();
+    const qidEnv = Deno.env.get("X_QID_SEARCH") || "";
+    const queryId = qidBody || qidEnv;
+    console.log("→ query:", rawQuery, "qidBody:", qidBody, "qidEnv:", qidEnv, "final:", queryId);
     if (!rawQuery) return json({ error: "Falta el tema a buscar" }, 400);
     const count = Math.max(1, Math.min(40, Number(body.count) || 20));
+    if (!queryId) return json({ error: "Falta el queryId de búsqueda (qid). Capturalo de la Network tab de x.com." }, 400);
 
     const variables = { rawQuery, count, querySource: "typed_query", product: "Latest" };
     const url = `https://x.com/i/api/graphql/${queryId}/SearchTimeline`
@@ -138,6 +145,7 @@ Deno.serve(async (request) => {
         "content-type": "application/json",
       },
     });
+    console.log("→ x.com responded:", xResponse.status);
     if (xResponse.status === 404) return json({ error: "queryId de búsqueda vencido — actualizá X_QID_SEARCH" }, 502);
     if (xResponse.status === 401 || xResponse.status === 403) return json({ error: "X rechazó las cookies — actualizá auth_token/ct0" }, 502);
     if (!xResponse.ok) return json({ error: `X respondió ${xResponse.status}` }, 502);
