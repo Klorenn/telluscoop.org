@@ -803,6 +803,8 @@
           ${m.info.points?.length ? `<ul style="margin:0 0 .7rem;padding-left:1.1rem;line-height:1.6">${m.info.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}
           ${m.info.sources?.length ? `<div class="post-meta" style="flex-wrap:wrap;gap:.5rem">${m.info.sources.slice(0, 8).map((s) => `<a class="table-link" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title.slice(0, 40))}</a>`).join("")}</div>` : ""}
         </article>` : ""}
+      ${!m.busy && !m.gifs.length && m.gifsError ? `<div class="card" style="margin-bottom:1.4rem"><p style="color:var(--red);margin:0">Sin GIFs: ${esc(m.gifsError)}</p>
+        <p style="color:var(--muted);margin:.4rem 0 0">Creá una key gratis en developers.giphy.com y cargala como secret <code>GIPHY_API_KEY</code> en Supabase.</p></div>` : ""}
       ${!m.busy && !m.info && !m.gifs.length ? `<div class="empty">Buscá un tema: te traigo el pulso de la conversación (Reddit y foros) y GIFs listos para usar.</div>` : ""}`;
   }
 
@@ -821,7 +823,8 @@
       state.memes.busy = false;
       state.memes.info = info.data?.summary ? { summary: info.data.summary, points: info.data.points || [], posts: info.data.posts || [], sources: info.data.sources || [] } : null;
       state.memes.gifs = gifs.data?.items || [];
-      const problems = [info.data?.error, gifs.data?.error].filter(Boolean);
+      state.memes.gifsError = gifs.data?.error || (gifs.error ? "No se pudieron buscar GIFs." : "");
+      const problems = [info.data?.error, state.memes.gifsError].filter(Boolean);
       if (problems.length) notify(problems.join(" · "), true);
       else notify(`${state.memes.info?.posts?.length || 0} posts listos y ${state.memes.gifs.length} GIFs.`);
       renderShell();
