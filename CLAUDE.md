@@ -2,70 +2,67 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Running the project
-
-No build step. Open `Tellus Cooperative.html` directly in a browser, or serve it from a local HTTP server (required for the `image-slot` sidecar reads):
+## Commands
 
 ```bash
-python3 -m http.server 8080
-# then open http://localhost:8080/Tellus%20Cooperative.html
+npm run dev    # serve the site at http://localhost:8080 (static, no build step)
+npm test       # node --test tests/*.test.mjs
 ```
 
-## Architecture
+There is no bundler, TypeScript, or lint step. The site deploys to Vercel (telluscoop.org) as static files plus one serverless function.
 
-This is a **no-bundler browser prototype** running inside the "omelette" design host. React 18 and Babel are loaded from CDN; JSX files are transpiled in-browser at runtime. There is no build pipeline, TypeScript, or test suite.
+## Two applications in one repo
 
-### File roles
+### 1. Public marketing site (`index.html`)
+
+A no-bundler browser prototype. React 18 and Babel are loaded from CDN; JSX files are transpiled in-browser at runtime.
+
+**Module system: none.** Shared components are attached to `window`:
+
+```js
+// tweaks-panel.jsx → Object.assign(window, { useTweaks, TweaksPanel, TweakColor, ... })
+// foundation.jsx   → window.FoundationSystem
+// i18n.js          → window.LANG_TRANSLATIONS (en/es dictionaries)
+```
 
 | File | Purpose |
 |---|---|
-| `Tellus Cooperative.html` | Entry point. Mounts the app, holds `TWEAK_DEFAULTS` |
+| `index.html` | Entry point. Mounts the app, holds `TWEAK_DEFAULTS` |
 | `foundation.jsx` | All page sections as one `FoundationSystem` component |
-| `tweaks-panel.jsx` | Reusable design-tweaks shell and form controls |
+| `tweaks-panel.jsx` | Design-tweaks shell and form controls |
+| `i18n.js` | English/Spanish translation dictionaries |
 | `tokens.css` / `styles/tokens.css` | Design tokens (CSS custom properties) |
 | `foundation.css` | Component styles for `foundation.jsx` |
 | `image-slot.js` | `<image-slot>` custom element for drag-and-drop image fills |
+| `brand.html` | Brand guidelines page, served at `/brand` via `vercel.json` rewrite |
+| `stellar/index.html` | Redirect to demo.stellarpassport.xyz |
+| `api/subscribe.js` | Vercel serverless function — Beehiiv newsletter signup |
 
-### Module system
+**Design tokens**: three live-tweakable palette colors — `--sand` `#ECE0CC` (background), `--teal` `#3F8487` (primary), `--clay` `#C75A2A` (accent). Set on `<html>` by the `App` component's `useEffect`. The `TWEAK_DEFAULTS` object in `index.html` is delimited by `/*EDITMODE-BEGIN*/` … `/*EDITMODE-END*/` — the omelette design host rewrites that block on disk when tweaks are saved.
 
-There is none. Every component that must be shared across files is attached to `window`:
+**Scroll animations**: `Reveal` wraps `useReveal` (IntersectionObserver) — `<Reveal delay={N}>` fades+slides children in on scroll (ms). `useCountUp(target, run)` drives stat counters, started by `useReveal`'s `shown` boolean.
 
-```js
-// tweaks-panel.jsx exports
-Object.assign(window, { useTweaks, TweaksPanel, TweakColor, ... });
+**image-slot**: `<image-slot id="…" shape="rect|circle|rounded|pill" placeholder="…">` persists dropped images via a `.image-slots.state.json` sidecar at the project root — the write only works inside the omelette runtime; elsewhere slots are read-only display.
 
-// foundation.jsx exports
-window.FoundationSystem = FoundationSystem;
-```
+**Fonts**: Fraunces (`--serif`), Inter (`--sans`), JetBrains Mono (`--mono`), from Google Fonts.
 
-The HTML entry point references them via `window.FoundationSystem`, `window.TweaksPanel`, etc.
+### 2. Stellar Ops dashboard (`ops/stellar/`)
 
-### Design tokens
+Private compliance dashboard for the Chile Stellar Ambassador Program SOW. Completely separate stack from the marketing site: **vanilla JS** (`app.js`, one IIFE, no React) + Supabase (`supabase-js` UMD from CDN). See `ops/stellar/README.md` for the auth flow, master admin list, and Luma integration.
 
-Three root palette colors are live-tweakable via the TweaksPanel:
+- `/ops/stellar/?preview=1` shows a labeled contract preview without auth; `/ops/stellar/` uses live Supabase Auth and data.
+- `config.js` holds the Supabase URL and **publishable** key — intentionally public; all authorization is enforced by RLS.
+- **Cache busting**: `app.js` and `styles.css` are referenced with `?v=YYYYMMDD-NN` in `ops/stellar/index.html`. Bump BOTH on every change — `tests/stellar-ops.test.mjs` fails if the two versions differ.
+- Tests are static assertions (regex against `app.js`/`index.html` source), not runtime tests.
 
-- `--sand` (background) — default `#ECE0CC`
-- `--teal` (primary) — default `#3F8487`
-- `--clay` (accent) — default `#C75A2A`
+### Supabase backend (`supabase/`)
 
-They are set as CSS custom properties on `<html>` by the `App` component's `useEffect`. The `TWEAK_DEFAULTS` object in the HTML file is delimited by `/*EDITMODE-BEGIN*/` … `/*EDITMODE-END*/` — the omelette host rewrites that block on disk when the user saves tweaks.
+- `migrations/` — timestamped SQL migrations for the Stellar Ops schema (RLS on every exposed table, org-scoped membership, role-restricted finance writes).
+- `functions/first-access/` — Edge Function for one-time-code first login of master admins.
+- `functions/luma-events/` — Edge Function proxying the Luma calendar API; keeps `LUMA_API_KEY` server-side (Supabase secret) and returns only event metadata + aggregate counts.
+- Project ref: `rhzanxzoqmbxptvxgnfj`.
 
-### Scroll animations
+## Secrets
 
-`Reveal` is a thin wrapper around `useReveal` (IntersectionObserver). Add `<Reveal delay={N}>` around any element to have it fade+slide in on scroll. `delay` is in milliseconds.
-
-### Animated counters
-
-`useCountUp(target, run)` drives the stat counters. `run` is the boolean from `useReveal`'s `shown` state — the animation starts the moment the element enters the viewport.
-
-### image-slot
-
-`<image-slot id="…" shape="rect|circle|rounded|pill" placeholder="…">` is a custom element. It persists dropped images via a `.image-slots.state.json` sidecar file at the project root — this write only works inside the omelette runtime. Outside it, slots are read-only display.
-
-### Fonts
-
-- `--serif`: Fraunces (variable, optical-size aware)
-- `--sans`: Inter
-- `--mono`: JetBrains Mono
-
-All loaded from Google Fonts in the HTML `<head>`.
+- Never put a Supabase service-role key or the Luma API key in frontend code, `config.js`, `.env.local`, or Git. `LUMA_API_KEY` lives only in Supabase Edge Function secrets.
+- The Supabase publishable key in `ops/stellar/config.js` is public by design.

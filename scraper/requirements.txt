@@ -1,0 +1,5 @@
+# Scrapling 0.4.x ships fetching deps (curl_cffi, playwright, browserforge)
+# behind an installer step — after pip install, run: scrapling install
+scrapling[fetchers]>=0.4.11
+supabase>=2.9.0
+python-dotenv>=1.0.1

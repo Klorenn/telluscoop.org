@@ -1,0 +1,5 @@
+{
+  "_comment": "X GraphQL query ids. These rotate on every x.com web deploy. Capture fresh values from the browser Network tab (logged in) when GraphQL starts returning 404. Leaving them blank forces the worker to use the Nitter fallback.",
+  "user_by_screen_name": "",
+  "user_tweets": ""
+}

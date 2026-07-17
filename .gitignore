@@ -3,3 +3,6 @@ node_modules
 *.log
 .vercel
 .env.local
+scraper/.venv
+__pycache__
+*.pyc

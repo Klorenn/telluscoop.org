@@ -1,0 +1,46 @@
+name: Social scrape
+
+# Runs the Phase 2 worker on a schedule and on manual dispatch.
+# Every secret comes from repository Actions secrets — never from the repo.
+on:
+  schedule:
+    - cron: "17 */6 * * *"  # every 6 hours, offset to avoid the top of the hour
+  workflow_dispatch:
+    inputs:
+      handle:
+        description: "Single handle to scrape (optional, no @)"
+        required: false
+
+concurrency:
+  group: social-scrape
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        working-directory: scraper
+        run: |
+          pip install -r requirements.txt
+          scrapling install
+
+      - name: Run scraper
+        working-directory: scraper
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          X_SCRAPER_AUTH_TOKEN: ${{ secrets.X_SCRAPER_AUTH_TOKEN }}
+          X_SCRAPER_CT0: ${{ secrets.X_SCRAPER_CT0 }}
+          X_QID_USER: ${{ secrets.X_QID_USER }}
+          X_QID_TWEETS: ${{ secrets.X_QID_TWEETS }}
+          NITTER_INSTANCES: ${{ secrets.NITTER_INSTANCES }}
+        run: python main.py ${{ github.event.inputs.handle }}
