@@ -57,8 +57,10 @@ function collectSources(data: Record<string, unknown>): { url: string; title: st
 async function searchInfo(apiKey: string, query: string) {
   const input = `Busca qué se está diciendo ahora sobre "${query}" en Reddit y en foros/comunidades (prioriza resultados de reddit.com en la búsqueda). Resume la conversación real: opiniones, dudas, chistes recurrentes y datos que la gente comparte.
 
+Después, escribe 3 posts LISTOS para publicar en X sobre el tema, en español LATAM, voz Tellus Cooperative: con gancho, humanos, aprovechando el humor o el ángulo que domina la conversación, <=270 caracteres, máximo 1 hashtag, sin emojis excesivos. Cada post debe poder acompañarse de un GIF/meme.
+
 Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
-{"resumen": "2-3 frases con el pulso de la conversación", "puntos": ["4-6 puntos clave: qué se comenta, qué polariza, qué memes circulan"]}`;
+{"resumen": "2-3 frases con el pulso de la conversación", "puntos": ["4-6 puntos clave: qué se comenta, qué polariza, qué memes circulan"], "posts": ["3 posts listos para publicar"], "gif_busqueda": "2-3 palabras en inglés para buscar el GIF perfecto para estos posts"}`;
 
   const errors: string[] = [];
   for (const model of MODELS) {
@@ -75,6 +77,8 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
       return {
         summary: String(parsed.resumen ?? "").trim() || extractText(data).slice(0, 500),
         points: Array.isArray(parsed.puntos) ? parsed.puntos.map((p: unknown) => String(p)) : [],
+        posts: Array.isArray(parsed.posts) ? parsed.posts.map((p: unknown) => String(p)) : [],
+        gifQuery: String(parsed.gif_busqueda ?? "").trim(),
         sources: collectSources(data),
         model,
       };

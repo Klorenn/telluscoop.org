@@ -776,7 +776,19 @@
           </div>
         </form>
       </section>
-      ${m.gifs.length ? `<div class="toolbar"><div><span class="eyebrow">Para el meme</span><h2>GIFs</h2></div></div>
+      ${m.info?.posts?.length ? `<div class="toolbar"><div><span class="eyebrow">Listos para publicar</span><h2>Post + meme</h2></div></div>
+        <div class="grid grid-3" style="margin-bottom:1.4rem">${m.info.posts.map((p, i) => {
+          const gif = m.gifs[i];
+          return `<article class="card">
+            ${gif ? `<a href="${esc(gif.page || gif.url)}" target="_blank" rel="noopener"><img src="${esc(gif.thumbnail || gif.url)}" alt="" style="width:100%;border-radius:8px;max-height:170px;object-fit:cover" loading="lazy" /></a>` : ""}
+            <p class="post-content" style="margin:.6rem 0;white-space:pre-wrap">${esc(p)}</p>
+            <div class="form-foot" style="justify-content:start">
+              <button class="table-link" data-copy-meme="${esc(p)}">Copiar post</button>
+              ${gif ? `<button class="table-link" data-copy-meme="${esc(gif.url)}">Copiar GIF</button>` : ""}
+            </div>
+          </article>`;
+        }).join("")}</div>` : ""}
+      ${m.gifs.length ? `<div class="toolbar"><div><span class="eyebrow">Más opciones</span><h2>GIFs</h2></div></div>
         <div class="grid grid-3" style="margin-bottom:1.4rem">${m.gifs.map((g) => `<article class="card">
           <a href="${esc(g.page || g.url)}" target="_blank" rel="noopener"><img src="${esc(g.thumbnail || g.url)}" alt="" style="width:100%;border-radius:8px;max-height:180px;object-fit:cover" loading="lazy" /></a>
           <p style="margin:.5rem 0 .4rem;line-height:1.4">${esc(g.title || "GIF")}</p>
@@ -801,16 +813,16 @@
       if (!query) return;
       state.memes = { ...state.memes, query, busy: true };
       renderShell();
-      const [info, gifs] = await Promise.all([
-        invokeEdge("reddit-search", { query, mode: "info" }),
-        invokeEdge("reddit-search", { query, mode: "memes", count: 12 }),
-      ]);
+      const info = await invokeEdge("reddit-search", { query, mode: "info" });
+      // The model suggests the best English search phrase for a matching GIF.
+      const gifQuery = info.data?.gifQuery || query;
+      const gifs = await invokeEdge("reddit-search", { query: gifQuery, mode: "memes", count: 9 });
       state.memes.busy = false;
-      state.memes.info = info.data?.summary ? { summary: info.data.summary, points: info.data.points || [], sources: info.data.sources || [] } : null;
+      state.memes.info = info.data?.summary ? { summary: info.data.summary, points: info.data.points || [], posts: info.data.posts || [], sources: info.data.sources || [] } : null;
       state.memes.gifs = gifs.data?.items || [];
       const problems = [info.data?.error, gifs.data?.error].filter(Boolean);
       if (problems.length) notify(problems.join(" · "), true);
-      else notify(`Contexto listo y ${state.memes.gifs.length} GIFs encontrados.`);
+      else notify(`${state.memes.info?.posts?.length || 0} posts listos y ${state.memes.gifs.length} GIFs.`);
       renderShell();
     });
     document.querySelectorAll("[data-copy-meme]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyMeme)));
