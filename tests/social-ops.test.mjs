@@ -106,6 +106,26 @@ test("repo finder can generate an X post about a repo", () => {
 test("generated X posts still ground their sources", () => {
   const postFn = edge.match(/async function generatePost[\s\S]*?\n\}/)?.[0];
   assert.ok(postFn, "generatePost not found");
-  assert.match(postFn, /google_search/);
+  assert.match(postFn, /callGemini\(/);
   assert.match(postFn, /collectSources/);
+  const geminiFn = edge.match(/async function callGemini[\s\S]*?\n\}/)?.[0];
+  assert.ok(geminiFn, "callGemini not found");
+  assert.match(geminiFn, /google_search/);
+});
+
+test("gemini calls fall back across models when one is overloaded", () => {
+  const models = edge.match(/const MODELS = \[[\s\S]*?\]/)?.[0];
+  assert.ok(models, "MODELS list not found");
+  assert.match(models, /gemini-3\.5-flash/);
+  assert.match(models, /gemini-2\.5-flash/);
+  assert.match(edge, /for \(const model of MODELS\)/);
+});
+
+test("social posts mode requires the Beehiiv link and covers every channel", () => {
+  assert.match(edge, /body\.format === "social_posts"/);
+  assert.match(edge, /Falta el link de Beehiiv/);
+  assert.match(app, /format: "social_posts"/);
+  for (const channel of ["whatsapp", "linkedin"]) assert.match(edge, new RegExp(channel));
+  assert.match(app, /data-social-posts/);
+  assert.match(app, /data-copy-social/);
 });

@@ -29,6 +29,7 @@
     prompts: [], articles: [], drafts: [], articleBusy: false,
     articleForm: { prompt_key: "crypto", count: 1, prompt_md: "" },
     topics: [], topicBusy: false,
+    memes: { query: "", busy: false, info: null, gifs: [] },
   };
 
   const esc = (value = "") => String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
@@ -163,6 +164,11 @@
       const { error: refreshError } = await supabase.auth.refreshSession();
       if (!refreshError) result = await invoke();
     }
+    // On non-2xx, supabase-js leaves data null; recover the function's JSON body
+    // so callers can show the real error instead of a generic message.
+    if (result.error && !result.data && result.error.context?.clone) {
+      try { result = { ...result, data: await result.error.context.clone().json() }; } catch { /* body not JSON */ }
+    }
     return result;
   }
 
@@ -211,6 +217,7 @@
             ${navButton("accounts", "users", "Cuentas")}
             ${navButton("repos", "github", "Repos")}
             ${navButton("articles", "newspaper", "Artículos")}
+            ${navButton("memes", "image", "Memes")}
           </nav>
           <div class="sidebar-foot">
             <span>${esc(state.preview ? "Vista previa" : state.session?.user?.email || "")}</span>
@@ -227,6 +234,7 @@
     return state.view === "accounts" ? accountsView()
       : state.view === "repos" ? reposView()
       : state.view === "articles" ? articlesView()
+      : state.view === "memes" ? memesView()
       : feedView();
   }
 
@@ -240,6 +248,7 @@
     if (state.view === "accounts") wireAccounts();
     if (state.view === "repos") wireRepos();
     if (state.view === "articles") wireArticles();
+    if (state.view === "memes") wireMemes();
   }
 
   // ---------- feed ----------
@@ -711,11 +720,28 @@
           <td><span class="status status-${article.status === "draft" ? "inbox" : article.status === "discarded" ? "discarded" : "reviewed"}">${esc(articleStatusLabels[article.status] || article.status)}</span></td>
           <td>${fmtDate(article.created_at)}</td>
           <td>${state.preview ? "" : `<button class="table-link" data-copy-article="${esc(article.id)}">Copiar</button>
+            <button class="table-link" data-social-posts="${esc(article.id)}" ${state.socialPosts?.busy ? "disabled" : ""}>Posts</button>
             <select data-article-status="${esc(article.id)}" aria-label="Estado" style="margin-top:.4rem">
               ${Object.entries(articleStatusLabels).map(([value, label]) => `<option value="${value}" ${article.status === value ? "selected" : ""}>${label}</option>`).join("")}
             </select>`}</td>
         </tr>`).join("")}</tbody>
-      </table></div>` : `<div class="empty">Todavía no hay artículos. Elegí una plantilla, cuántos querés y presioná Generar.</div>`}`;
+      </table></div>` : `<div class="empty">Todavía no hay artículos. Elegí una plantilla, cuántos querés y presioná Generar.</div>`}
+      ${socialPostsSection()}`;
+  }
+
+  function socialPostsSection() {
+    const sp = state.socialPosts;
+    if (!sp) return "";
+    if (sp.busy) return `<div class="card" style="margin-top:1.4rem"><p style="color:var(--muted)">Generando posts para «${esc(sp.title)}»…</p></div>`;
+    if (!sp.posts) return "";
+    const block = (label, key) => sp.posts[key] ? `<article class="card">
+      <h3>${label}</h3>
+      <p class="post-content" style="margin:.5rem 0 .7rem;white-space:pre-wrap">${esc(sp.posts[key])}</p>
+      <button class="table-link" data-copy-social="${key}">Copiar</button>
+    </article>` : "";
+    return `<div class="toolbar" style="margin-top:1.6rem"><div><span class="eyebrow">Difusión</span><h2>Posts para «${esc(sp.title)}»</h2></div></div>
+      <p style="color:var(--muted);margin:0 0 .8rem">Link: <a href="${esc(sp.link)}" target="_blank" rel="noopener">${esc(sp.link)}</a></p>
+      <div class="grid grid-3">${block("X", "x")}${block("WhatsApp", "whatsapp")}${block("LinkedIn", "linkedin")}</div>`;
   }
 
   function draftCard(draft, index) {
@@ -732,6 +758,62 @@
         <button class="table-link" data-discard-draft="${index}" style="color:var(--red)">Descartar</button>
       </div>
     </article>`;
+  }
+
+  // ---------- memes & reddit ----------
+
+  function memesView() {
+    const m = state.memes;
+    return `
+      <div class="toolbar"><div><span class="eyebrow">${esc(state.org?.name || "")}</span><h2>Memes y Reddit</h2></div></div>
+      <section class="card" style="margin-bottom:1.2rem">
+        <h3>Buscar un tema</h3>
+        <p style="color:var(--muted);margin:.2rem 0 .8rem">Trae contexto de Reddit y memes/GIFs de subs de humor para acompañar un post.</p>
+        <form id="meme-form" class="form-grid">
+          <div class="field span-all"><label for="meme-query">Tema</label><input id="meme-query" name="query" placeholder="ej: bitcoin etf, google gemini, stellar" value="${esc(m.query)}" required /></div>
+          <div class="form-foot span-all">
+            <button class="button button-primary" type="submit" ${m.busy || state.preview ? "disabled" : ""}>${icon("search")} ${m.busy ? "Buscando…" : "Buscar info + memes"}</button>
+          </div>
+        </form>
+      </section>
+      ${m.gifs.length ? `<div class="toolbar"><div><span class="eyebrow">Para el meme</span><h2>GIFs</h2></div></div>
+        <div class="grid grid-3" style="margin-bottom:1.4rem">${m.gifs.map((g) => `<article class="card">
+          <a href="${esc(g.page || g.url)}" target="_blank" rel="noopener"><img src="${esc(g.thumbnail || g.url)}" alt="" style="width:100%;border-radius:8px;max-height:180px;object-fit:cover" loading="lazy" /></a>
+          <p style="margin:.5rem 0 .4rem;line-height:1.4">${esc(g.title || "GIF")}</p>
+          <div class="form-foot" style="justify-content:start;margin-top:.4rem">
+            <button class="table-link" data-copy-meme="${esc(g.url)}">Copiar link del GIF</button>
+          </div>
+        </article>`).join("")}</div>` : ""}
+      ${m.info ? `<div class="toolbar"><div><span class="eyebrow">Contexto</span><h2>Qué se está diciendo</h2></div></div>
+        <article class="card" style="margin-bottom:1.4rem">
+          <p style="line-height:1.6;margin:0 0 .7rem">${esc(m.info.summary || "")}</p>
+          ${m.info.points?.length ? `<ul style="margin:0 0 .7rem;padding-left:1.1rem;line-height:1.6">${m.info.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}
+          ${m.info.sources?.length ? `<div class="post-meta" style="flex-wrap:wrap;gap:.5rem">${m.info.sources.slice(0, 8).map((s) => `<a class="table-link" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title.slice(0, 40))}</a>`).join("")}</div>` : ""}
+        </article>` : ""}
+      ${!m.busy && !m.info && !m.gifs.length ? `<div class="empty">Buscá un tema: te traigo el pulso de la conversación (Reddit y foros) y GIFs listos para usar.</div>` : ""}`;
+  }
+
+  function wireMemes() {
+    document.querySelector("#meme-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (state.preview) return notify("La vista previa es de solo lectura.", true);
+      const query = String(new FormData(event.target).get("query") || "").trim();
+      if (!query) return;
+      state.memes = { ...state.memes, query, busy: true };
+      renderShell();
+      const [info, gifs] = await Promise.all([
+        invokeEdge("reddit-search", { query, mode: "info" }),
+        invokeEdge("reddit-search", { query, mode: "memes", count: 12 }),
+      ]);
+      state.memes.busy = false;
+      state.memes.info = info.data?.summary ? { summary: info.data.summary, points: info.data.points || [], sources: info.data.sources || [] } : null;
+      state.memes.gifs = gifs.data?.items || [];
+      const problems = [info.data?.error, gifs.data?.error].filter(Boolean);
+      if (problems.length) notify(problems.join(" · "), true);
+      else notify(`Contexto listo y ${state.memes.gifs.length} GIFs encontrados.`);
+      renderShell();
+    });
+    document.querySelectorAll("[data-copy-meme]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyMeme)));
   }
 
   function draftToMarkdown(draft) {
@@ -782,6 +864,11 @@
       const article = state.articles.find((a) => a.id === button.dataset.copyArticle);
       if (article) copyText(draftToMarkdown(article));
     }));
+    document.querySelectorAll("[data-social-posts]").forEach((button) => button.addEventListener("click", () => generateSocialPosts(button.dataset.socialPosts)));
+    document.querySelectorAll("[data-copy-social]").forEach((button) => button.addEventListener("click", () => {
+      const post = state.socialPosts?.posts?.[button.dataset.copySocial];
+      if (post) copyText(post);
+    }));
     document.querySelectorAll("[data-article-status]").forEach((select) => select.addEventListener("change", async () => {
       const { error } = await supabase.from("articles").update({ status: select.value }).eq("id", select.dataset.articleStatus);
       if (error) return notify("No se pudo actualizar el estado.", true);
@@ -808,6 +895,29 @@
     state.drafts = data.drafts || [];
     const failed = (data.errors || []).length;
     notify(`Generados ${data.generated} de ${data.requested}${failed ? ` (${failed} fallaron)` : ""}.`);
+    renderShell();
+  }
+
+  async function generateSocialPosts(articleId) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const article = state.articles.find((a) => a.id === articleId);
+    if (!article) return;
+    const link = window.prompt("Pegá el link del artículo en Beehiiv (va incluido en cada post):", state.socialPosts?.link || "");
+    if (!link || !link.trim()) return notify("Necesitás el link de Beehiiv para armar los posts.", true);
+    state.socialPosts = { articleId, title: article.title, link: link.trim(), posts: null, busy: true };
+    renderShell();
+    const { data, error } = await invokeEdge("generate-article", {
+      format: "social_posts",
+      link: link.trim(),
+      article: { title: article.title, subtitle: article.subtitle, summary: article.summary || [] },
+    });
+    if (error || data?.error) {
+      state.socialPosts = null;
+      notify(data?.error || "No se pudieron generar los posts.", true);
+      return renderShell();
+    }
+    state.socialPosts = { articleId, title: article.title, link: link.trim(), posts: data.posts, busy: false };
+    notify("Posts generados para X, WhatsApp y LinkedIn.");
     renderShell();
   }
 
