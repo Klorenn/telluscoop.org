@@ -1,8 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+// Wide-open CORS is safe here: authorization is enforced by the user JWT +
+// membership check, not by origin. Locking origin broke www.* visitors.
 const cors = {
-  "Access-Control-Allow-Origin": "https://telluscoop.org",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };

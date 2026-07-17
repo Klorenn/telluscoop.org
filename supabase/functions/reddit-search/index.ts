@@ -149,8 +149,9 @@ Deno.serve(async (request) => {
     if (body.mode === "memes") {
       const giphyKey = Deno.env.get("GIPHY_API_KEY");
       if (giphyKey) {
-        const items = await searchGifs(giphyKey, query, limit);
-        return json({ items, mode: "memes", via: "giphy" });
+        // A bad key or Giphy hiccup should degrade to Openverse, not to nothing.
+        const items = await searchGifs(giphyKey, query, limit).catch(() => []);
+        if (items.length) return json({ items, mode: "memes", via: "giphy" });
       }
       // No Giphy key yet: Openverse serves CC images keyless so every post
       // still gets a visual. GIFs animados llegan cuando carguen GIPHY_API_KEY.
