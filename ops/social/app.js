@@ -861,6 +861,16 @@
 
   // ---------- memes & reddit ----------
 
+  const MEME_CATEGORIES = [
+    ["IA", "artificial intelligence meme funny"],
+    ["Claude", "claude anthropic ai meme"],
+    ["ChatGPT", "chatgpt openai meme"],
+    ["Gemini", "google gemini ai meme"],
+    ["Cripto", "crypto bitcoin meme funny"],
+    ["Devs", "programming developer meme"],
+    ["Web3", "blockchain web3 meme"],
+  ];
+
   function memesView() {
     const m = state.memes;
     return `
@@ -874,7 +884,25 @@
             <button class="button button-primary" type="submit" ${m.busy || state.preview ? "disabled" : ""}>${icon("search")} ${m.busy ? "Buscando…" : "Buscar info + memes"}</button>
           </div>
         </form>
+        <div style="margin-top:.8rem">
+          <span style="color:var(--muted);font-size:.85rem">O explora lo que ríen las comunidades:</span>
+          <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem">
+            ${MEME_CATEGORIES.map(([label, q]) => `<button class="button button-secondary" data-meme-cat="${esc(q)}" data-meme-label="${esc(label)}" ${m.busy || state.preview ? "disabled" : ""} style="min-height:34px;padding:.3rem .8rem">${esc(label)}</button>`).join("")}
+          </div>
+        </div>
       </section>
+      ${m.memePost ? `<section class="card" style="margin-bottom:1.2rem">
+        <h3>Post para el meme ${m.memePost.title ? `«${esc(m.memePost.title)}»` : ""}</h3>
+        ${m.memePost.busy ? `<p style="color:var(--muted);margin:.4rem 0 0">Escribiendo el post…</p>` : `
+        <div class="grid grid-3" style="margin-top:.8rem">
+          ${[["X", "x"], ["WhatsApp", "whatsapp"], ["Instagram", "instagram"]].map(([label, key]) => m.memePost.posts?.[key] ? `<article class="card">
+            <h3>${label}</h3>
+            <p class="post-content" style="margin:.5rem 0 .7rem;white-space:pre-wrap">${esc(m.memePost.posts[key])}</p>
+            <button class="table-link" data-copy-meme="${esc(m.memePost.posts[key])}">Copiar</button>
+          </article>` : "").join("")}
+        </div>
+        <p style="color:var(--muted);margin:.6rem 0 0">GIF: <a href="${esc(m.memePost.url)}" target="_blank" rel="noopener">${esc(m.memePost.url.slice(0, 60))}…</a> <button class="table-link" data-copy-meme="${esc(m.memePost.url)}">Copiar link del GIF</button></p>`}
+      </section>` : ""}
       ${m.info?.posts?.length ? `<div class="toolbar"><div><span class="eyebrow">Listos para publicar</span><h2>Post + meme</h2></div></div>
         <div class="grid grid-3" style="margin-bottom:1.4rem">${m.info.posts.map((p, i) => {
           const gif = m.gifs[i];
@@ -888,11 +916,12 @@
           </article>`;
         }).join("")}</div>` : ""}
       ${m.gifs.length ? `<div class="toolbar"><div><span class="eyebrow">Más opciones</span><h2>GIFs</h2></div></div>
-        <div class="grid grid-3" style="margin-bottom:1.4rem">${m.gifs.map((g) => `<article class="card">
+        <div class="grid grid-3" style="margin-bottom:1.4rem">${m.gifs.map((g, i) => `<article class="card">
           <a href="${esc(g.page || g.url)}" target="_blank" rel="noopener"><img src="${esc(g.thumbnail || g.url)}" alt="" style="width:100%;border-radius:8px;max-height:180px;object-fit:cover" loading="lazy" /></a>
           <p style="margin:.5rem 0 .4rem;line-height:1.4">${esc(g.title || "GIF")}</p>
           <div class="form-foot" style="justify-content:start;margin-top:.4rem">
-            <button class="table-link" data-copy-meme="${esc(g.url)}">Copiar link del GIF</button>
+            <button class="table-link" data-meme-post-idx="${i}">✨ Crear post</button>
+            <button class="table-link" data-copy-meme="${esc(g.url)}">Copiar link</button>
           </div>
         </article>`).join("")}</div>` : ""}
       ${m.info ? `<div class="toolbar"><div><span class="eyebrow">Contexto</span><h2>Qué se está diciendo</h2></div></div>
@@ -928,6 +957,44 @@
       renderShell();
     });
     document.querySelectorAll("[data-copy-meme]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyMeme)));
+    document.querySelectorAll("[data-meme-cat]").forEach((button) => button.addEventListener("click", () => browseMemeCategory(button.dataset.memeLabel, button.dataset.memeCat)));
+    document.querySelectorAll("[data-meme-post-idx]").forEach((button) => button.addEventListener("click", () => generateMemePost(Number(button.dataset.memePostIdx))));
+  }
+
+  // Browse community memes by curated category: fast Giphy-only search.
+  async function browseMemeCategory(label, giphyQuery) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    state.memes = { ...state.memes, query: label, busy: true, memePost: null };
+    renderShell();
+    const gifs = await invokeEdge("reddit-search", { query: giphyQuery, mode: "memes", count: 12 });
+    state.memes.busy = false;
+    state.memes.info = null;
+    state.memes.gifs = gifs.data?.items || [];
+    state.memes.gifsError = gifs.data?.error || "";
+    if (state.memes.gifsError) notify(state.memes.gifsError, true);
+    else notify(`${state.memes.gifs.length} memes de ${label}.`);
+    renderShell();
+  }
+
+  // Caption a chosen meme for X, WhatsApp and Instagram.
+  async function generateMemePost(index) {
+    const gif = state.memes.gifs[index];
+    if (!gif) return;
+    state.memes.memePost = { title: gif.title, url: gif.url, posts: null, busy: true };
+    renderShell();
+    const { data, error } = await invokeEdge("generate-article", {
+      format: "meme_post",
+      tema: state.memes.query,
+      meme_title: gif.title,
+    });
+    if (error || data?.error) {
+      state.memes.memePost = null;
+      notify(data?.error || "No se pudo generar el post del meme.", true);
+      return renderShell();
+    }
+    state.memes.memePost = { title: gif.title, url: gif.url, posts: data.posts, busy: false };
+    renderShell();
+    document.querySelector("#main")?.scrollTo?.(0, 0);
   }
 
   function draftToMarkdown(draft) {

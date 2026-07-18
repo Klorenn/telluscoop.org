@@ -239,6 +239,37 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
       }
     }
 
+    // Mode: caption a meme/GIF for each social channel.
+    if (body.format === "meme_post") {
+      const tema = String(body.tema ?? "").trim();
+      const memeTitle = String(body.meme_title ?? "").trim();
+      if (!tema && !memeTitle) return json({ error: "Falta el tema o el meme" }, 400);
+      const input = `Eres el equipo editorial de Tellus Cooperative. Vamos a publicar un meme/GIF sobre "${tema || memeTitle}"${memeTitle ? ` (el meme se llama: "${memeTitle}")` : ""}.
+
+Escribe el texto que acompaña al meme en cada canal, en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), con humor inteligente y liviano. NUNCA expliques el chiste. Sin tono de guía ni vendedor.
+
+Canales:
+- x: <=250 caracteres, con gancho, 0-1 hashtag.
+- whatsapp: 1-2 líneas sobrias para compartir en grupos, sin emojis.
+- instagram: caption de 2-3 líneas + 3-5 hashtags al final.
+
+Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
+{"x": "texto para X", "whatsapp": "texto para WhatsApp", "instagram": "caption para Instagram"}`;
+      try {
+        const { data, model } = await callGemini(apiKey, input, false);
+        const parsed = parseJsonLoose(extractText(data));
+        const posts = {
+          x: String(parsed.x ?? "").trim(),
+          whatsapp: String(parsed.whatsapp ?? "").trim(),
+          instagram: String(parsed.instagram ?? "").trim(),
+        };
+        if (!posts.x && !posts.whatsapp && !posts.instagram) return json({ error: "El modelo devolvió una respuesta vacía" }, 502);
+        return json({ posts, model });
+      } catch (error) {
+        return json({ error: "No se pudo generar el post del meme", detail: [String(error)] }, 502);
+      }
+    }
+
     // Mode: Tellus-voice posts about a searched topic, grounded on the real
     // tweets the feed just captured. No tools: fast and quota-free.
     if (body.format === "topic_posts") {
