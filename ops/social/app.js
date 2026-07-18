@@ -1021,16 +1021,18 @@
     state.memes.query = query;
     state.memes.created = { busy: true, items: state.memes.created?.items || [] };
     renderShell();
-    const { data, error } = await invokeEdge("reddit-search", { mode: "create", query, count: 4, exclude: used });
+    const { data, error } = await invokeEdge("reddit-search", { mode: "create", query, count: 10, exclude: used });
     state.memes.created.busy = false;
     if (error || data?.error) {
       notify(data?.error || "No se pudieron crear memes.", true);
       return renderShell();
     }
-    state.memes.created.items = data.items;
-    const usedNow = [...new Set([...used, ...data.items.map((i) => i.template)])].slice(-80);
+    // Append: pressing the button again keeps the previous batch and adds more.
+    const merged = [...new Map([...(state.memes.created.items || []), ...data.items].map((i) => [i.url, i])).values()];
+    state.memes.created.items = merged.slice(-30);
+    const usedNow = [...new Set([...used, ...data.items.map((i) => i.template)])].slice(-120);
     localStorage.setItem("used_meme_templates", JSON.stringify(usedNow));
-    notify(`${data.items.length} memes creados (plantillas nuevas, sin repetir).`);
+    notify(`+${data.items.length} memes nuevos (${state.memes.created.items.length} en total, sin repetir plantilla).`);
     renderShell();
   }
 

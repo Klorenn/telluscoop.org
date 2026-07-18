@@ -151,7 +151,7 @@ async function createMemes(apiKey: string, query: string, count: number, exclude
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  const options = pool.slice(0, 40).map((t) => `${t.id}: ${t.name}`).join("\n");
+  const options = pool.slice(0, 60).map((t) => `${t.id}: ${t.name}`).join("\n");
 
   const input = `Eres el equipo de memes de Tellus Cooperative (nicho: IA, cripto, tech en español). Tema: "${query}".
 
@@ -222,7 +222,7 @@ Deno.serve(async (request) => {
     if (body.mode === "create") {
       const apiKey = Deno.env.get("GEMINI_API_KEY");
       if (!apiKey) return json({ error: "Gemini todavía no está configurado" }, 503);
-      const count = Math.max(1, Math.min(6, Number(body.count) || 4));
+      const count = Math.max(1, Math.min(12, Number(body.count) || 8));
       const exclude = Array.isArray(body.exclude) ? body.exclude.map((e: unknown) => String(e)) : [];
       const items = await createMemes(apiKey, query, count, exclude);
       if (!items.length) return json({ error: "No salió ningún meme; intenta de nuevo" }, 502);
