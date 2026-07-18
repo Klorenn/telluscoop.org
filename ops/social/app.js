@@ -439,15 +439,20 @@
     state.topicPosts = { query, posts: null, images: [], busy: true };
     renderShell();
     const samples = capturedPosts.map((p) => p.content).filter(Boolean).slice(0, 10);
-    const [gen, media] = await Promise.all([
-      invokeEdge("generate-article", { format: "topic_posts", query, posts: samples }),
-      invokeEdge("reddit-search", { query, mode: "memes", count: 6 }),
-    ]);
+    const gen = await invokeEdge("generate-article", { format: "topic_posts", query, posts: samples });
     if (gen.error || gen.data?.error) {
       state.topicPosts = null;
       notify(gen.data?.error || "No se pudieron generar posts del tema.", true);
       return renderShell();
     }
+    // Image search needs short English terms, not the long Spanish topic —
+    // the model suggests them; fall back to the topic's first words.
+    const gifQuery = gen.data.gifQuery || query.split(/\s+/).slice(0, 3).join(" ");
+    let media = await invokeEdge("reddit-search", { query: gifQuery, mode: "memes", count: 6 });
+    if (!media.data?.items?.length && gifQuery !== query) {
+      media = await invokeEdge("reddit-search", { query: query.split(/\s+/).slice(0, 3).join(" "), mode: "memes", count: 6 });
+    }
+    if (!media.data?.items?.length) notify("Posts listos; no encontré imagen para este tema.", true);
     state.topicPosts = { query, posts: gen.data.posts, images: media.data?.items || [], busy: false };
     renderShell();
   }

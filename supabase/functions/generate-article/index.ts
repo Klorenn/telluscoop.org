@@ -255,13 +255,13 @@ ${samples || "(sin ejemplos)"}
 Escribe 3 posts LISTOS para publicar en X con la voz de Tellus: español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), claros y humanos, con gancho informativo, sin hype ni tono trader, <=270 caracteres, máximo 1 hashtag, sin emojis excesivos. Aporta ángulo propio, no repitas los posts de arriba.
 
 Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
-{"posts": ["post 1", "post 2", "post 3"]}`;
+{"posts": ["post 1", "post 2", "post 3"], "gif_busqueda": "2-3 palabras en inglés para buscar el GIF/imagen perfecto para estos posts"}`;
       try {
         const { data, model } = await callGemini(apiKey, input, false);
         const parsed = parseJsonLoose(extractText(data));
         const posts = Array.isArray(parsed.posts) ? parsed.posts.map((p: unknown) => String(p)).filter(Boolean) : [];
         if (!posts.length) return json({ error: "El modelo devolvió una respuesta vacía" }, 502);
-        return json({ posts, model });
+        return json({ posts, gifQuery: String(parsed.gif_busqueda ?? "").trim(), model });
       } catch (error) {
         return json({ error: "No se pudieron generar los posts del tema", detail: [String(error)] }, 502);
       }
