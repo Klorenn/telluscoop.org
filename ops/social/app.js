@@ -26,7 +26,7 @@
     filters: { platform: "", category: "", search: "" },
     repoResults: [], repoQuery: "", repoBusy: false,
     repoPostDraft: null, repoPostBusy: false,
-    prompts: [], articles: [], drafts: [], articleBusy: false,
+    prompts: [], articles: [], drafts: [], articleBusy: false, articleView: null,
     articleForm: { prompt_key: "crypto", count: 1, prompt_md: "" },
     topics: [], topicBusy: false, topicPosts: null, feedPage: 0,
     memes: { query: "", busy: false, info: null, gifs: [] },
@@ -835,11 +835,24 @@
       ${state.drafts.length ? `<div class="toolbar"><div><span class="eyebrow">Recién generados</span><h2>Elegí cuáles guardar</h2></div></div>
         <div class="grid grid-2" style="margin-bottom:1.4rem">${state.drafts.map(draftCard).join("")}</div>` : ""}
 
+      ${state.articleView ? (() => {
+        const article = state.articles.find((a) => a.id === state.articleView);
+        if (!article) return "";
+        return `<section class="card" style="margin-bottom:1.4rem">
+          <div class="toolbar" style="margin-bottom:.6rem"><div><span class="eyebrow">Artículo completo</span><h2>${esc(article.title)}</h2></div>
+            <div class="form-foot" style="margin:0">
+              <button class="button button-secondary" data-copy-article="${esc(article.id)}">Copiar todo</button>
+              <button class="button button-ghost" id="close-article">Cerrar</button>
+            </div></div>
+          <pre class="article-full">${esc(draftToMarkdown(article))}</pre>
+        </section>`;
+      })() : ""}
+
       <div class="toolbar"><div><span class="eyebrow">Guardados</span><h2>Artículos</h2></div></div>
       ${state.articles.length ? `<div class="card table-wrap"><table>
         <thead><tr><th>Título</th><th>Plantilla</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
         <tbody>${state.articles.map((article) => `<tr>
-          <td><strong>${esc(article.title)}</strong><br /><span style="color:var(--muted)">${esc(article.subtitle || "")}</span></td>
+          <td><button class="table-link" data-open-article="${esc(article.id)}" style="text-align:left"><strong>${esc(article.title)}</strong></button><br /><span style="color:var(--muted)">${esc(article.subtitle || "")}</span></td>
           <td>${esc(article.prompt_key)}</td>
           <td><span class="status status-${article.status === "draft" ? "inbox" : article.status === "discarded" ? "discarded" : "reviewed"}">${esc(articleStatusLabels[article.status] || article.status)}</span></td>
           <td>${fmtDate(article.created_at)}</td>
@@ -879,6 +892,7 @@
       ${draft.sources?.length ? `<div class="post-meta"><span>${draft.sources.length} fuente(s)</span></div>` : `<div class="post-meta"><span style="color:var(--red)">Sin fuentes — revisá antes de publicar</span></div>`}
       <div class="form-foot" style="justify-content:start">
         <button class="button button-secondary" data-save-draft="${index}" style="min-height:38px">Guardar</button>
+        <button class="table-link" data-draft-posts="${index}" ${state.socialPosts?.busy ? "disabled" : ""}>Posts WSP/X/LI</button>
         <button class="table-link" data-copy-draft="${index}">Copiar</button>
         <button class="table-link" data-discard-draft="${index}" style="color:var(--red)">Descartar</button>
       </div>
@@ -1024,9 +1038,18 @@
   }
 
   function draftToMarkdown(draft) {
+    const body = draft.body_md || "";
+    // New-style articles already ARE the full Markdown (title included).
+    if (body.trimStart().startsWith("# ")) {
+      const lines = [body];
+      if (draft.sources?.length && !/SOURCES|## (Sources|Fuentes)/i.test(body)) {
+        lines.push("", "**SOURCES**", "", ...draft.sources.map((s) => `* [${s.title}](${s.url})`));
+      }
+      return lines.join("\n").trim();
+    }
     const lines = [`# ${draft.title}`, "", `_${draft.subtitle}_`, ""];
     if (draft.summary?.length) { lines.push("## Resumen", ...draft.summary.map((s) => `- ${s}`), ""); }
-    lines.push(draft.body_md || "", "");
+    lines.push(body, "");
     if (draft.sources?.length) { lines.push("## Sources", ...draft.sources.map((s) => `- [${s.title}](${s.url})`)); }
     return lines.join("\n").trim();
   }
@@ -1072,6 +1095,13 @@
       if (article) copyText(draftToMarkdown(article));
     }));
     document.querySelectorAll("[data-social-posts]").forEach((button) => button.addEventListener("click", () => generateSocialPosts(button.dataset.socialPosts)));
+    document.querySelectorAll("[data-draft-posts]").forEach((button) => button.addEventListener("click", () => generateDraftPosts(Number(button.dataset.draftPosts))));
+    document.querySelectorAll("[data-open-article]").forEach((button) => button.addEventListener("click", () => {
+      state.articleView = button.dataset.openArticle;
+      renderShell();
+      document.querySelector("#main")?.scrollTo?.(0, 0);
+    }));
+    document.querySelector("#close-article")?.addEventListener("click", () => { state.articleView = null; renderShell(); });
     document.querySelectorAll("[data-view-posts]").forEach((button) => button.addEventListener("click", () => viewSocialPosts(button.dataset.viewPosts)));
     document.querySelectorAll("[data-copy-social]").forEach((button) => button.addEventListener("click", () => {
       const post = state.socialPosts?.posts?.[button.dataset.copySocial];
@@ -1110,13 +1140,14 @@
     if (state.preview) return notify("La vista previa es de solo lectura.", true);
     const article = state.articles.find((a) => a.id === articleId);
     if (!article) return;
-    const link = window.prompt("Pegá el link del artículo en Beehiiv (va incluido en cada post):", article.social_link || state.socialPosts?.link || "");
-    if (!link || !link.trim()) return notify("Necesitás el link de Beehiiv para armar los posts.", true);
-    state.socialPosts = { articleId, title: article.title, link: link.trim(), posts: null, busy: true };
+    const answer = window.prompt("Link de Beehiiv (opcional — deja vacío y dale OK para seguir sin link):", article.social_link || state.socialPosts?.link || "");
+    if (answer === null) return;
+    const link = answer.trim();
+    state.socialPosts = { articleId, title: article.title, link, posts: null, busy: true };
     renderShell();
     const { data, error } = await invokeEdge("generate-article", {
       format: "social_posts",
-      link: link.trim(),
+      link,
       article: { title: article.title, subtitle: article.subtitle, summary: article.summary || [] },
     });
     if (error || data?.error) {
@@ -1124,17 +1155,42 @@
       notify(data?.error || "No se pudieron generar los posts.", true);
       return renderShell();
     }
-    state.socialPosts = { articleId, title: article.title, link: link.trim(), posts: data.posts, busy: false };
+    state.socialPosts = { articleId, title: article.title, link, posts: data.posts, busy: false };
     // Persist with the article so "Ver posts" works after a reload.
     const { error: saveError } = await supabase.from("articles")
-      .update({ social_posts: data.posts, social_link: link.trim() })
+      .update({ social_posts: data.posts, social_link: link || null })
       .eq("id", articleId);
     if (saveError) notify("Posts generados, pero no se pudieron guardar.", true);
     else {
       article.social_posts = data.posts;
-      article.social_link = link.trim();
+      article.social_link = link;
       notify("Posts generados y guardados.");
     }
+    renderShell();
+  }
+
+  // Same generation for a just-created draft (not saved yet, nothing persisted).
+  async function generateDraftPosts(index) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const draft = state.drafts[index];
+    if (!draft) return;
+    const answer = window.prompt("Link de Beehiiv (opcional — deja vacío y dale OK para seguir sin link):", state.socialPosts?.link || "");
+    if (answer === null) return;
+    const link = answer.trim();
+    state.socialPosts = { articleId: null, title: draft.title, link, posts: null, busy: true };
+    renderShell();
+    const { data, error } = await invokeEdge("generate-article", {
+      format: "social_posts",
+      link,
+      article: { title: draft.title, subtitle: draft.subtitle, summary: draft.summary || [] },
+    });
+    if (error || data?.error) {
+      state.socialPosts = null;
+      notify(data?.error || "No se pudieron generar los posts.", true);
+      return renderShell();
+    }
+    state.socialPosts = { articleId: null, title: draft.title, link, posts: data.posts, busy: false };
+    notify("Posts generados (guarda el artículo si quieres conservarlos).");
     renderShell();
   }
 

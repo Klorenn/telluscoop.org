@@ -121,11 +121,19 @@ test("gemini calls fall back across models when one is overloaded", () => {
   assert.match(edge, /for \(const model of MODELS\)/);
 });
 
-test("social posts mode requires the Beehiiv link and covers every channel", () => {
+test("social posts mode accepts an optional Beehiiv link and covers every channel", () => {
   assert.match(edge, /body\.format === "social_posts"/);
-  assert.match(edge, /Falta el link de Beehiiv/);
+  assert.match(edge, /link is optional/i);
+  assert.match(edge, /sin inventar links/);
   assert.match(app, /format: "social_posts"/);
   for (const channel of ["whatsapp", "linkedin"]) assert.match(edge, new RegExp(channel));
   assert.match(app, /data-social-posts/);
   assert.match(app, /data-copy-social/);
+});
+
+test("articles keep the user's full markdown format and open in a large view", () => {
+  assert.match(edge, /el artículo completo en Markdown/);
+  assert.doesNotMatch(edge, /ARTICLE_JSON_CONTRACT/);
+  assert.match(app, /data-open-article/);
+  assert.match(app, /article-full/);
 });

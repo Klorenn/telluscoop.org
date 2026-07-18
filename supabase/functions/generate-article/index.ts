@@ -69,11 +69,6 @@ function parseJsonLoose(text: string): Record<string, unknown> {
   }
 }
 
-// The interactions API ignores response_format when tools are active, so the
-// JSON contract goes in the prompt and we parse leniently.
-const ARTICLE_JSON_CONTRACT = `Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
-{"titulo": "Título SEO, 5-6 palabras, con el tema central del día", "subtitulo": "1 frase que resume los 2-3 hechos clave", "resumen": ["3 a 5 bullets: qué pasó y por qué importa"], "cuerpo_md": "Desarrollo + En foco + Cierre Tellus, en Markdown con subtítulos"}`;
-
 const POST_JSON_CONTRACT = `Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
 {"post": "Post principal para X en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), <=280 caracteres, con gancho y el enlace del repo", "thread": ["0-3 tweets extra de hilo, opcionales"], "hashtags": ["2-4 hashtags relevantes sin espacios"]}`;
 
@@ -113,28 +108,26 @@ function yesterdayISO(): string {
 }
 
 async function generateOne(apiKey: string, promptMd: string, date: string): Promise<Draft> {
-  const input = `${promptMd}\n\nResume lo ocurrido el día anterior: ${date}. Usa Google Search para verificar cada hecho y cita fuentes reales y recientes. Fecha de publicación: hoy.\n\n${ARTICLE_JSON_CONTRACT}`;
+  // The user's prompt template defines the full article format — the model
+  // returns the complete Markdown untouched; title/subtitle are read from it.
+  const input = `${promptMd}\n\nResume lo ocurrido el día anterior: ${date}. Usa Google Search para verificar cada hecho y cita fuentes reales y recientes. Fecha de publicación: hoy. Responde ÚNICAMENTE con el artículo completo en Markdown, siguiendo exactamente el formato del prompt, sin comentarios extra antes ni después.`;
 
   const { data, model } = await callGemini(apiKey, input);
-  const text = extractText(data);
-  const parsed = parseJsonLoose(text);
+  const text = extractText(data).replace(/^```(markdown|md)?\n?/, "").replace(/\n?```\s*$/, "").trim();
+  if (!text) throw new Error(`El modelo ${model} devolvió una respuesta vacía`);
 
-  const draft: Draft = {
-    title: String(parsed.titulo ?? "").trim(),
-    subtitle: String(parsed.subtitulo ?? "").trim(),
-    summary: Array.isArray(parsed.resumen) ? parsed.resumen.map((s: unknown) => String(s)) : [],
-    body_md: String(parsed.cuerpo_md ?? "").trim(),
+  const lines = text.split("\n");
+  const title = (lines.find((l) => l.startsWith("# ")) ?? "").replace(/^# +/, "").trim();
+  const subtitle = (lines.find((l) => l.startsWith("### ")) ?? "").replace(/^#+ +/, "").trim();
+
+  return {
+    title: title || "Artículo del día",
+    subtitle,
+    summary: [],
+    body_md: text,
     sources: collectSources(data),
     model,
   };
-
-  // Model answered in prose instead of JSON: keep the content, don't drop it.
-  if (!draft.body_md && text.trim()) {
-    draft.title = draft.title || "Borrador sin formato";
-    draft.body_md = text.trim();
-  }
-  if (!draft.body_md) throw new Error(`El modelo ${model} devolvió una respuesta vacía`);
-  return draft;
 }
 
 async function generatePost(apiKey: string, repo: RepoContext): Promise<Draft> {
@@ -203,11 +196,11 @@ Deno.serve(async (request) => {
     if (body.format === "social_posts") {
       const article = body.article as Record<string, unknown> | undefined;
       if (!article || typeof article !== "object" || !article.title) return json({ error: "Falta el artículo" }, 400);
+      // The Beehiiv link is optional: without it the posts simply tease the article.
       const link = String(body.link ?? "").trim();
-      if (!link) return json({ error: "Falta el link de Beehiiv" }, 400);
 
       const summary = Array.isArray(article.summary) ? article.summary.map((s: unknown) => `- ${String(s)}`).join("\n") : "";
-      const input = `Eres el equipo editorial de Tellus Cooperative. A partir de este artículo ya publicado, escribe un post para cada canal, en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), claro y humano (sin hype ni tono trader). Cada post DEBE incluir este enlace al artículo: ${link}
+      const input = `Eres el equipo editorial de Tellus Cooperative. A partir de este artículo ya publicado, escribe un post para cada canal, en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), claro y humano (sin hype ni tono trader). ${link ? `Cada post DEBE incluir este enlace al artículo: ${link}` : "Aún no hay enlace público: cierra cada post invitando a leer el artículo completo en el newsletter de Tellus, sin inventar links."}
 
 Título: ${String(article.title)}
 Subtítulo: ${String(article.subtitle ?? "")}
