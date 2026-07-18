@@ -610,6 +610,23 @@
 
   // ---------- repos ----------
 
+  // Curated GitHub searches; dates are computed at click time.
+  const REPO_CATEGORIES = [
+    ["Trending semana", () => `created:>${daysAgo(7)} stars:>50`],
+    ["Claude", () => `claude in:name,description stars:>30 pushed:>${daysAgo(60)}`],
+    ["Claude skills", () => `claude skill in:name,description pushed:>${daysAgo(90)}`],
+    ["Agentes IA", () => `ai agent in:name,description stars:>200 pushed:>${daysAgo(30)}`],
+    ["MCP", () => `mcp server in:name,description stars:>50 pushed:>${daysAgo(60)}`],
+    ["UI/UX", () => `topic:ui topic:design-system stars:>300 pushed:>${daysAgo(90)}`],
+    ["Componentes", () => `topic:components stars:>300 pushed:>${daysAgo(90)}`],
+    ["Librerías nuevas", () => `topic:library created:>${daysAgo(120)} stars:>100`],
+    ["Cripto/Stellar", () => `stellar blockchain in:name,description stars:>20 pushed:>${daysAgo(90)}`],
+  ];
+
+  function daysAgo(n) {
+    return new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+  }
+
   function reposView() {
     return `
       <div class="toolbar"><div><span class="eyebrow">GitHub</span><h2>Buscador de repositorios</h2></div></div>
@@ -622,6 +639,12 @@
             <button class="button button-primary" type="submit" ${state.repoBusy ? "disabled" : ""}>Buscar</button>
           </div>
         </form>
+        <div style="margin-top:.8rem">
+          <span style="color:var(--muted);font-size:.85rem">Búsquedas rápidas:</span>
+          <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem">
+            ${REPO_CATEGORIES.map(([label]) => `<button class="button button-secondary" data-repo-chip="${esc(label)}" ${state.repoBusy ? "disabled" : ""} style="min-height:34px;padding:.3rem .8rem">${esc(label)}</button>`).join("")}
+          </div>
+        </div>
       </section>
       ${state.repoPostDraft ? repoPostPanel(state.repoPostDraft) : ""}
       ${state.repoResults.length ? `<div class="grid grid-2" style="margin-bottom:1.4rem">${state.repoResults.map(repoResultCard).join("")}</div>` : ""}
@@ -697,9 +720,12 @@
       if (query) searchRepos(query);
     });
     document.querySelector("#repo-trending")?.addEventListener("click", () => {
-      const since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
-      searchRepos(`created:>${since} stars:>300`);
+      searchRepos(`created:>${daysAgo(30)} stars:>300`);
     });
+    document.querySelectorAll("[data-repo-chip]").forEach((button) => button.addEventListener("click", () => {
+      const category = REPO_CATEGORIES.find(([label]) => label === button.dataset.repoChip);
+      if (category) searchRepos(category[1]());
+    }));
     document.querySelectorAll("[data-save-repo]").forEach((button) => button.addEventListener("click", async () => {
       const repo = state.repoResults.find((r) => r.full_name === button.dataset.saveRepo);
       if (!repo) return;
