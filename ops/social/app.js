@@ -317,6 +317,9 @@
         </select>
         <input id="filter-search" type="search" placeholder="Filtrar texto o autor…" value="${esc(state.filters.search)}" aria-label="Filtrar" />
       </div>
+      ${posts.length && !state.preview ? `<div class="form-foot" style="justify-content:flex-end;margin-bottom:.8rem">
+        <button class="button button-primary" id="gen-from-feed" ${state.topicPosts?.busy ? "disabled" : ""}>${icon("sparkles")} ${state.topicPosts?.busy ? "Generando…" : "Generar posts con estos"}</button>
+      </div>` : ""}
       ${posts.length ? (() => {
         const perPage = 20;
         const pages = Math.max(1, Math.ceil(posts.length / perPage));
@@ -389,6 +392,7 @@
     }));
     document.querySelector("#topic-search-form")?.addEventListener("submit", runTopicSearch);
     document.querySelector("#fetch-recent")?.addEventListener("click", fetchRecentFromAccounts);
+    document.querySelector("#gen-from-feed")?.addEventListener("click", generateFromFeed);
     document.querySelectorAll("[data-feed-page]").forEach((b) => b.addEventListener("click", () => {
       state.feedPage = Math.max(0, Number(b.dataset.feedPage) || 0);
       renderShell();
@@ -448,6 +452,18 @@
     renderShell();
   }
 
+  // Manual trigger: write Tellus posts from whatever the feed currently shows
+  // (scraped topic results, recent account posts, or a filtered view).
+  function generateFromFeed() {
+    const posts = filteredPosts();
+    if (!posts.length) return notify("No hay posts en el feed para inspirarse.", true);
+    const tema = state.filters.search.trim()
+      || state.topicPosts?.query
+      || "lo más comentado en estos posts de tecnología y cripto";
+    generateTopicPosts(tema, posts.slice(0, 12));
+    document.querySelector(".toolbar")?.scrollIntoView({ behavior: "smooth" });
+  }
+
   // Pull the latest posts from the curated accounts without picking a topic:
   // one X search with "from:handle OR from:handle...".
   async function fetchRecentFromAccounts() {
@@ -463,6 +479,7 @@
     state.feedPage = 0;
     await loadLiveData();
     renderShell();
+    generateTopicPosts("lo último que publicaron nuestras cuentas de tecnología y cripto", data.posts || []);
   }
 
   async function runTopicSearchById(topicId) {
