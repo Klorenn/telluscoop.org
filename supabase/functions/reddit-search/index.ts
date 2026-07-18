@@ -57,7 +57,9 @@ function collectSources(data: Record<string, unknown>): { url: string; title: st
 async function searchInfo(apiKey: string, query: string) {
   const input = `Busca qué se está diciendo ahora sobre "${query}" en Reddit y en foros/comunidades (prioriza resultados de reddit.com en la búsqueda). Resume la conversación real: opiniones, dudas, chistes recurrentes y datos que la gente comparte.
 
-Después, escribe 3 posts LISTOS para publicar en X sobre el tema, en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), voz Tellus Cooperative: con gancho, humanos, aprovechando el humor o el ángulo que domina la conversación, <=270 caracteres, máximo 1 hashtag, sin emojis excesivos. Cada post debe poder acompañarse de un GIF/meme.
+Después, escribe 3 posts LISTOS para publicar en X sobre el tema, en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), voz Tellus Cooperative, <=270 caracteres cada uno. Cada post debe poder acompañarse de un GIF/meme.
+
+El post 1 usa formato viral (estilo cuentas grandes de IA): primera línea gancho en MAYÚSCULAS con el dato más fuerte, 1 línea de contexto, 3-4 bullets con "→ " concretos, cierre corto de impacto; solo datos reales de la conversación. Los posts 2 y 3 son sobrios, con gancho informativo y el humor o ángulo que domina la conversación.
 
 Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
 {"resumen": "2-3 frases con el pulso de la conversación", "puntos": ["4-6 puntos clave: qué se comenta, qué polariza, qué memes circulan"], "posts": ["3 posts listos para publicar"], "gif_busqueda": "2-3 palabras en inglés para buscar el GIF perfecto para estos posts"}`;

@@ -69,6 +69,15 @@ function parseJsonLoose(text: string): Record<string, unknown> {
   }
 }
 
+// Viral X format the team likes (big AI accounts style). Facts only, no
+// invented numbers.
+const VIRAL_STYLE = `Formato viral para X (estilo cuentas grandes de IA):
+- Primera línea: gancho en MAYÚSCULAS con el dato más fuerte y concreto.
+- Segunda línea: contexto en 1 frase corta en minúsculas.
+- Luego 3-4 bullets que empiecen con "→ " (resultados, números, features concretas).
+- Cierre de 1 línea corta con impacto o invitación.
+- Solo datos reales del contexto dado, NADA inventado. Frases cortas. Máximo 1 emoji o ninguno. Máximo 1 hashtag.`;
+
 const POST_JSON_CONTRACT = `Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
 {"post": "Post principal para X en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), <=280 caracteres, con gancho y el enlace del repo", "thread": ["0-3 tweets extra de hilo, opcionales"], "hashtags": ["2-4 hashtags relevantes sin espacios"]}`;
 
@@ -148,7 +157,11 @@ Lenguaje: ${repo.language ?? ""}
 Estrellas: ${repo.stars ?? ""}
 Enlace: ${repo.url ?? ""}
 
-Usa Google Search para entender qué hace el proyecto y por qué es interesante. El post principal debe tener gancho, ser claro y humano (sin hype ni tono trader), explicar en una línea por qué importa, e incluir el enlace del repo. Opcionalmente agrega 1-3 tweets de hilo con más detalle. Nada de emojis excesivos.
+Usa Google Search para entender qué hace el proyecto y por qué es interesante.
+
+${VIRAL_STYLE}
+
+El post principal usa ese formato viral e incluye el enlace del repo al final. Opcionalmente agrega 1-3 tweets de hilo con más detalle en tono normal.
 
 ${POST_JSON_CONTRACT}`;
 
@@ -285,10 +298,14 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
 Posts reales que circulan ahora en X sobre el tema:
 ${samples || "(sin ejemplos)"}
 
-Escribe 3 posts LISTOS para publicar en X con la voz de Tellus: español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), claros y humanos, con gancho informativo, sin hype ni tono trader, <=270 caracteres, máximo 1 hashtag, sin emojis excesivos. Aporta ángulo propio, no repitas los posts de arriba.
+Escribe 3 posts LISTOS para publicar en X con la voz de Tellus, en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), <=270 caracteres cada uno. Aporta ángulo propio, no repitas los posts de arriba.
+
+${VIRAL_STYLE}
+
+Mezcla: el post 1 usa el formato viral de arriba; los posts 2 y 3 son sobrios y editoriales (gancho informativo, sin mayúsculas sostenidas).
 
 Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
-{"posts": ["post 1", "post 2", "post 3"], "gif_busqueda": "2-3 palabras en inglés para buscar el GIF/imagen perfecto para estos posts"}`;
+{"posts": ["post 1 viral", "post 2 sobrio", "post 3 sobrio"], "gif_busqueda": "2-3 palabras en inglés para buscar el GIF/imagen perfecto para estos posts"}`;
       try {
         const { data, model } = await callGemini(apiKey, input, false);
         const parsed = parseJsonLoose(extractText(data));
