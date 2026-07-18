@@ -258,8 +258,9 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
     if (body.format === "meme_post") {
       const tema = String(body.tema ?? "").trim();
       const memeTitle = String(body.meme_title ?? "").trim();
+      const caption = String(body.caption ?? "").trim();
       if (!tema && !memeTitle) return json({ error: "Falta el tema o el meme" }, 400);
-      const input = `Eres el equipo editorial de Tellus Cooperative. Vamos a publicar un meme/GIF sobre "${tema || memeTitle}"${memeTitle ? ` (el meme se llama: "${memeTitle}")` : ""}.
+      const input = `Eres el equipo editorial de Tellus Cooperative. Vamos a publicar un meme/GIF sobre "${tema || memeTitle}"${memeTitle ? ` (plantilla: "${memeTitle}")` : ""}${caption ? `. El texto del meme dice: "${caption}"` : ""}.
 
 Escribe el texto que acompaña al meme en cada canal, en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), con humor inteligente y liviano. NUNCA expliques el chiste. Sin tono de guía ni vendedor.
 

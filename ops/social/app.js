@@ -957,10 +957,11 @@
           </article>`;
         }).join("")}</div>` : ""}
       ${m.created?.items?.length ? `<div class="toolbar"><div><span class="eyebrow">Hechos por nosotros</span><h2>Memes creados</h2></div></div>
-        <div class="grid grid-3" style="margin-bottom:1.4rem">${m.created.items.map((g) => `<article class="card">
+        <div class="grid grid-3" style="margin-bottom:1.4rem">${m.created.items.map((g, i) => `<article class="card">
           <a href="${esc(g.url)}" target="_blank" rel="noopener"><img src="${esc(g.url)}" alt="" style="width:100%;border-radius:8px" loading="lazy" /></a>
           <p style="margin:.5rem 0 .4rem;color:var(--muted);font-size:.85rem">${esc(g.title)}</p>
           <div class="form-foot" style="justify-content:start;margin-top:.2rem">
+            <button class="table-link" data-created-post="${i}">✨ Crear post</button>
             <button class="table-link" data-copy-meme="${esc(g.url)}">Copiar link</button>
           </div>
         </article>`).join("")}</div>` : ""}
@@ -1009,6 +1010,7 @@
     document.querySelector("#meme-create")?.addEventListener("click", createOwnMemes);
     document.querySelectorAll("[data-meme-cat]").forEach((button) => button.addEventListener("click", () => browseMemeCategory(button.dataset.memeLabel, button.dataset.memeCat)));
     document.querySelectorAll("[data-meme-post-idx]").forEach((button) => button.addEventListener("click", () => generateMemePost(Number(button.dataset.memePostIdx))));
+    document.querySelectorAll("[data-created-post]").forEach((button) => button.addEventListener("click", () => generateCreatedMemePost(Number(button.dataset.createdPost))));
   }
 
   // Own memes: Gemini writes the joke, memegen renders it. Used templates are
@@ -1052,8 +1054,15 @@
   }
 
   // Caption a chosen meme for X, WhatsApp and Instagram.
-  async function generateMemePost(index) {
-    const gif = state.memes.gifs[index];
+  function generateMemePost(index) {
+    return memePostFor(state.memes.gifs[index]);
+  }
+
+  function generateCreatedMemePost(index) {
+    return memePostFor(state.memes.created?.items?.[index]);
+  }
+
+  async function memePostFor(gif) {
     if (!gif) return;
     state.memes.memePost = { title: gif.title, url: gif.url, posts: null, busy: true };
     renderShell();
@@ -1061,6 +1070,7 @@
       format: "meme_post",
       tema: state.memes.query,
       meme_title: gif.title,
+      caption: gif.caption || "",
     });
     if (error || data?.error) {
       state.memes.memePost = null;

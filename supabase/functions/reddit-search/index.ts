@@ -136,32 +136,60 @@ async function callGeminiPlain(apiKey: string, input: string): Promise<string> {
   throw new Error(`Gemini falló → ${errors.join(" | ")}`);
 }
 
+interface MemeTemplate {
+  id: string;
+  name: string;
+  lines: number;
+  background?: string; // imgflip image rendered via memegen /images/custom
+}
+
+// Pool = memegen native templates (2 lines + midwit bell curve with 3) plus
+// imgflip's top-100 rendered through memegen's custom-background endpoint.
+async function loadMemeTemplates(): Promise<MemeTemplate[]> {
+  const ua = { headers: { "User-Agent": "TellusSocialOps/1.0" } };
+  const [memegenResp, imgflipResp] = await Promise.all([
+    fetch("https://api.memegen.link/templates", ua),
+    fetch("https://api.imgflip.com/get_memes", ua).catch(() => null),
+  ]);
+  if (!memegenResp.ok) throw new Error(`memegen ${memegenResp.status}`);
+  const memegen = (await memegenResp.json()) as { id: string; name: string; lines?: number }[];
+  const pool: MemeTemplate[] = memegen
+    .filter((t) => (t.lines ?? 2) === 2 || t.id === "midwit")
+    .map((t) => ({ id: t.id, name: t.id === "midwit" ? "Midwit / Bell Curve (izquierda, centro, derecha)" : t.name, lines: t.id === "midwit" ? 3 : 2 }));
+  if (imgflipResp?.ok) {
+    const imgflip = (await imgflipResp.json()) as { data?: { memes?: { id: string; name: string; url: string; box_count?: number }[] } };
+    for (const m of imgflip.data?.memes ?? []) {
+      if ((m.box_count ?? 2) > 2) continue;
+      pool.push({ id: `imgflip-${m.id}`, name: m.name, lines: 2, background: m.url });
+    }
+  }
+  return pool;
+}
+
 async function createMemes(apiKey: string, query: string, count: number, exclude: string[]) {
-  const response = await fetch("https://api.memegen.link/templates", {
-    headers: { "User-Agent": "TellusSocialOps/1.0" },
-  });
-  if (!response.ok) throw new Error(`memegen ${response.status}`);
-  const templates = (await response.json()) as { id: string; name: string; lines?: number }[];
+  const templates = await loadMemeTemplates();
   const byId = new Map(templates.map((t) => [t.id, t]));
 
-  // Two-line templates only, minus the ones already used; shuffled so every
-  // run offers Gemini a different pool → memes never repeat their image.
-  const pool = templates.filter((t) => (t.lines ?? 2) === 2 && !exclude.includes(t.id));
+  // Shuffle minus already-used ids so images never repeat between batches.
+  const pool = templates.filter((t) => !exclude.includes(t.id));
   for (let i = pool.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  const options = pool.slice(0, 60).map((t) => `${t.id}: ${t.name}`).join("\n");
+  const midwit = pool.find((t) => t.id === "midwit");
+  const offered = pool.slice(0, 70);
+  if (midwit && !offered.includes(midwit)) offered.push(midwit);
+  const options = offered.map((t) => `${t.id} (${t.lines} textos): ${t.name}`).join("\n");
 
   const input = `Eres el equipo de memes de Tellus Cooperative (nicho: IA, cripto, tech en español). Tema: "${query}".
 
-Elige ${count} plantillas DISTINTAS de la lista (usa el conocimiento del formato de cada meme para que el chiste calce con la plantilla) y escribe el texto de arriba y abajo en español chileno neutro (tuteo, sin voseo). Humor inteligente del nicho, cortito y punzante, sin explicar el chiste, sin hashtags. Máximo ~60 caracteres por línea.
+Elige ${count} plantillas DISTINTAS de la lista (usa el conocimiento del formato de cada meme para que el chiste calce con la plantilla) y escribe los textos en español chileno neutro (tuteo, sin voseo). Humor inteligente del nicho, cortito y punzante, sin explicar el chiste, sin hashtags. Máximo ~60 caracteres por texto. Cada plantilla indica cuántos textos lleva; en midwit el orden es: extremo izquierdo (simple), centro (el que sufre sobrepensando), extremo derecho (simple).
 
-Plantillas disponibles (id: nombre):
+Plantillas disponibles (id (textos): nombre):
 ${options}
 
 Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
-{"memes": [{"template": "id exacto de la lista", "top": "texto de arriba", "bottom": "texto de abajo"}]}`;
+{"memes": [{"template": "id exacto de la lista", "texts": ["texto 1", "texto 2"]}]}`;
 
   const parsed = parseJsonLoose(await callGeminiPlain(apiKey, input));
   const memes = Array.isArray(parsed.memes) ? parsed.memes as Record<string, unknown>[] : [];
@@ -169,8 +197,14 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
     .map((m) => {
       const template = byId.get(String(m.template ?? ""));
       if (!template) return null;
-      const url = `https://api.memegen.link/images/${template.id}/${memegenEncode(String(m.top ?? ""))}/${memegenEncode(String(m.bottom ?? ""))}.png`;
-      return { title: template.name, url, thumbnail: url, page: url, template: template.id };
+      const texts = (Array.isArray(m.texts) ? m.texts.map((t: unknown) => String(t)) : [])
+        .slice(0, template.lines);
+      while (texts.length < template.lines) texts.push("");
+      const path = texts.map((t) => memegenEncode(t)).join("/");
+      const url = template.background
+        ? `https://api.memegen.link/images/custom/${path}.png?background=${encodeURIComponent(template.background)}`
+        : `https://api.memegen.link/images/${template.id}/${path}.png`;
+      return { title: template.name, url, thumbnail: url, page: url, template: template.id, caption: texts.filter(Boolean).join(" / ") };
     })
     .filter((m): m is NonNullable<typeof m> => Boolean(m))
     .slice(0, count);
