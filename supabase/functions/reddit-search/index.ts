@@ -106,6 +106,76 @@ async function searchGifs(giphyKey: string, query: string, limit: number) {
   }).filter((g) => g.url);
 }
 
+// ---- Own-meme generator (memegen.link, keyless) ----
+
+function memegenEncode(text: string): string {
+  const cleaned = text.trim()
+    .replace(/_/g, "__").replace(/-/g, "--").replace(/ /g, "_")
+    .replace(/\?/g, "~q").replace(/&/g, "~a").replace(/%/g, "~p")
+    .replace(/#/g, "~h").replace(/\//g, "~s").replace(/\\/g, "~b").replace(/"/g, "''");
+  return encodeURIComponent(cleaned) || "_";
+}
+
+async function callGeminiPlain(apiKey: string, input: string): Promise<string> {
+  const errors: string[] = [];
+  for (const model of MODELS) {
+    const response = await fetch(GEMINI_URL, {
+      method: "POST",
+      headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ model, input }),
+    });
+    const text = await response.text();
+    if (response.ok) {
+      const data = JSON.parse(text) as Record<string, unknown>;
+      if (!data.error) return extractText(data);
+      errors.push(`${model}: ${JSON.stringify(data.error).slice(0, 120)}`);
+      continue;
+    }
+    errors.push(`${model} ${response.status}`);
+  }
+  throw new Error(`Gemini falló → ${errors.join(" | ")}`);
+}
+
+async function createMemes(apiKey: string, query: string, count: number, exclude: string[]) {
+  const response = await fetch("https://api.memegen.link/templates", {
+    headers: { "User-Agent": "TellusSocialOps/1.0" },
+  });
+  if (!response.ok) throw new Error(`memegen ${response.status}`);
+  const templates = (await response.json()) as { id: string; name: string; lines?: number }[];
+  const byId = new Map(templates.map((t) => [t.id, t]));
+
+  // Two-line templates only, minus the ones already used; shuffled so every
+  // run offers Gemini a different pool → memes never repeat their image.
+  const pool = templates.filter((t) => (t.lines ?? 2) === 2 && !exclude.includes(t.id));
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const options = pool.slice(0, 40).map((t) => `${t.id}: ${t.name}`).join("\n");
+
+  const input = `Eres el equipo de memes de Tellus Cooperative (nicho: IA, cripto, tech en español). Tema: "${query}".
+
+Elige ${count} plantillas DISTINTAS de la lista (usa el conocimiento del formato de cada meme para que el chiste calce con la plantilla) y escribe el texto de arriba y abajo en español chileno neutro (tuteo, sin voseo). Humor inteligente del nicho, cortito y punzante, sin explicar el chiste, sin hashtags. Máximo ~60 caracteres por línea.
+
+Plantillas disponibles (id: nombre):
+${options}
+
+Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
+{"memes": [{"template": "id exacto de la lista", "top": "texto de arriba", "bottom": "texto de abajo"}]}`;
+
+  const parsed = parseJsonLoose(await callGeminiPlain(apiKey, input));
+  const memes = Array.isArray(parsed.memes) ? parsed.memes as Record<string, unknown>[] : [];
+  return memes
+    .map((m) => {
+      const template = byId.get(String(m.template ?? ""));
+      if (!template) return null;
+      const url = `https://api.memegen.link/images/${template.id}/${memegenEncode(String(m.top ?? ""))}/${memegenEncode(String(m.bottom ?? ""))}.png`;
+      return { title: template.name, url, thumbnail: url, page: url, template: template.id };
+    })
+    .filter((m): m is NonNullable<typeof m> => Boolean(m))
+    .slice(0, count);
+}
+
 async function searchOpenverse(query: string, limit: number) {
   const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(query)}&page_size=${limit}&mature=false`;
   const response = await fetch(url, { headers: { "User-Agent": "TellusSocialOps/1.0 (telluscoop.org)" } });
@@ -147,6 +217,17 @@ Deno.serve(async (request) => {
     const query = String(body.query ?? "").trim();
     if (!query) return json({ error: "Falta query" }, 400);
     const limit = Math.max(1, Math.min(25, Number(body.count) || 12));
+
+    // Own memes: Gemini writes the joke, memegen.link renders it.
+    if (body.mode === "create") {
+      const apiKey = Deno.env.get("GEMINI_API_KEY");
+      if (!apiKey) return json({ error: "Gemini todavía no está configurado" }, 503);
+      const count = Math.max(1, Math.min(6, Number(body.count) || 4));
+      const exclude = Array.isArray(body.exclude) ? body.exclude.map((e: unknown) => String(e)) : [];
+      const items = await createMemes(apiKey, query, count, exclude);
+      if (!items.length) return json({ error: "No salió ningún meme; intenta de nuevo" }, 502);
+      return json({ items, mode: "create" });
+    }
 
     if (body.mode === "memes") {
       const giphyKey = Deno.env.get("GIPHY_API_KEY");

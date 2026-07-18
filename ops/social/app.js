@@ -922,6 +922,7 @@
           <div class="field span-all"><label for="meme-query">Tema</label><input id="meme-query" name="query" placeholder="ej: bitcoin etf, google gemini, stellar" value="${esc(m.query)}" required /></div>
           <div class="form-foot span-all">
             <button class="button button-primary" type="submit" ${m.busy || state.preview ? "disabled" : ""}>${icon("search")} ${m.busy ? "Buscando…" : "Buscar info + memes"}</button>
+            <button class="button button-secondary" type="button" id="meme-create" ${m.created?.busy || state.preview ? "disabled" : ""}>🎨 ${m.created?.busy ? "Creando…" : "Crear memes propios"}</button>
           </div>
         </form>
         <div style="margin-top:.8rem">
@@ -955,6 +956,14 @@
             </div>
           </article>`;
         }).join("")}</div>` : ""}
+      ${m.created?.items?.length ? `<div class="toolbar"><div><span class="eyebrow">Hechos por nosotros</span><h2>Memes creados</h2></div></div>
+        <div class="grid grid-3" style="margin-bottom:1.4rem">${m.created.items.map((g) => `<article class="card">
+          <a href="${esc(g.url)}" target="_blank" rel="noopener"><img src="${esc(g.url)}" alt="" style="width:100%;border-radius:8px" loading="lazy" /></a>
+          <p style="margin:.5rem 0 .4rem;color:var(--muted);font-size:.85rem">${esc(g.title)}</p>
+          <div class="form-foot" style="justify-content:start;margin-top:.2rem">
+            <button class="table-link" data-copy-meme="${esc(g.url)}">Copiar link</button>
+          </div>
+        </article>`).join("")}</div>` : ""}
       ${m.gifs.length ? `<div class="toolbar"><div><span class="eyebrow">Más opciones</span><h2>GIFs</h2></div></div>
         <div class="grid grid-3" style="margin-bottom:1.4rem">${m.gifs.map((g, i) => `<article class="card">
           <a href="${esc(g.page || g.url)}" target="_blank" rel="noopener"><img src="${esc(g.thumbnail || g.url)}" alt="" style="width:100%;border-radius:8px;max-height:180px;object-fit:cover" loading="lazy" /></a>
@@ -997,8 +1006,32 @@
       renderShell();
     });
     document.querySelectorAll("[data-copy-meme]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyMeme)));
+    document.querySelector("#meme-create")?.addEventListener("click", createOwnMemes);
     document.querySelectorAll("[data-meme-cat]").forEach((button) => button.addEventListener("click", () => browseMemeCategory(button.dataset.memeLabel, button.dataset.memeCat)));
     document.querySelectorAll("[data-meme-post-idx]").forEach((button) => button.addEventListener("click", () => generateMemePost(Number(button.dataset.memePostIdx))));
+  }
+
+  // Own memes: Gemini writes the joke, memegen renders it. Used templates are
+  // remembered locally and excluded so images never repeat.
+  async function createOwnMemes() {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const query = String(document.querySelector("#meme-query")?.value || state.memes.query || "").trim();
+    if (!query) return notify("Escribe un tema primero (arriba) y dale a Crear memes.", true);
+    const used = JSON.parse(localStorage.getItem("used_meme_templates") || "[]");
+    state.memes.query = query;
+    state.memes.created = { busy: true, items: state.memes.created?.items || [] };
+    renderShell();
+    const { data, error } = await invokeEdge("reddit-search", { mode: "create", query, count: 4, exclude: used });
+    state.memes.created.busy = false;
+    if (error || data?.error) {
+      notify(data?.error || "No se pudieron crear memes.", true);
+      return renderShell();
+    }
+    state.memes.created.items = data.items;
+    const usedNow = [...new Set([...used, ...data.items.map((i) => i.template)])].slice(-80);
+    localStorage.setItem("used_meme_templates", JSON.stringify(usedNow));
+    notify(`${data.items.length} memes creados (plantillas nuevas, sin repetir).`);
+    renderShell();
   }
 
   // Browse community memes by curated category: fast Giphy-only search.
