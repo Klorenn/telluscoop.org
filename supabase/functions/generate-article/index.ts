@@ -120,12 +120,21 @@ async function generateOne(apiKey: string, promptMd: string, date: string): Prom
   const title = (lines.find((l) => l.startsWith("# ")) ?? "").replace(/^# +/, "").trim();
   const subtitle = (lines.find((l) => l.startsWith("### ")) ?? "").replace(/^#+ +/, "").trim();
 
+  // Sources must never be empty: grounding annotations first, then any
+  // markdown links the article itself cites (its SOURCES section).
+  let sources = collectSources(data);
+  if (!sources.length) {
+    const seen = new Map<string, string>();
+    for (const match of text.matchAll(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g)) seen.set(match[2], match[1]);
+    sources = [...seen].map(([url, sourceTitle]) => ({ url, title: sourceTitle }));
+  }
+
   return {
     title: title || "Artículo del día",
     subtitle,
     summary: [],
     body_md: text,
-    sources: collectSources(data),
+    sources,
     model,
   };
 }

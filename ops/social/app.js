@@ -844,7 +844,7 @@
               <button class="button button-secondary" data-copy-article="${esc(article.id)}">Copiar todo</button>
               <button class="button button-ghost" id="close-article">Cerrar</button>
             </div></div>
-          <pre class="article-full">${esc(draftToMarkdown(article))}</pre>
+          <div class="article-full article-md">${mdToHtml(draftToMarkdown(article))}</div>
         </section>`;
       })() : ""}
 
@@ -888,7 +888,7 @@
       <p style="color:var(--muted);margin:.2rem 0 .7rem;line-height:1.5">${esc(draft.subtitle || "")}</p>
       ${draft.summary?.length ? `<ul style="margin:0 0 .7rem;padding-left:1.1rem;line-height:1.5">${draft.summary.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : ""}
       <details style="margin-bottom:.6rem"><summary style="cursor:pointer;color:var(--teal);font-weight:600">Ver cuerpo</summary>
-        <p class="post-content" style="margin-top:.5rem">${esc(draft.body_md || "")}</p></details>
+        <div class="article-md" style="margin-top:.5rem;max-height:50vh;overflow-y:auto">${mdToHtml(draft.body_md || "")}</div></details>
       ${draft.sources?.length ? `<div class="post-meta"><span>${draft.sources.length} fuente(s)</span></div>` : `<div class="post-meta"><span style="color:var(--red)">Sin fuentes — revisá antes de publicar</span></div>`}
       <div class="form-foot" style="justify-content:start">
         <button class="button button-secondary" data-save-draft="${index}" style="min-height:38px">Guardar</button>
@@ -1035,6 +1035,30 @@
     state.memes.memePost = { title: gif.title, url: gif.url, posts: data.posts, busy: false };
     renderShell();
     document.querySelector("#main")?.scrollTo?.(0, 0);
+  }
+
+  // Tiny safe Markdown renderer: text is HTML-escaped first, then headers,
+  // bold, italics, lists, links and rules are applied. Enough for articles.
+  function mdToHtml(md) {
+    const inline = (s) => s
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>")
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    let html = "";
+    let inList = false;
+    const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
+    for (const raw of esc(md).split("\n")) {
+      const t = raw.trim();
+      const heading = t.match(/^(#{1,6}) (.*)$/);
+      if (heading) { closeList(); const level = heading[1].length; html += `<h${level}>${inline(heading[2])}</h${level}>`; }
+      else if (/^(-{3,}|\*{3,}|_{3,})$/.test(t)) { closeList(); html += "<hr />"; }
+      else if (/^[*-] /.test(t)) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${inline(t.replace(/^[*-] /, ""))}</li>`; }
+      else if (t === "") { closeList(); }
+      else { closeList(); html += `<p>${inline(t)}</p>`; }
+    }
+    closeList();
+    return html;
   }
 
   function draftToMarkdown(draft) {

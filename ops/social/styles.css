@@ -97,7 +97,19 @@ a { color: inherit; }
 .post-content a { color: var(--teal, #3F8487); text-decoration: underline; }
 .post-clamp { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
 .post-clamp.expanded { display: block; -webkit-line-clamp: unset; overflow: visible; }
-.article-full { white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; font-size: .92rem; line-height: 1.65; max-height: 70vh; overflow-y: auto; background: none; border: 0; padding: 0; margin: 0; }
+.article-full { overflow-wrap: anywhere; font-size: .94rem; max-height: 72vh; overflow-y: auto; }
+.article-md { line-height: 1.65; }
+.article-md h1 { font-size: 1.55rem; line-height: 1.25; margin: 1.1rem 0 .5rem; }
+.article-md h2 { font-size: 1.25rem; margin: 1.2rem 0 .45rem; }
+.article-md h3 { font-size: 1.05rem; margin: 1rem 0 .4rem; color: var(--muted); }
+.article-md h4, .article-md h5, .article-md h6 { font-size: .98rem; margin: .9rem 0 .35rem; }
+.article-md p { margin: .5rem 0; }
+.article-md ul { margin: .5rem 0; padding-left: 1.25rem; }
+.article-md li { margin: .25rem 0; }
+.article-md hr { border: 0; border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent); margin: 1.1rem 0; }
+.article-md a { color: var(--teal, #3F8487); text-decoration: underline; }
+.article-md strong { font-weight: 700; }
+.article-md code { font-size: .88em; padding: .1em .3em; border-radius: 4px; background: color-mix(in srgb, currentColor 8%, transparent); }
 .post-stats { display: flex; gap: 1rem; color: var(--muted); font-size: .82rem; font-family: "JetBrains Mono", monospace; }
 .post-actions { display: flex; gap: .6rem; flex-wrap: wrap; }
 
