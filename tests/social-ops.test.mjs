@@ -8,12 +8,14 @@ const migration = await readFile(new URL("../supabase/migrations/20260717120000_
 const topicsMigration = await readFile(new URL("../supabase/migrations/20260717150000_create_social_topics.sql", import.meta.url), "utf8");
 const articlesMigration = await readFile(new URL("../supabase/migrations/20260717140000_create_articles.sql", import.meta.url), "utf8");
 const edge = await readFile(new URL("../supabase/functions/generate-article/index.ts", import.meta.url), "utf8");
+const xSearchEdge = await readFile(new URL("../supabase/functions/x-search/index.ts", import.meta.url), "utf8");
 const redditEdge = await readFile(new URL("../supabase/functions/reddit-search/index.ts", import.meta.url), "utf8");
 const guidesMigration = await readFile(new URL("../supabase/migrations/20260721030000_create_guides.sql", import.meta.url), "utf8");
 const summaryMigration = await readFile(new URL("../supabase/migrations/20260721040000_create_social_summary.sql", import.meta.url), "utf8");
 const xProfileEdge = await readFile(new URL("../supabase/functions/x-profile/index.ts", import.meta.url), "utf8");
 const repoSearchEdge = await readFile(new URL("../supabase/functions/repo-search/index.ts", import.meta.url), "utf8");
 const growthMigration = await readFile(new URL("../supabase/migrations/20260721050000_monthly_growth_goal_and_cron.sql", import.meta.url), "utf8");
+const refreshAllMigration = await readFile(new URL("../supabase/migrations/20260721060000_refresh_all_default_goals_meme_picks.sql", import.meta.url), "utf8");
 
 test("production cache versions match", () => {
   const cssVersion = page.match(/styles\.css\?v=([^"']+)/)?.[1];
@@ -102,10 +104,16 @@ test("article generation lets the user pick how many (1-5)", () => {
   assert.match(edge, /Math\.min\(5, Number\(body\.count\)/);
 });
 
-test("repo finder can generate an X post about a repo", () => {
+test("repo finder generates one post per channel in a tabbed popup", () => {
   assert.match(app, /data-post-repo-result|data-post-repo-saved/);
-  assert.match(app, /format: "x_post", repo/);
-  assert.match(edge, /body\.format === "x_post"/);
+  assert.match(app, /format: "repo_social_posts", repo/);
+  assert.match(app, /REPO_POST_CHANNELS/);
+  for (const channel of ["whatsapp", "discord", "linkedin", "instagram"]) assert.match(app, new RegExp(`"${channel}"`));
+  assert.match(app, /function repoPostModal/);
+  assert.match(app, /modal-tabs/);
+  assert.match(app, /data-repo-tab/);
+  assert.match(edge, /body\.format === "repo_social_posts"/);
+  assert.match(edge, /function generateRepoSocialPosts/);
   assert.match(edge, /function generatePost/);
 });
 
@@ -324,6 +332,74 @@ test("Resumen shows a minimal trend chart and a monthly-growth goal per platform
   assert.match(app, /class="trend-chart"/);
   assert.match(app, /stroke-width="2"/);
   assert.match(app, /role="img"/);
+});
+
+test("x-search never re-surfaces posts already captured, in either mode", () => {
+  assert.match(xSearchEdge, /const dropAlreadyCaptured = async/);
+  assert.match(xSearchEdge, /\.select\("url"\)/);
+  assert.match(xSearchEdge, /\.in\("url", urls\)/);
+  const modeOneUpsert = xSearchEdge.match(/Mode 1[\s\S]*?return json\(\{ saved: deduped\.length, posts: deduped \}\);/)?.[0];
+  const modeTwoUpsert = xSearchEdge.match(/Mode 2[\s\S]*?return json\(\{ saved: deduped\.length,[\s\S]*?\}\);/)?.[0];
+  assert.ok(modeOneUpsert, "mode 1 block not found");
+  assert.ok(modeTwoUpsert, "mode 2 block not found");
+  assert.match(modeOneUpsert, /dropAlreadyCaptured/);
+  assert.match(modeTwoUpsert, /dropAlreadyCaptured/);
+});
+
+test("Feed has a bulk-delete button for scraped posts that leaves manual captures alone", () => {
+  assert.match(app, /id="clear-scraped"/);
+  assert.match(app, /Borrar todos los capturados/);
+  const handler = app.match(/#clear-scraped[\s\S]*?\}\);/)?.[0];
+  assert.ok(handler, "clear-scraped handler not found");
+  assert.match(handler, /\.eq\("source", "scraper"\)/);
+  assert.match(handler, /confirm\(/);
+});
+
+test("summary is the landing view and refreshes all three accounts with one button", () => {
+  assert.match(app, /view: "summary"/);
+  assert.match(app, /summary-refresh-all/);
+  assert.match(app, /refresh: "all"/);
+  assert.doesNotMatch(app, /summary-refresh-x/);
+});
+
+test("x-profile refreshes instagram and linkedin via public meta tags, tolerating per-platform failures", () => {
+  assert.match(xProfileEdge, /function igFollowers/);
+  assert.match(xProfileEdge, /function liFollowers/);
+  assert.match(xProfileEdge, /og:description/);
+  assert.match(xProfileEdge, /refreshAll = isCron \|\| body\.refresh === "all"/);
+  assert.match(xProfileEdge, /warnings/);
+  assert.match(xProfileEdge, /function parseCompact/);
+});
+
+test("daily cron refreshes all platforms and default growth goals are +200/month", () => {
+  assert.match(refreshAllMigration, /'refresh', 'all'/);
+  assert.match(refreshAllMigration, /target_monthly_growth/);
+  assert.match(refreshAllMigration, /200/);
+  assert.match(refreshAllMigration, /vault\.decrypted_secrets/);
+});
+
+test("trend chart draws a dashed goal line from the monthly growth target", () => {
+  const chartFn = app.match(/function lineChart[\s\S]*?\n  \}/)?.[0];
+  assert.ok(chartFn, "lineChart not found");
+  assert.match(chartFn, /stroke-dasharray/);
+  assert.match(chartFn, /goalTarget/);
+  assert.match(chartFn, /baseline \+ goalTarget/);
+});
+
+test("meme bank: top-of-day reddit memes can be saved, used, and discarded", () => {
+  assert.match(redditEdge, /body\.mode === "top"/);
+  assert.match(redditEdge, /function topRedditMemes/);
+  assert.match(redditEdge, /over_18/);
+  assert.match(app, /data-top-memes/);
+  assert.match(app, /data-save-meme/);
+  assert.match(app, /meme_picks/);
+  assert.match(app, /data-pick-post/);
+  assert.match(app, /data-pick-used/);
+});
+
+test("meme_picks table is RLS-scoped like the rest", () => {
+  assert.match(refreshAllMigration, /alter table public\.meme_picks enable row level security/);
+  assert.match(refreshAllMigration, /meme_picks_member_all[\s\S]*?m\.role <> 'viewer'/);
 });
 
 test("rewrite_article mode reuses the user's template on pasted source text, any language, no fresh search", () => {

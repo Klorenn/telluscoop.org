@@ -243,6 +243,35 @@ async function searchOpenverse(query: string, limit: number) {
   })).filter((r) => r.url);
 }
 
+async function topRedditMemes(subs: string, limit: number) {
+  try {
+    const url = `https://www.reddit.com/r/${subs}/top.json?t=day&limit=${Math.min(60, limit * 3)}&raw_json=1`;
+    const response = await fetch(url, { headers: { "User-Agent": "TellusSocialOps/1.0 (telluscoop.org)" } });
+    if (!response.ok) return [];
+    const data = await response.json();
+    const children = (data?.data?.children ?? []) as { data: Record<string, unknown> }[];
+    return children
+      .map((c) => c.data)
+      .filter((p) => !p.over_18 && !p.stickied)
+      .filter((p) => {
+        const u = String(p.url ?? "");
+        return p.post_hint === "image" || /\.(jpe?g|png|gif)$/i.test(u) || u.includes("i.redd.it");
+      })
+      .map((p) => ({
+        title: String(p.title ?? ""),
+        url: String(p.url ?? ""),
+        thumbnail: String(p.url ?? ""),
+        page: `https://www.reddit.com${String(p.permalink ?? "")}`,
+        subreddit: String(p.subreddit ?? ""),
+        score: Number(p.score) || 0,
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+  } catch {
+    return [];
+  }
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (request.method !== "POST") return json({ error: "Método no permitido" }, 405);
@@ -269,9 +298,21 @@ Deno.serve(async (request) => {
 
     const body = await request.json();
     const query = String(body.query ?? "").trim();
-    if (!query) return json({ error: "Falta query" }, 400);
+    if (!query && body.mode !== "top") return json({ error: "Falta query" }, 400);
     const limit = Math.max(1, Math.min(25, Number(body.count) || 12));
     const lang = readLang(body.lang);
+
+    // Top memes of the day straight from Reddit's public JSON listing — the
+    // best-performing image posts across meme subreddits, for the meme bank.
+    if (body.mode === "top") {
+      const subs = query || "memes+ProgrammerHumor+wholesomememes+cryptocurrencymemes";
+      const items = await topRedditMemes(subs, limit);
+      return json({
+        items,
+        mode: "top",
+        ...(items.length ? {} : { message: "Reddit no devolvió memes ahora. Probá de nuevo en un rato." }),
+      });
+    }
 
     // Own memes: Gemini writes the joke, memegen.link renders it.
     if (body.mode === "create") {

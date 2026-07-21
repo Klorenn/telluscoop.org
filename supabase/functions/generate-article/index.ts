@@ -242,6 +242,42 @@ ${postJsonContract(lang)}`;
   };
 }
 
+async function generateRepoSocialPosts(apiKey: string, repo: RepoContext, lang: Lang): Promise<{ posts: Record<string, string>; sources: { url: string; title: string }[]; model: string }> {
+  const input = `Eres el equipo editorial de Tellus Cooperative. Escribe un post para cada canal sobre este repositorio de GitHub.
+
+Repositorio: ${repo.full_name ?? ""}
+Descripción: ${repo.description ?? ""}
+Lenguaje: ${repo.language ?? ""}
+Estrellas: ${repo.stars ?? ""}
+Enlace: ${repo.url ?? ""}
+
+Usa Google Search para entender qué hace el proyecto y por qué es interesante antes de escribir.
+
+${styleRules(lang)}
+
+Canales:
+- x: <=270 caracteres, gancho fuerte, incluye el enlace al final, 1-2 hashtags máximo.
+- whatsapp: 2-4 líneas sobrias para compartir en grupos técnicos, sin emojis, termina con el enlace.
+- discord: 2-4 líneas para un canal de comunidad/dev, tono cercano pero sin hype vacío, termina con el enlace.
+- linkedin: 3-5 párrafos cortos, tono profesional, explica el valor o caso de uso, cierre con el enlace.
+- instagram: caption de 2-3 líneas + 3-5 hashtags al final (sin link clickeable — invita a buscarlo o "link en bio").
+
+Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
+{"x": "post para X", "whatsapp": "mensaje para WhatsApp", "discord": "mensaje para Discord", "linkedin": "post para LinkedIn", "instagram": "caption para Instagram"}`;
+
+  const { data, model } = await callGemini(apiKey, input);
+  const parsed = parseJsonLoose(extractText(data));
+  const posts = {
+    x: String(parsed.x ?? "").trim(),
+    whatsapp: String(parsed.whatsapp ?? "").trim(),
+    discord: String(parsed.discord ?? "").trim(),
+    linkedin: String(parsed.linkedin ?? "").trim(),
+    instagram: String(parsed.instagram ?? "").trim(),
+  };
+  if (!Object.values(posts).some(Boolean)) throw new Error(`El modelo ${model} devolvió una respuesta vacía`);
+  return { posts, sources: collectSources(data), model };
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (request.method !== "POST") return json({ error: "Método no permitido" }, 405);
@@ -611,6 +647,17 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
         return json({ drafts: [draft], requested: 1, generated: 1, errors: [] });
       } catch (error) {
         return json({ error: "No se pudo generar el post", detail: [String(error)] }, 502);
+      }
+    }
+
+    // Mode: one post per channel about a repo — X, WhatsApp, Discord, LinkedIn, Instagram.
+    if (body.format === "repo_social_posts") {
+      if (!body.repo || typeof body.repo !== "object") return json({ error: "Falta el repositorio" }, 400);
+      try {
+        const result = await generateRepoSocialPosts(apiKey, body.repo as RepoContext, lang);
+        return json(result);
+      } catch (error) {
+        return json({ error: "No se pudieron generar los posts", detail: [String(error)] }, 502);
       }
     }
 

@@ -21,7 +21,7 @@
   };
 
   const state = {
-    session: null, preview: PREVIEW, view: "feed",
+    session: null, preview: PREVIEW, view: "summary",
     org: null, accounts: [], posts: [], repos: [],
     filters: { platform: "", category: "", search: "" },
     repoResults: [], repoQuery: "", repoBusy: false,
@@ -30,7 +30,8 @@
     articleForm: { prompt_key: "crypto", count: 1, prompt_md: "" },
     articleFilters: { status: "", template: "", search: "" }, articlePage: 0,
     topics: [], topicBusy: false, topicPosts: null, feedPage: 0,
-    memes: { query: "", busy: false, info: null, gifs: [] },
+    memes: { query: "", busy: false, info: null, gifs: [], top: null, topBusy: false },
+    memePicks: [],
     lang: localStorage.getItem("gen_lang") === "en" ? "en" : "es",
     tweetReply: null,
     rewrite: { source: "", busy: false },
@@ -160,6 +161,8 @@
       safe(supabase.from("social_metrics").select("*").order("captured_at", { ascending: false }).limit(400)),
       safe(supabase.from("social_goals").select("*")),
     ]);
+    const memePicks = await safe(supabase.from("meme_picks").select("*").neq("status", "discarded").order("created_at", { ascending: false }).limit(60));
+    state.memePicks = memePicks.data || [];
     const critical = [orgs, accounts, posts].find((r) => r.error);
     if (critical) throw critical.error;
     state.org = orgs.data[0] || null;
@@ -305,13 +308,14 @@
       localStorage.setItem("gen_lang", state.lang);
       renderShell();
     }));
-    // Popups used by Articles/Guides: click the code-block copy button, or
-    // click the dimmed backdrop itself (not the panel) to close.
+    // Popups used by Articles/Guides/Repos: click the code-block copy button,
+    // or click the dimmed backdrop itself (not the panel) to close.
     document.querySelectorAll("[data-copy-code]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyCode)));
     document.querySelectorAll("[data-modal-overlay]").forEach((overlay) => overlay.addEventListener("click", (e) => {
       if (e.target !== overlay) return;
       state.articleView = null;
       state.guideView = null;
+      state.repoPostDraft = null;
       renderShell();
     }));
     if (state.view === "summary") wireSummary();
@@ -339,24 +343,35 @@
   }
 
   // Minimal single-series trend line: thin 2px stroke, rounded caps, one
-  // highlighted endpoint. Invisible larger hit-circles carry a native
-  // <title> tooltip per point so the curve stays hoverable without a
-  // custom crosshair layer.
-  function lineChart(metricsAsc) {
-    if (metricsAsc.length < 2) return `<p class="chart-empty">Necesitás al menos 2 cargas de seguidores para ver la curva.</p>`;
-    const width = 320, height = 72, pad = 8;
+  // highlighted endpoint, soft area fill underneath, and an optional dashed
+  // goal line (this month's baseline + monthly growth target). Invisible
+  // larger hit-circles carry a native <title> tooltip per point so the curve
+  // stays hoverable without a custom crosshair layer.
+  function lineChart(metricsAsc, goalTarget) {
+    if (metricsAsc.length < 2) return `<p class="chart-empty">Cargá seguidores 2 veces (o esperá al auto diario) y acá aparece la curva.</p>`;
+    const width = 320, height = 84, pad = 10;
     const xs = metricsAsc.map((m) => new Date(m.captured_at).getTime());
     const ys = metricsAsc.map((m) => m.followers);
+    // Goal line: where followers should end this month (baseline + target).
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+    const desc = metricsAsc.slice().reverse();
+    const baseline = (desc.find((m) => new Date(m.captured_at).getTime() < monthStart) || metricsAsc[0]).followers;
+    const goalY = goalTarget ? baseline + goalTarget : null;
     const minX = Math.min(...xs), maxX = Math.max(...xs);
-    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const minY = Math.min(...ys, ...(goalY !== null ? [goalY] : []));
+    const maxY = Math.max(...ys, ...(goalY !== null ? [goalY] : []));
     const spanX = maxX - minX || 1;
     const spanY = maxY - minY || 1;
     const x = (v) => pad + ((v - minX) / spanX) * (width - pad * 2);
     const y = (v) => height - pad - ((v - minY) / spanY) * (height - pad * 2);
-    const path = metricsAsc.map((m, i) => `${i === 0 ? "M" : "L"}${x(new Date(m.captured_at).getTime()).toFixed(1)},${y(m.followers).toFixed(1)}`).join(" ");
+    const pts = metricsAsc.map((m) => `${x(new Date(m.captured_at).getTime()).toFixed(1)},${y(m.followers).toFixed(1)}`);
+    const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p}`).join(" ");
+    const area = `${path} L${x(maxX).toFixed(1)},${height - pad} L${x(minX).toFixed(1)},${height - pad} Z`;
     const last = metricsAsc[metricsAsc.length - 1];
-    const hits = metricsAsc.map((m) => `<circle cx="${x(new Date(m.captured_at).getTime()).toFixed(1)}" cy="${y(m.followers).toFixed(1)}" r="8" fill="transparent"><title>${esc(fmtDate(m.captured_at))}: ${esc(fmtNum(m.followers))} seguidores</title></circle>`).join("");
+    const hits = metricsAsc.map((m) => `<circle cx="${x(new Date(m.captured_at).getTime()).toFixed(1)}" cy="${y(m.followers).toFixed(1)}" r="9" fill="transparent"><title>${esc(fmtDate(m.captured_at))}: ${esc(fmtNum(m.followers))} seguidores</title></circle>`).join("");
     return `<svg class="trend-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Evolución de seguidores en el tiempo">
+      <path d="${area}" fill="var(--teal)" opacity=".08" />
+      ${goalY !== null ? `<line x1="${pad}" x2="${width - pad}" y1="${y(goalY).toFixed(1)}" y2="${y(goalY).toFixed(1)}" stroke="var(--clay)" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7"><title>Meta del mes: ${esc(fmtNum(goalY))}</title></line>` : ""}
       <path d="${path}" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
       <circle cx="${x(new Date(last.captured_at).getTime()).toFixed(1)}" cy="${y(last.followers).toFixed(1)}" r="4" fill="var(--teal)" />
       ${hits}
@@ -384,49 +399,52 @@
 
   function summaryCard(platform) {
     const s = summaryPlatform(platform);
-    const followerGoalPct = s.goal.target_followers && s.current ? Math.min(100, Math.round((s.current.followers / s.goal.target_followers) * 100)) : null;
     const growthGoalPct = s.goal.target_monthly_growth && s.growth != null ? Math.min(100, Math.max(0, Math.round((s.growth / s.goal.target_monthly_growth) * 100))) : null;
-    const monthLabel = new Intl.DateTimeFormat("es-CL", { month: "long" }).format(new Date());
+    const monthLabel = new Intl.DateTimeFormat("es-CL", { month: "short" }).format(new Date()).replace(".", "");
     return `
       <section class="card summary-card">
         <div class="summary-head">
           <span class="chip chip-platform-${platform}">${esc(platformLabels[platform])}</span>
-          ${s.account ? `<a href="${esc(s.account.url || "#")}" target="_blank" rel="noopener" style="color:var(--muted);font-size:.82rem">@${esc(s.account.handle)}</a>` : `<span style="color:var(--muted);font-size:.82rem">Sin cuenta en Cuentas</span>`}
+          ${s.account ? `<a href="${esc(s.account.url || "#")}" target="_blank" rel="noopener" class="summary-handle">@${esc(s.account.handle)}</a>` : `<span class="summary-handle">Sin cuenta</span>`}
         </div>
         <div class="stat-row">
           <div class="stat"><span class="stat-value">${s.current ? fmtNum(s.current.followers) : "—"}</span><span class="stat-label">Seguidores</span></div>
-          <div class="stat"><span class="stat-value ${s.growth == null ? "" : s.growth >= 0 ? "stat-up" : "stat-down"}">${s.growth == null ? "—" : (s.growth >= 0 ? "+" : "") + fmtNum(s.growth)}</span><span class="stat-label">Crecimiento de ${esc(monthLabel)}</span></div>
-          <div class="stat"><span class="stat-value">${s.postsThisWeek}</span><span class="stat-label">Posts esta semana</span></div>
+          <div class="stat"><span class="stat-value ${s.growth == null ? "" : s.growth >= 0 ? "stat-up" : "stat-down"}">${s.growth == null ? "—" : (s.growth >= 0 ? "+" : "") + fmtNum(s.growth)}</span><span class="stat-label">${esc(monthLabel)} · crecimiento</span></div>
+          <div class="stat"><span class="stat-value">${s.postsThisWeek}</span><span class="stat-label">Posts / semana</span></div>
         </div>
-        ${lineChart(s.trend)}
-        ${growthGoalPct !== null ? `<div class="progress"><div class="progress-fill" style="width:${growthGoalPct}%"></div></div><span class="progress-label">${growthGoalPct}% de la meta de +${fmtNum(s.goal.target_monthly_growth)} este mes</span>` : ""}
-        ${followerGoalPct !== null ? `<div class="progress"><div class="progress-fill" style="width:${followerGoalPct}%"></div></div><span class="progress-label">${followerGoalPct}% de la meta de ${fmtNum(s.goal.target_followers)} seguidores</span>` : ""}
+        ${lineChart(s.trend, Number(s.goal.target_monthly_growth) || null)}
+        ${growthGoalPct !== null ? `<div class="goal-row"><div class="progress"><div class="progress-fill" style="width:${growthGoalPct}%"></div></div><span class="progress-label">${growthGoalPct}% de +${fmtNum(s.goal.target_monthly_growth)} este mes</span></div>` : ""}
         <div class="summary-status ${s.postedToday ? "status-ok" : "status-warn"}">
           ${icon(s.postedToday ? "check-circle-2" : "alert-triangle")}
           <span>${s.lastPost ? (s.postedToday ? "Posteaste hoy" : `Hoy no has posteado — última vez ${fmtDate(s.lastPost.posted_at)}`) : "Sin posts registrados todavía"}</span>
+          <button class="table-link" type="button" data-mark-posted="${platform}" title="Registrar que posteaste hoy">${icon("plus")} Posteé</button>
         </div>
-        <div class="summary-actions">
-          <button class="button button-secondary" type="button" data-mark-posted="${platform}">${icon("check")} Marqué que posteé</button>
-          ${platform === "x" && !state.preview ? `<button class="button button-secondary" type="button" id="summary-refresh-x" ${state.summaryBusy ? "disabled" : ""}>${icon("refresh-cw")} ${state.summaryBusy ? "Actualizando…" : "Actualizar automático"}</button>` : ""}
-        </div>
-        <span class="summary-auto-note">${platform === "x" ? "Se actualiza solo 1 vez al día (además del botón)" : "Sin automatización todavía — cargá seguidores y posts a mano"}</span>
-        <form class="form-grid summary-form" data-followers-form="${platform}">
-          <div class="field"><label for="followers-${platform}">Actualizar seguidores</label><input id="followers-${platform}" name="followers" type="number" min="0" placeholder="${s.current ? s.current.followers : 0}" /></div>
-          <div class="form-foot"><button class="button button-primary" type="submit">Guardar</button></div>
-        </form>
-        <form class="form-grid summary-form" data-goals-form="${platform}">
-          <div class="field"><label for="goal-growth-${platform}">Meta crecimiento/mes</label><input id="goal-growth-${platform}" name="target_monthly_growth" type="number" min="0" value="${s.goal.target_monthly_growth ?? ""}" /></div>
-          <div class="field"><label for="goal-followers-${platform}">Meta seguidores</label><input id="goal-followers-${platform}" name="target_followers" type="number" min="0" value="${s.goal.target_followers ?? ""}" /></div>
-          <div class="field"><label for="goal-posts-${platform}">Meta posts/semana</label><input id="goal-posts-${platform}" name="target_posts_per_week" type="number" min="0" step="0.5" value="${s.goal.target_posts_per_week ?? ""}" /></div>
-          <div class="form-foot"><button class="button button-secondary" type="submit">Guardar meta</button></div>
-        </form>
+        <details class="summary-edit">
+          <summary>Datos y metas</summary>
+          <form class="form-grid summary-form" data-followers-form="${platform}">
+            <div class="field"><label for="followers-${platform}">Seguidores hoy</label><input id="followers-${platform}" name="followers" type="number" min="0" placeholder="${s.current ? s.current.followers : 0}" /></div>
+            <div class="form-foot"><button class="button button-primary" type="submit">Guardar</button></div>
+          </form>
+          <form class="form-grid summary-form" data-goals-form="${platform}">
+            <div class="field"><label for="goal-growth-${platform}">Meta crecimiento/mes</label><input id="goal-growth-${platform}" name="target_monthly_growth" type="number" min="0" placeholder="200" value="${s.goal.target_monthly_growth ?? ""}" /></div>
+            <div class="field"><label for="goal-posts-${platform}">Meta posts/semana</label><input id="goal-posts-${platform}" name="target_posts_per_week" type="number" min="0" step="0.5" value="${s.goal.target_posts_per_week ?? ""}" /></div>
+            <div class="form-foot"><button class="button button-secondary" type="submit">Guardar metas</button></div>
+          </form>
+        </details>
       </section>`;
   }
 
   function summaryView() {
+    const lastAuto = state.metrics.filter((m) => m.source === "scraper").map((m) => m.captured_at).sort().pop();
     return `
-      <div class="toolbar"><div><span class="eyebrow">${esc(state.org?.name || "")}</span><h2>Resumen</h2></div></div>
-      <div class="grid grid-3">${["x", "linkedin", "instagram"].map(summaryCard).join("")}</div>`;
+      <div class="toolbar">
+        <div><span class="eyebrow">${esc(state.org?.name || "")}</span><h2>Resumen</h2></div>
+        ${state.preview ? "" : `<div class="summary-toolbar">
+          <span class="summary-auto-note">${lastAuto ? `Auto: ${esc(fmtDate(lastAuto))} · corre 1 vez al día` : "Se actualiza solo 1 vez al día"}</span>
+          <button class="button button-secondary" type="button" id="summary-refresh-all" ${state.summaryBusy ? "disabled" : ""}>${icon("refresh-cw")} ${state.summaryBusy ? "Actualizando…" : "Actualizar ahora"}</button>
+        </div>`}
+      </div>
+      <div class="grid grid-3 summary-grid">${["x", "linkedin", "instagram"].map(summaryCard).join("")}</div>`;
   }
 
   function wireSummary() {
@@ -479,15 +497,16 @@
       renderShell();
     }));
 
-    document.querySelector("#summary-refresh-x")?.addEventListener("click", async () => {
+    document.querySelector("#summary-refresh-all")?.addEventListener("click", async () => {
       state.summaryBusy = true;
       renderShell();
       const account = state.accounts.find((a) => a.platform === "x" && a.category === "tellus-own");
-      const { data, error } = await invokeEdge("x-profile", { handle: account?.handle || "telluscoop" });
+      const { data, error } = await invokeEdge("x-profile", { handle: account?.handle || "telluscoop", refresh: "all" });
       state.summaryBusy = false;
-      if (error || data?.error) { notify(data?.error || "No se pudo actualizar X.", true); renderShell(); return; }
+      if (error || data?.error) { notify(data?.error || "No se pudo actualizar.", true); renderShell(); return; }
       await loadLiveData();
-      notify("X actualizado.");
+      const done = ["x", "instagram", "linkedin"].filter((p) => data[p] != null).map((p) => platformLabels[p]);
+      notify(done.length ? `Actualizado: ${done.join(", ")}.` : "Actualizado (algunas cuentas no respondieron — cargalas a mano).");
       renderShell();
     });
   }
@@ -590,6 +609,7 @@
         <input id="filter-search" type="search" placeholder="Filtrar texto o autor…" value="${esc(state.filters.search)}" aria-label="Filtrar" />
       </div>
       ${posts.length && !state.preview ? `<div class="form-foot" style="justify-content:flex-end;margin-bottom:.8rem">
+        ${state.posts.some((p) => p.source === "scraper") ? `<button class="button button-secondary" id="clear-scraped">${icon("trash-2")} Borrar todos los capturados</button>` : ""}
         <button class="button button-primary" id="gen-from-feed" ${state.topicPosts?.busy ? "disabled" : ""}>${icon("sparkles")} ${state.topicPosts?.busy ? "Generando…" : "Generar posts con estos"}</button>
       </div>` : ""}
       ${posts.length ? (() => {
@@ -708,6 +728,17 @@
       state.posts = state.posts.filter((p) => p.id !== button.dataset.deletePost);
       renderShell();
     }));
+    document.querySelector("#clear-scraped")?.addEventListener("click", async () => {
+      const scrapedIds = state.posts.filter((p) => p.source === "scraper").map((p) => p.id);
+      if (!scrapedIds.length) return;
+      if (!confirm(`¿Borrar los ${scrapedIds.length} posts capturados automáticamente? Los cargados a mano no se tocan.`)) return;
+      const { error } = await supabase.from("social_posts").delete().eq("organization_id", state.org.id).eq("source", "scraper");
+      if (error) return notify("No se pudo borrar.", true);
+      state.posts = state.posts.filter((p) => p.source !== "scraper");
+      state.feedPage = 0;
+      notify("Feed capturado limpiado.");
+      renderShell();
+    });
     document.querySelector("#topic-search-form")?.addEventListener("submit", runTopicSearch);
     document.querySelector("#fetch-recent")?.addEventListener("click", fetchRecentFromAccounts);
     document.querySelector("#gen-from-feed")?.addEventListener("click", generateFromFeed);
@@ -964,7 +995,7 @@
           </div>
         </div>
       </section>
-      ${state.repoPostDraft ? repoPostPanel(state.repoPostDraft) : ""}
+      ${repoPostModal()}
       ${state.repoResults.length ? `<div class="grid grid-2" style="margin-bottom:1.4rem">${state.repoResults.map(repoResultCard).join("")}</div>` : ""}
       <div class="toolbar"><div><span class="eyebrow">Guardados</span><h2>Repos elegidos</h2></div></div>
       ${state.repos.length ? `<div class="card table-wrap"><table>
@@ -975,7 +1006,7 @@
           <td>★ ${fmtNum(repo.stars)}</td>
           <td>${esc(repo.language || "—")}</td>
           <td><span class="status status-${esc(repo.status)}">${esc(repoStatusLabels[repo.status] || repo.status)}</span></td>
-          <td>${state.preview ? "" : `<button class="table-link" data-post-repo-saved="${esc(repo.id)}" ${state.repoPostBusy ? "disabled" : ""}>${icon("sparkles")} Post X</button>
+          <td>${state.preview ? "" : `<button class="table-link" data-post-repo-saved="${esc(repo.id)}" ${state.repoPostBusy ? "disabled" : ""}>${icon("sparkles")} Crear posts</button>
           <select data-repo-status="${esc(repo.id)}" aria-label="Cambiar estado" style="margin-top:.4rem">
             ${Object.entries(repoStatusLabels).map(([value, label]) => `<option value="${value}" ${repo.status === value ? "selected" : ""}>${label}</option>`).join("")}
           </select>`}</td>
@@ -991,25 +1022,30 @@
       <div class="post-stats"><span>★ ${fmtNum(repo.stargazers_count)}</span><span>${esc(repo.language || "—")}</span><span>${fmtDate(repo.pushed_at)}</span></div>
       <div class="form-foot" style="justify-content:start">
         ${saved ? `<span class="chip">Ya guardado</span>` : state.preview ? "" : `<button class="button button-secondary" data-save-repo="${esc(repo.full_name)}" style="min-height:38px">Guardar</button>`}
-        ${state.preview ? "" : `<button class="button button-primary" data-post-repo-result="${esc(repo.full_name)}" style="min-height:38px" ${state.repoPostBusy ? "disabled" : ""}>${icon("sparkles")} ${state.repoPostBusy ? "Generando…" : "Crear post X"}</button>`}
+        ${state.preview ? "" : `<button class="button button-primary" data-post-repo-result="${esc(repo.full_name)}" style="min-height:38px" ${state.repoPostBusy ? "disabled" : ""}>${icon("sparkles")} ${state.repoPostBusy ? "Generando…" : "Crear posts"}</button>`}
       </div>
     </article>`;
   }
 
-  function repoPostPanel(draft) {
-    const hashtags = (draft.summary || []).join(" ");
-    const text = [draft.body_md, hashtags].filter(Boolean).join("\n\n");
-    return `<section class="card" style="margin-bottom:1.4rem;border-color:var(--teal)">
-      <div class="post-head"><h3 style="margin:0">Post para X — ${esc(draft.title)}</h3>
-        <button class="table-link" data-close-post aria-label="Cerrar">${icon("x")} Cerrar</button></div>
-      <textarea id="repo-post-text" style="width:100%;min-height:150px;margin:.6rem 0;border:1px solid var(--line);border-radius:11px;padding:.72rem .85rem">${esc(text)}</textarea>
+  const REPO_POST_CHANNELS = [["x", "X"], ["whatsapp", "WhatsApp"], ["discord", "Discord"], ["linkedin", "LinkedIn"], ["instagram", "Instagram"]];
+
+  function repoPostModal() {
+    const draft = state.repoPostDraft;
+    if (!draft) return "";
+    const head = `<h2 style="margin:0">Posts para «${esc(draft.repoName)}»</h2>
+      <button class="button button-ghost" type="button" data-close-post>${icon("x")} Cerrar</button>`;
+    const body = `
+      <div class="modal-tabs" role="tablist" aria-label="Canal">
+        ${REPO_POST_CHANNELS.map(([key, label]) => `<button type="button" role="tab" aria-selected="${draft.tab === key}" class="${draft.tab === key ? "active" : ""}" data-repo-tab="${key}">${esc(label)}</button>`).join("")}
+      </div>
+      <textarea id="repo-post-text" style="width:100%;min-height:160px;margin:.8rem 0;border:1px solid var(--line);border-radius:11px;padding:.72rem .85rem">${esc(draft.posts[draft.tab] || "")}</textarea>
       ${draft.sources?.length ? `<div class="post-meta"><span>${draft.sources.length} fuente(s):</span> ${draft.sources.slice(0, 4).map((s) => `<a class="table-link" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join(" · ")}</div>`
         : `<div class="post-meta"><span style="color:var(--red)">Sin fuentes verificadas — revisá antes de publicar.</span></div>`}
       <div class="form-foot" style="justify-content:start;margin-top:.7rem">
-        <button class="button button-secondary" id="repo-post-copy" type="button" style="min-height:38px">${icon("copy")} Copiar</button>
-        <button class="button button-primary" id="repo-post-save" type="button" style="min-height:38px">Guardar como borrador</button>
-      </div>
-    </section>`;
+        <button class="button button-secondary" id="repo-post-copy" type="button">${icon("copy")} Copiar ${esc(REPO_POST_CHANNELS.find(([k]) => k === draft.tab)?.[1] || "")}</button>
+        <button class="button button-primary" id="repo-post-save" type="button">Guardar los 5 como borrador</button>
+      </div>`;
+    return modalShell(head, body);
   }
 
   // GitHub's own search only matches name/description/readme, so a term like
@@ -1139,7 +1175,18 @@
       const repo = state.repos.find((r) => r.id === button.dataset.postRepoSaved);
       if (repo) generatePostForRepo({ full_name: repo.repo_full_name, description: repo.description, url: repo.url, language: repo.language, stars: repo.stars });
     }));
-    document.querySelector("#repo-post-copy")?.addEventListener("click", () => copyText(document.querySelector("#repo-post-text")?.value || ""));
+    document.querySelectorAll("[data-repo-tab]").forEach((button) => button.addEventListener("click", () => {
+      if (!state.repoPostDraft) return;
+      state.repoPostDraft.tab = button.dataset.repoTab;
+      renderShell();
+    }));
+    document.querySelector("#repo-post-text")?.addEventListener("input", (e) => {
+      if (state.repoPostDraft) state.repoPostDraft.posts[state.repoPostDraft.tab] = e.target.value;
+    });
+    document.querySelector("#repo-post-copy")?.addEventListener("click", () => {
+      const draft = state.repoPostDraft;
+      if (draft) copyText(draft.posts[draft.tab] || "");
+    });
     document.querySelector("#repo-post-save")?.addEventListener("click", saveRepoPost);
     document.querySelector("[data-close-post]")?.addEventListener("click", () => { state.repoPostDraft = null; renderShell(); });
   }
@@ -1148,28 +1195,31 @@
     if (state.preview) return notify("La vista previa es de solo lectura.", true);
     state.repoPostBusy = true;
     renderShell();
-    const { data, error } = await invokeEdge("generate-article", { format: "x_post", repo });
+    const { data, error } = await invokeEdge("generate-article", { format: "repo_social_posts", repo });
     state.repoPostBusy = false;
     if (error || data?.error) {
       notify(data?.error || "No se pudo generar el post. Revisá que Gemini esté configurado.", true);
       return renderShell();
     }
-    state.repoPostDraft = data.drafts?.[0] || null;
-    notify("Post generado. Revisalo y ajustá antes de publicar.");
+    state.repoPostDraft = { repoName: repo.full_name, repoUrl: repo.url, posts: data.posts, sources: data.sources || [], model: data.model, tab: "x" };
+    notify("Posts generados. Revisalos por canal antes de publicar.");
     renderShell();
   }
 
   async function saveRepoPost() {
     const draft = state.repoPostDraft;
     if (!draft) return;
-    const edited = document.querySelector("#repo-post-text")?.value || draft.body_md;
+    const body_md = REPO_POST_CHANNELS
+      .filter(([key]) => draft.posts[key]?.trim())
+      .map(([key, label]) => `## ${label}\n\n${draft.posts[key].trim()}`)
+      .join("\n\n");
     const row = {
       organization_id: state.org.id,
-      prompt_key: "x_post",
-      title: draft.title,
-      subtitle: draft.subtitle,
-      summary: draft.summary || [],
-      body_md: edited,
+      prompt_key: "repo_social_posts",
+      title: draft.repoName,
+      subtitle: draft.repoUrl || "",
+      summary: [],
+      body_md,
       sources: draft.sources || [],
       model: draft.model,
       status: "draft",
@@ -1179,7 +1229,7 @@
     if (error) return notify("No se pudo guardar el post.", true);
     state.articles.unshift(data);
     state.repoPostDraft = null;
-    notify("Post guardado como borrador en Artículos.");
+    notify("Posts guardados como borrador en Artículos.");
     renderShell();
   }
 
@@ -1191,6 +1241,7 @@
   // a human label instead of the raw key.
   function articleTemplateLabel(key) {
     if (key === "x_post") return "Post de repo (X)";
+    if (key === "repo_social_posts") return "Posts de repo (multi-canal)";
     if (key === "reescrito") return "Reescrito de fuente";
     return state.prompts.find((p) => p.key === key)?.name || key || "—";
   }
@@ -1610,6 +1661,38 @@
           </div>
         </div>
       </section>
+
+      <section class="card" style="margin-bottom:1.2rem">
+        <div class="post-head"><h3 style="margin:0">Top memes de hoy</h3>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+            ${[["Todos", ""], ["Devs", "ProgrammerHumor"], ["Cripto", "cryptocurrencymemes+bitcoinmemes"], ["Clásicos", "memes+wholesomememes"]].map(([label, subs]) => `<button class="button button-secondary" data-top-memes="${esc(subs)}" ${m.topBusy || state.preview ? "disabled" : ""} style="min-height:34px;padding:.3rem .8rem">${esc(label)}</button>`).join("")}
+          </div>
+        </div>
+        <p style="color:var(--muted);margin:.3rem 0 0">Los memes con más votos del día en Reddit. Guardá los buenos en tu banco para usarlos cuando quieras.</p>
+        ${m.topBusy ? `<p style="color:var(--muted);margin:.8rem 0 0">Trayendo lo mejor del día…</p>` : ""}
+        ${m.top?.length ? `<div class="grid grid-3" style="margin-top:.9rem">${m.top.map((g, i) => `<article class="card">
+          <a href="${esc(g.page || g.url)}" target="_blank" rel="noopener"><img src="${esc(g.url)}" alt="" style="width:100%;border-radius:8px;max-height:200px;object-fit:cover" loading="lazy" /></a>
+          <p style="margin:.5rem 0 .2rem;line-height:1.35;font-size:.9rem">${esc(g.title.slice(0, 90))}</p>
+          <span style="color:var(--muted);font-size:.78rem">r/${esc(g.subreddit)} · ▲ ${fmtNum(g.score)}</span>
+          <div class="form-foot" style="justify-content:start;margin-top:.4rem">
+            ${state.memePicks.some((p) => p.image_url === g.url) ? `<span class="chip">Guardado</span>` : `<button class="table-link" data-save-meme="${i}">${icon("bookmark")} Guardar</button>`}
+            <button class="table-link" data-copy-meme="${esc(g.url)}">Copiar link</button>
+          </div>
+        </article>`).join("")}</div>` : ""}
+      </section>
+
+      ${state.memePicks.length ? `<div class="toolbar"><div><span class="eyebrow">Tu banco</span><h2>Memes guardados</h2></div></div>
+        <div class="grid grid-3" style="margin-bottom:1.4rem">${state.memePicks.map((p) => `<article class="card">
+          <a href="${esc(p.page_url || p.image_url)}" target="_blank" rel="noopener"><img src="${esc(p.image_url)}" alt="" style="width:100%;border-radius:8px;max-height:200px;object-fit:cover;${p.status === "used" ? "opacity:.55" : ""}" loading="lazy" /></a>
+          <p style="margin:.5rem 0 .2rem;line-height:1.35;font-size:.9rem">${esc((p.title || "").slice(0, 90))}</p>
+          <span style="color:var(--muted);font-size:.78rem">${p.subreddit ? `r/${esc(p.subreddit)} · ` : ""}${p.status === "used" ? "Ya usado" : "Sin usar"}</span>
+          <div class="form-foot" style="justify-content:start;margin-top:.4rem">
+            <button class="table-link" data-pick-post="${esc(p.id)}">✨ Crear post</button>
+            <button class="table-link" data-copy-meme="${esc(p.image_url)}">Copiar</button>
+            ${p.status !== "used" ? `<button class="table-link" data-pick-used="${esc(p.id)}">Marcar usado</button>` : ""}
+            <button class="table-link" data-pick-discard="${esc(p.id)}" style="color:var(--red)">Quitar</button>
+          </div>
+        </article>`).join("")}</div>` : ""}
       ${m.memePost ? `<section class="card" style="margin-bottom:1.2rem">
         <h3>Post para el meme ${m.memePost.title ? `«${esc(m.memePost.title)}»` : ""}</h3>
         ${m.memePost.busy ? `<p style="color:var(--muted);margin:.4rem 0 0">Escribiendo el post…</p>` : `
@@ -1689,6 +1772,54 @@
     document.querySelectorAll("[data-meme-cat]").forEach((button) => button.addEventListener("click", () => browseMemeCategory(button.dataset.memeLabel, button.dataset.memeCat)));
     document.querySelectorAll("[data-meme-post-idx]").forEach((button) => button.addEventListener("click", () => generateMemePost(Number(button.dataset.memePostIdx))));
     document.querySelectorAll("[data-created-post]").forEach((button) => button.addEventListener("click", () => generateCreatedMemePost(Number(button.dataset.createdPost))));
+    document.querySelectorAll("[data-top-memes]").forEach((button) => button.addEventListener("click", () => loadTopMemes(button.dataset.topMemes)));
+    document.querySelectorAll("[data-save-meme]").forEach((button) => button.addEventListener("click", () => saveMemePick(Number(button.dataset.saveMeme))));
+    document.querySelectorAll("[data-pick-post]").forEach((button) => button.addEventListener("click", () => {
+      const pick = state.memePicks.find((p) => p.id === button.dataset.pickPost);
+      if (pick) memePostFor({ title: pick.title, url: pick.image_url });
+    }));
+    document.querySelectorAll("[data-pick-used]").forEach((button) => button.addEventListener("click", () => updateMemePick(button.dataset.pickUsed, "used")));
+    document.querySelectorAll("[data-pick-discard]").forEach((button) => button.addEventListener("click", () => updateMemePick(button.dataset.pickDiscard, "discarded")));
+  }
+
+  async function loadTopMemes(subs) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    state.memes.topBusy = true;
+    renderShell();
+    const { data, error } = await invokeEdge("reddit-search", { mode: "top", query: subs || "", count: 12 });
+    state.memes.topBusy = false;
+    state.memes.top = data?.items || [];
+    if (error || data?.error) notify(data?.error || "No se pudieron traer los memes.", true);
+    else if (!state.memes.top.length) notify(data?.message || "Reddit no devolvió memes ahora.");
+    renderShell();
+  }
+
+  async function saveMemePick(index) {
+    const g = state.memes.top?.[index];
+    if (!g) return;
+    const row = {
+      organization_id: state.org.id,
+      title: g.title,
+      image_url: g.url,
+      page_url: g.page || null,
+      source: "reddit",
+      subreddit: g.subreddit || null,
+      score: g.score || 0,
+      added_by: state.session?.user?.id || null,
+    };
+    const { data, error } = await supabase.from("meme_picks").insert(row).select().single();
+    if (error) return notify(error.code === "23505" ? "Ese meme ya está guardado." : "No se pudo guardar.", true);
+    state.memePicks.unshift(data);
+    notify("Meme guardado en tu banco.");
+    renderShell();
+  }
+
+  async function updateMemePick(id, status) {
+    const { error } = await supabase.from("meme_picks").update({ status }).eq("id", id);
+    if (error) return notify("No se pudo actualizar.", true);
+    if (status === "discarded") state.memePicks = state.memePicks.filter((p) => p.id !== id);
+    else { const pick = state.memePicks.find((p) => p.id === id); if (pick) pick.status = status; }
+    renderShell();
   }
 
   // Own memes: Gemini writes the joke, memegen renders it. Used templates are
@@ -2087,12 +2218,13 @@
   }
 
   supabase.auth.onAuthStateChange((_event, session) => { state.session = session; });
-  // Escape closes whichever article/guide popup is open. Bound once, not on
-  // every render, since it never needs to change.
+  // Escape closes whichever article/guide/repo-post popup is open. Bound
+  // once, not on every render, since it never needs to change.
   document.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape" || (!state.articleView && !state.guideView)) return;
+    if (e.key !== "Escape" || (!state.articleView && !state.guideView && !state.repoPostDraft)) return;
     state.articleView = null;
     state.guideView = null;
+    state.repoPostDraft = null;
     renderShell();
   });
   boot();

@@ -57,6 +57,22 @@ Deno.serve(async (request) => {
 
     const body = await request.json();
 
+    // Re-running the same (or an overlapping) search keeps finding the same
+    // trending tweets, which cluttered the feed and made "Comentarios del
+    // día" regenerate replies for posts already captured. Drop anything
+    // whose URL is already in social_posts before it's saved or returned.
+    const dropAlreadyCaptured = async (rows: PostRow[]): Promise<PostRow[]> => {
+      const urls = rows.map((r) => r.url).filter(Boolean);
+      if (!urls.length) return rows;
+      const { data: existing } = await supabase
+        .from("social_posts")
+        .select("url")
+        .eq("organization_id", membership.organization_id)
+        .in("url", urls);
+      const seen = new Set((existing || []).map((r: { url: string }) => r.url));
+      return rows.filter((r) => !seen.has(r.url));
+    };
+
     // Mode 1: Client sends pre-parsed posts directly
     if (Array.isArray(body.posts)) {
       const rows: PostRow[] = body.posts.map((p: Record<string, unknown>) => ({
@@ -76,7 +92,8 @@ Deno.serve(async (request) => {
 
       if (!rows.length) return json({ saved: 0, posts: [], message: "Sin resultados válidos" });
 
-      const deduped = [...new Map(rows.map((r) => [r.url, r])).values()];
+      const deduped = await dropAlreadyCaptured([...new Map(rows.map((r) => [r.url, r])).values()]);
+      if (!deduped.length) return json({ saved: 0, posts: [], message: "Ya tenías todos estos posts capturados." });
       const { error } = await supabase.from("social_posts").upsert(deduped, { onConflict: "organization_id,url" });
       if (error) return json({ error: `No se pudo guardar: ${error.message}` }, 500);
 
@@ -143,7 +160,8 @@ Deno.serve(async (request) => {
       source: "scraper" as const,
     })).filter((r) => r.author_handle && r.url);
 
-    const deduped = [...new Map(rows.map((r) => [r.url, r])).values()];
+    const deduped = await dropAlreadyCaptured([...new Map(rows.map((r) => [r.url, r])).values()]);
+    if (!deduped.length) return json({ saved: 0, posts: [], message: "Ya tenías todos estos posts capturados — probá otro tema." });
     const { error } = await supabase.from("social_posts").upsert(deduped, { onConflict: "organization_id,url" });
     if (error) return json({ error: `No se pudo guardar: ${error.message}` }, 500);
 
