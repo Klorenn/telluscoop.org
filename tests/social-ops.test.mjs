@@ -10,6 +10,8 @@ const articlesMigration = await readFile(new URL("../supabase/migrations/2026071
 const edge = await readFile(new URL("../supabase/functions/generate-article/index.ts", import.meta.url), "utf8");
 const redditEdge = await readFile(new URL("../supabase/functions/reddit-search/index.ts", import.meta.url), "utf8");
 const guidesMigration = await readFile(new URL("../supabase/migrations/20260721030000_create_guides.sql", import.meta.url), "utf8");
+const summaryMigration = await readFile(new URL("../supabase/migrations/20260721040000_create_social_summary.sql", import.meta.url), "utf8");
+const xProfileEdge = await readFile(new URL("../supabase/functions/x-profile/index.ts", import.meta.url), "utf8");
 
 test("production cache versions match", () => {
   const cssVersion = page.match(/styles\.css\?v=([^"']+)/)?.[1];
@@ -242,6 +244,42 @@ test("reply generators detect the original post's own language and soften tone f
     assert.match(block, /lanzamiento de repo/);
   }
   assert.match(edge, /function houseRules/);
+});
+
+test("summary tables (metrics, goals) enable RLS and block viewers from writing", () => {
+  for (const table of ["social_metrics", "social_goals"]) {
+    assert.match(summaryMigration, new RegExp(`alter table public\\.${table} enable row level security`));
+    assert.match(summaryMigration, new RegExp(`${table}_member_all[\\s\\S]*?m\\.role <> 'viewer'`));
+  }
+});
+
+test("own accounts are seeded on LinkedIn and Instagram, tagged tellus-own", () => {
+  assert.match(summaryMigration, /'linkedin', 'tellus-cooperative'/);
+  assert.match(summaryMigration, /'instagram', 'telluscoop'/);
+  assert.match(summaryMigration, /'tellus-own'/);
+});
+
+test("Resumen view shows followers, growth, goals and whether today has a post per platform", () => {
+  assert.match(app, /function summaryView/);
+  assert.match(app, /function summaryPlatform/);
+  assert.match(app, /navButton\("summary"/);
+  assert.match(app, /Hoy no has posteado/);
+  assert.match(app, /data-followers-form/);
+  assert.match(app, /data-goals-form/);
+  assert.match(app, /data-mark-posted/);
+});
+
+test("x-profile edge function requires a session and keeps the scraper server URL out of the frontend", () => {
+  assert.match(xProfileEdge, /Sesión requerida/);
+  assert.match(xProfileEdge, /\.neq\("role", "viewer"\)/);
+  assert.match(xProfileEdge, /Deno\.env\.get\("X_SEARCH_SERVER_URL"\)/);
+  assert.doesNotMatch(app, /X_SEARCH_SERVER_URL/);
+});
+
+test("x-profile writes follower snapshots and the latest own post as scraper-sourced", () => {
+  assert.match(xProfileEdge, /source: "scraper"/);
+  assert.match(xProfileEdge, /social_metrics/);
+  assert.match(xProfileEdge, /social_posts/);
 });
 
 test("rewrite_article mode reuses the user's template on pasted source text, any language, no fresh search", () => {

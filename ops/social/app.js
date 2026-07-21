@@ -37,6 +37,7 @@
     dailyReplies: null,
     guides: [], guideForm: { chain: "stellar", topic: "", useImages: true, useEmojis: false }, guideDrafts: [], guideBusy: false,
     guideView: null, guideSocialPosts: null,
+    metrics: [], goals: [], summaryBusy: false,
   };
 
   const CHAINS = [
@@ -147,7 +148,7 @@
 
   async function loadLiveData() {
     const safe = async (query) => { try { return await query; } catch { return { data: [], error: null }; } };
-    const [orgs, accounts, posts, repos, prompts, articles, topics, guides] = await Promise.all([
+    const [orgs, accounts, posts, repos, prompts, articles, topics, guides, metrics, goals] = await Promise.all([
       safe(supabase.from("organizations").select("id, name, slug").limit(1)),
       safe(supabase.from("social_accounts").select("*").order("category").order("handle")),
       safe(supabase.from("social_posts").select("*").order("posted_at", { ascending: false, nullsFirst: false }).limit(300)),
@@ -156,6 +157,8 @@
       safe(supabase.from("articles").select("*").order("created_at", { ascending: false }).limit(100)),
       safe(supabase.from("social_topics").select("*").order("label")),
       safe(supabase.from("guides").select("*").order("created_at", { ascending: false }).limit(100)),
+      safe(supabase.from("social_metrics").select("*").order("captured_at", { ascending: false }).limit(400)),
+      safe(supabase.from("social_goals").select("*")),
     ]);
     const critical = [orgs, accounts, posts].find((r) => r.error);
     if (critical) throw critical.error;
@@ -167,6 +170,8 @@
     state.articles = articles.data || [];
     state.topics = topics.data || [];
     state.guides = guides.data || [];
+    state.metrics = metrics.data || [];
+    state.goals = goals.data || [];
     if (state.prompts[0]) state.articleForm.prompt_key = state.prompts[0].key;
   }
 
@@ -202,10 +207,27 @@
       { id: "a1", platform: "x", handle: "midudev", display_name: "Miguel Ángel Durán", category: "ai-dev-news", active: true },
       { id: "a2", platform: "x", handle: "levelsio", display_name: "Pieter Levels", category: "internet-business", active: true },
       { id: "a3", platform: "x", handle: "dev_gen88926", display_name: "Dev Gen", category: "memes", active: true },
+      { id: "own-x", platform: "x", handle: "telluscoop", display_name: "Tellus Cooperative", category: "tellus-own", active: true },
+      { id: "own-li", platform: "linkedin", handle: "tellus-cooperative", display_name: "Tellus Cooperative", category: "tellus-own", active: true },
+      { id: "own-ig", platform: "instagram", handle: "telluscoop", display_name: "Tellus Cooperative", category: "tellus-own", active: true },
     ];
     state.posts = [
       { id: "p1", account_id: "a1", platform: "x", author_handle: "midudev", content: "Ha salido Kimi K3. Se siente como un nuevo momento DeepSeek para el mundo de la IA.", url: "https://x.com/midudev/status/1", posted_at: new Date().toISOString(), likes: 4200, reposts: 610, replies: 180, views: 520000, source: "manual", tags: [] },
       { id: "p2", account_id: "a2", platform: "x", author_handle: "levelsio", content: "Ship fast. Charge money. Talk to users.", url: "https://x.com/levelsio/status/2", posted_at: new Date(Date.now() - 864e5).toISOString(), likes: 9800, reposts: 1200, replies: 340, views: 1200000, source: "manual", tags: [] },
+      { id: "p-own-x", account_id: "own-x", platform: "x", author_handle: "telluscoop", content: "Nuestro post de hoy en X.", url: "https://x.com/telluscoop/status/9", posted_at: new Date().toISOString(), likes: 40, reposts: 6, replies: 3, views: 3200, source: "scraper", tags: [] },
+      { id: "p-own-li", account_id: "own-li", platform: "linkedin", author_handle: "tellus-cooperative", content: "Novedades de la cooperativa.", url: null, posted_at: new Date(Date.now() - 3 * 864e5).toISOString(), likes: 0, reposts: 0, replies: 0, views: 0, source: "manual", tags: [] },
+    ];
+    state.metrics = [
+      { id: "m1", platform: "x", followers: 1840, source: "scraper", captured_at: new Date().toISOString() },
+      { id: "m2", platform: "x", followers: 1790, source: "manual", captured_at: new Date(Date.now() - 14 * 864e5).toISOString() },
+      { id: "m3", platform: "linkedin", followers: 620, source: "manual", captured_at: new Date(Date.now() - 5 * 864e5).toISOString() },
+      { id: "m4", platform: "linkedin", followers: 590, source: "manual", captured_at: new Date(Date.now() - 35 * 864e5).toISOString() },
+      { id: "m5", platform: "instagram", followers: 310, source: "manual", captured_at: new Date(Date.now() - 20 * 864e5).toISOString() },
+    ];
+    state.goals = [
+      { id: "g1", platform: "x", target_followers: 3000, target_posts_per_week: 7 },
+      { id: "g2", platform: "linkedin", target_followers: 1500, target_posts_per_week: 3 },
+      { id: "g3", platform: "instagram", target_followers: 1000, target_posts_per_week: 4 },
     ];
     state.repos = [
       { id: "r1", repo_full_name: "D4Vinci/Scrapling", url: "https://github.com/D4Vinci/Scrapling", description: "Undetectable, powerful, flexible web scraping for Python", stars: 12400, language: "Python", status: "inbox", topics: ["scraping"] },
@@ -237,6 +259,7 @@
         <aside class="sidebar">
           <div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Social Ops</div>
           <nav aria-label="Secciones">
+            ${navButton("summary", "layout-dashboard", "Resumen")}
             ${navButton("feed", "rss", "Feed")}
             ${navButton("accounts", "users", "Cuentas")}
             ${navButton("repos", "github", "Repos")}
@@ -260,7 +283,8 @@
   }
 
   function renderView() {
-    return state.view === "accounts" ? accountsView()
+    return state.view === "summary" ? summaryView()
+      : state.view === "accounts" ? accountsView()
       : state.view === "repos" ? reposView()
       : state.view === "articles" ? articlesView()
       : state.view === "memes" ? memesView()
@@ -288,12 +312,137 @@
       state.guideView = null;
       renderShell();
     }));
+    if (state.view === "summary") wireSummary();
     if (state.view === "feed") wireFeed();
     if (state.view === "accounts") wireAccounts();
     if (state.view === "repos") wireRepos();
     if (state.view === "articles") wireArticles();
     if (state.view === "memes") wireMemes();
     if (state.view === "guides") wireGuides();
+  }
+
+  // ---------- summary ----------
+
+  function sameDay(a, b) { return new Date(a).toDateString() === new Date(b).toDateString(); }
+
+  function summaryPlatform(platform) {
+    const account = state.accounts.find((a) => a.platform === platform && a.category === "tellus-own");
+    const metrics = state.metrics.filter((m) => m.platform === platform).slice().sort((a, b) => new Date(b.captured_at) - new Date(a.captured_at));
+    const goal = state.goals.find((g) => g.platform === platform) || {};
+    const posts = account
+      ? state.posts.filter((p) => p.account_id === account.id && p.posted_at).slice().sort((a, b) => new Date(b.posted_at) - new Date(a.posted_at))
+      : [];
+    const current = metrics[0] || null;
+    const previous = metrics[1] || null;
+    const delta = current && previous ? current.followers - previous.followers : null;
+    const lastPost = posts[0] || null;
+    const postedToday = lastPost ? sameDay(lastPost.posted_at, new Date()) : false;
+    const weekAgo = Date.now() - 7 * 864e5;
+    const postsThisWeek = posts.filter((p) => new Date(p.posted_at).getTime() >= weekAgo).length;
+    return { platform, account, current, delta, goal, lastPost, postedToday, postsThisWeek };
+  }
+
+  function summaryCard(platform) {
+    const s = summaryPlatform(platform);
+    const followerGoalPct = s.goal.target_followers && s.current ? Math.min(100, Math.round((s.current.followers / s.goal.target_followers) * 100)) : null;
+    return `
+      <section class="card summary-card">
+        <div class="summary-head">
+          <span class="chip chip-platform-${platform}">${esc(platformLabels[platform])}</span>
+          ${s.account ? `<a href="${esc(s.account.url || "#")}" target="_blank" rel="noopener" style="color:var(--muted);font-size:.82rem">@${esc(s.account.handle)}</a>` : `<span style="color:var(--muted);font-size:.82rem">Sin cuenta en Cuentas</span>`}
+        </div>
+        <div class="stat-row">
+          <div class="stat"><span class="stat-value">${s.current ? fmtNum(s.current.followers) : "—"}</span><span class="stat-label">Seguidores</span></div>
+          <div class="stat"><span class="stat-value ${s.delta == null ? "" : s.delta >= 0 ? "stat-up" : "stat-down"}">${s.delta == null ? "—" : (s.delta >= 0 ? "+" : "") + fmtNum(s.delta)}</span><span class="stat-label">Desde última carga</span></div>
+          <div class="stat"><span class="stat-value">${s.postsThisWeek}</span><span class="stat-label">Posts esta semana</span></div>
+        </div>
+        ${followerGoalPct !== null ? `<div class="progress"><div class="progress-fill" style="width:${followerGoalPct}%"></div></div><span class="progress-label">${followerGoalPct}% de la meta de ${fmtNum(s.goal.target_followers)} seguidores</span>` : ""}
+        <div class="summary-status ${s.postedToday ? "status-ok" : "status-warn"}">
+          ${icon(s.postedToday ? "check-circle-2" : "alert-triangle")}
+          <span>${s.lastPost ? (s.postedToday ? "Posteaste hoy" : `Hoy no has posteado — última vez ${fmtDate(s.lastPost.posted_at)}`) : "Sin posts registrados todavía"}</span>
+        </div>
+        <div class="summary-actions">
+          <button class="button button-secondary" type="button" data-mark-posted="${platform}">${icon("check")} Marqué que posteé</button>
+          ${platform === "x" && !state.preview ? `<button class="button button-secondary" type="button" id="summary-refresh-x" ${state.summaryBusy ? "disabled" : ""}>${icon("refresh-cw")} ${state.summaryBusy ? "Actualizando…" : "Actualizar automático"}</button>` : ""}
+        </div>
+        <form class="form-grid summary-form" data-followers-form="${platform}">
+          <div class="field"><label for="followers-${platform}">Actualizar seguidores</label><input id="followers-${platform}" name="followers" type="number" min="0" placeholder="${s.current ? s.current.followers : 0}" /></div>
+          <div class="form-foot"><button class="button button-primary" type="submit">Guardar</button></div>
+        </form>
+        <form class="form-grid summary-form" data-goals-form="${platform}">
+          <div class="field"><label for="goal-followers-${platform}">Meta seguidores</label><input id="goal-followers-${platform}" name="target_followers" type="number" min="0" value="${s.goal.target_followers ?? ""}" /></div>
+          <div class="field"><label for="goal-posts-${platform}">Meta posts/semana</label><input id="goal-posts-${platform}" name="target_posts_per_week" type="number" min="0" step="0.5" value="${s.goal.target_posts_per_week ?? ""}" /></div>
+          <div class="form-foot"><button class="button button-secondary" type="submit">Guardar meta</button></div>
+        </form>
+      </section>`;
+  }
+
+  function summaryView() {
+    return `
+      <div class="toolbar"><div><span class="eyebrow">${esc(state.org?.name || "")}</span><h2>Resumen</h2></div></div>
+      <div class="grid grid-3">${["x", "linkedin", "instagram"].map(summaryCard).join("")}</div>`;
+  }
+
+  function wireSummary() {
+    document.querySelectorAll("[data-mark-posted]").forEach((button) => button.addEventListener("click", async () => {
+      if (state.preview) return notify("La vista previa es de solo lectura.", true);
+      const platform = button.dataset.markPosted;
+      const account = state.accounts.find((a) => a.platform === platform && a.category === "tellus-own");
+      if (!account) return notify("Falta la cuenta propia de esta plataforma en Cuentas.", true);
+      const row = {
+        organization_id: state.org.id, account_id: account.id, platform,
+        author_handle: account.handle, url: null,
+        content: "(post propio registrado manualmente)", posted_at: new Date().toISOString(),
+        source: "manual",
+      };
+      const { data, error } = await supabase.from("social_posts").insert(row).select().single();
+      if (error) return notify("No se pudo registrar el post.", true);
+      state.posts.unshift(data);
+      notify("Post registrado.");
+      renderShell();
+    }));
+
+    document.querySelectorAll("[data-followers-form]").forEach((form) => form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (state.preview) return notify("La vista previa es de solo lectura.", true);
+      const platform = form.dataset.followersForm;
+      const value = Number(new FormData(form).get("followers"));
+      if (!Number.isFinite(value) || value < 0) return notify("Ingresá un número válido.", true);
+      const row = { organization_id: state.org.id, platform, followers: Math.floor(value), source: "manual" };
+      const { data, error } = await supabase.from("social_metrics").insert(row).select().single();
+      if (error) return notify("No se pudo guardar.", true);
+      state.metrics.unshift(data);
+      notify("Seguidores actualizados.");
+      renderShell();
+    }));
+
+    document.querySelectorAll("[data-goals-form]").forEach((form) => form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (state.preview) return notify("La vista previa es de solo lectura.", true);
+      const platform = form.dataset.goalsForm;
+      const fd = new FormData(form);
+      const target_followers = fd.get("target_followers") ? Number(fd.get("target_followers")) : null;
+      const target_posts_per_week = fd.get("target_posts_per_week") ? Number(fd.get("target_posts_per_week")) : null;
+      const { data, error } = await supabase.from("social_goals")
+        .upsert({ organization_id: state.org.id, platform, target_followers, target_posts_per_week }, { onConflict: "organization_id,platform" })
+        .select().single();
+      if (error) return notify("No se pudo guardar la meta.", true);
+      state.goals = state.goals.filter((g) => g.platform !== platform).concat(data);
+      notify("Meta guardada.");
+      renderShell();
+    }));
+
+    document.querySelector("#summary-refresh-x")?.addEventListener("click", async () => {
+      state.summaryBusy = true;
+      renderShell();
+      const account = state.accounts.find((a) => a.platform === "x" && a.category === "tellus-own");
+      const { data, error } = await invokeEdge("x-profile", { handle: account?.handle || "telluscoop" });
+      state.summaryBusy = false;
+      if (error || data?.error) { notify(data?.error || "No se pudo actualizar X.", true); renderShell(); return; }
+      await loadLiveData();
+      notify("X actualizado.");
+      renderShell();
+    });
   }
 
   // ---------- feed ----------
