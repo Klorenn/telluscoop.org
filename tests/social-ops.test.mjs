@@ -13,6 +13,7 @@ const guidesMigration = await readFile(new URL("../supabase/migrations/202607210
 const summaryMigration = await readFile(new URL("../supabase/migrations/20260721040000_create_social_summary.sql", import.meta.url), "utf8");
 const xProfileEdge = await readFile(new URL("../supabase/functions/x-profile/index.ts", import.meta.url), "utf8");
 const repoSearchEdge = await readFile(new URL("../supabase/functions/repo-search/index.ts", import.meta.url), "utf8");
+const growthMigration = await readFile(new URL("../supabase/migrations/20260721050000_monthly_growth_goal_and_cron.sql", import.meta.url), "utf8");
 
 test("production cache versions match", () => {
   const cssVersion = page.match(/styles\.css\?v=([^"']+)/)?.[1];
@@ -300,6 +301,29 @@ test("repo-search edge function requires a session, keeps the Gemini key server-
   assert.match(repoSearchEdge, /google_search/);
   assert.match(repoSearchEdge, /async function fetchRepoMeta/);
   assert.match(repoSearchEdge, /api\.github\.com\/repos\//);
+});
+
+test("monthly growth goal column and a daily cron for the X profile refresh are set up without hardcoding secrets", () => {
+  assert.match(growthMigration, /target_monthly_growth/);
+  assert.match(growthMigration, /cron\.schedule/);
+  assert.match(growthMigration, /x-profile/);
+  assert.match(growthMigration, /vault\.decrypted_secrets/);
+  assert.doesNotMatch(growthMigration, /service_role.{0,10}eyJ|sb_secret_/i);
+});
+
+test("x-profile accepts a trusted cron call (service-role bearer) without requiring an interactive user session", () => {
+  assert.match(xProfileEdge, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(xProfileEdge, /isCron/);
+  assert.match(xProfileEdge, /eq\("slug", "tellus"\)/);
+});
+
+test("Resumen shows a minimal trend chart and a monthly-growth goal per platform", () => {
+  assert.match(app, /function lineChart/);
+  assert.match(app, /function monthlyGrowth/);
+  assert.match(app, /target_monthly_growth/);
+  assert.match(app, /class="trend-chart"/);
+  assert.match(app, /stroke-width="2"/);
+  assert.match(app, /role="img"/);
 });
 
 test("rewrite_article mode reuses the user's template on pasted source text, any language, no fresh search", () => {

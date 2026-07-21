@@ -219,15 +219,17 @@
     ];
     state.metrics = [
       { id: "m1", platform: "x", followers: 1840, source: "scraper", captured_at: new Date().toISOString() },
-      { id: "m2", platform: "x", followers: 1790, source: "manual", captured_at: new Date(Date.now() - 14 * 864e5).toISOString() },
-      { id: "m3", platform: "linkedin", followers: 620, source: "manual", captured_at: new Date(Date.now() - 5 * 864e5).toISOString() },
-      { id: "m4", platform: "linkedin", followers: 590, source: "manual", captured_at: new Date(Date.now() - 35 * 864e5).toISOString() },
-      { id: "m5", platform: "instagram", followers: 310, source: "manual", captured_at: new Date(Date.now() - 20 * 864e5).toISOString() },
+      { id: "m2", platform: "x", followers: 1812, source: "scraper", captured_at: new Date(Date.now() - 7 * 864e5).toISOString() },
+      { id: "m3", platform: "x", followers: 1790, source: "manual", captured_at: new Date(Date.now() - 14 * 864e5).toISOString() },
+      { id: "m4", platform: "linkedin", followers: 620, source: "manual", captured_at: new Date(Date.now() - 5 * 864e5).toISOString() },
+      { id: "m5", platform: "linkedin", followers: 605, source: "manual", captured_at: new Date(Date.now() - 20 * 864e5).toISOString() },
+      { id: "m6", platform: "linkedin", followers: 590, source: "manual", captured_at: new Date(Date.now() - 35 * 864e5).toISOString() },
+      { id: "m7", platform: "instagram", followers: 310, source: "manual", captured_at: new Date(Date.now() - 20 * 864e5).toISOString() },
     ];
     state.goals = [
-      { id: "g1", platform: "x", target_followers: 3000, target_posts_per_week: 7 },
-      { id: "g2", platform: "linkedin", target_followers: 1500, target_posts_per_week: 3 },
-      { id: "g3", platform: "instagram", target_followers: 1000, target_posts_per_week: 4 },
+      { id: "g1", platform: "x", target_followers: 3000, target_posts_per_week: 7, target_monthly_growth: 100 },
+      { id: "g2", platform: "linkedin", target_followers: 1500, target_posts_per_week: 3, target_monthly_growth: 50 },
+      { id: "g3", platform: "instagram", target_followers: 1000, target_posts_per_week: 4, target_monthly_growth: 40 },
     ];
     state.repos = [
       { id: "r1", repo_full_name: "D4Vinci/Scrapling", url: "https://github.com/D4Vinci/Scrapling", description: "Undetectable, powerful, flexible web scraping for Python", stars: 12400, language: "Python", status: "inbox", topics: ["scraping"] },
@@ -325,6 +327,42 @@
 
   function sameDay(a, b) { return new Date(a).toDateString() === new Date(b).toDateString(); }
 
+  // Net growth since the start of the current calendar month: current
+  // followers minus the closest snapshot taken before the month began (falls
+  // back to the earliest known snapshot if all data is from this month).
+  function monthlyGrowth(metricsDesc) {
+    if (!metricsDesc.length) return null;
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+    const current = metricsDesc[0];
+    const baseline = metricsDesc.find((m) => new Date(m.captured_at).getTime() < monthStart) || metricsDesc[metricsDesc.length - 1];
+    return current.followers - baseline.followers;
+  }
+
+  // Minimal single-series trend line: thin 2px stroke, rounded caps, one
+  // highlighted endpoint. Invisible larger hit-circles carry a native
+  // <title> tooltip per point so the curve stays hoverable without a
+  // custom crosshair layer.
+  function lineChart(metricsAsc) {
+    if (metricsAsc.length < 2) return `<p class="chart-empty">Necesitás al menos 2 cargas de seguidores para ver la curva.</p>`;
+    const width = 320, height = 72, pad = 8;
+    const xs = metricsAsc.map((m) => new Date(m.captured_at).getTime());
+    const ys = metricsAsc.map((m) => m.followers);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const spanX = maxX - minX || 1;
+    const spanY = maxY - minY || 1;
+    const x = (v) => pad + ((v - minX) / spanX) * (width - pad * 2);
+    const y = (v) => height - pad - ((v - minY) / spanY) * (height - pad * 2);
+    const path = metricsAsc.map((m, i) => `${i === 0 ? "M" : "L"}${x(new Date(m.captured_at).getTime()).toFixed(1)},${y(m.followers).toFixed(1)}`).join(" ");
+    const last = metricsAsc[metricsAsc.length - 1];
+    const hits = metricsAsc.map((m) => `<circle cx="${x(new Date(m.captured_at).getTime()).toFixed(1)}" cy="${y(m.followers).toFixed(1)}" r="8" fill="transparent"><title>${esc(fmtDate(m.captured_at))}: ${esc(fmtNum(m.followers))} seguidores</title></circle>`).join("");
+    return `<svg class="trend-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Evolución de seguidores en el tiempo">
+      <path d="${path}" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      <circle cx="${x(new Date(last.captured_at).getTime()).toFixed(1)}" cy="${y(last.followers).toFixed(1)}" r="4" fill="var(--teal)" />
+      ${hits}
+    </svg>`;
+  }
+
   function summaryPlatform(platform) {
     const account = state.accounts.find((a) => a.platform === platform && a.category === "tellus-own");
     const metrics = state.metrics.filter((m) => m.platform === platform).slice().sort((a, b) => new Date(b.captured_at) - new Date(a.captured_at));
@@ -339,12 +377,16 @@
     const postedToday = lastPost ? sameDay(lastPost.posted_at, new Date()) : false;
     const weekAgo = Date.now() - 7 * 864e5;
     const postsThisWeek = posts.filter((p) => new Date(p.posted_at).getTime() >= weekAgo).length;
-    return { platform, account, current, delta, goal, lastPost, postedToday, postsThisWeek };
+    const trend = metrics.slice(0, 30).slice().reverse();
+    const growth = monthlyGrowth(metrics);
+    return { platform, account, current, delta, goal, lastPost, postedToday, postsThisWeek, trend, growth };
   }
 
   function summaryCard(platform) {
     const s = summaryPlatform(platform);
     const followerGoalPct = s.goal.target_followers && s.current ? Math.min(100, Math.round((s.current.followers / s.goal.target_followers) * 100)) : null;
+    const growthGoalPct = s.goal.target_monthly_growth && s.growth != null ? Math.min(100, Math.max(0, Math.round((s.growth / s.goal.target_monthly_growth) * 100))) : null;
+    const monthLabel = new Intl.DateTimeFormat("es-CL", { month: "long" }).format(new Date());
     return `
       <section class="card summary-card">
         <div class="summary-head">
@@ -353,9 +395,11 @@
         </div>
         <div class="stat-row">
           <div class="stat"><span class="stat-value">${s.current ? fmtNum(s.current.followers) : "—"}</span><span class="stat-label">Seguidores</span></div>
-          <div class="stat"><span class="stat-value ${s.delta == null ? "" : s.delta >= 0 ? "stat-up" : "stat-down"}">${s.delta == null ? "—" : (s.delta >= 0 ? "+" : "") + fmtNum(s.delta)}</span><span class="stat-label">Desde última carga</span></div>
+          <div class="stat"><span class="stat-value ${s.growth == null ? "" : s.growth >= 0 ? "stat-up" : "stat-down"}">${s.growth == null ? "—" : (s.growth >= 0 ? "+" : "") + fmtNum(s.growth)}</span><span class="stat-label">Crecimiento de ${esc(monthLabel)}</span></div>
           <div class="stat"><span class="stat-value">${s.postsThisWeek}</span><span class="stat-label">Posts esta semana</span></div>
         </div>
+        ${lineChart(s.trend)}
+        ${growthGoalPct !== null ? `<div class="progress"><div class="progress-fill" style="width:${growthGoalPct}%"></div></div><span class="progress-label">${growthGoalPct}% de la meta de +${fmtNum(s.goal.target_monthly_growth)} este mes</span>` : ""}
         ${followerGoalPct !== null ? `<div class="progress"><div class="progress-fill" style="width:${followerGoalPct}%"></div></div><span class="progress-label">${followerGoalPct}% de la meta de ${fmtNum(s.goal.target_followers)} seguidores</span>` : ""}
         <div class="summary-status ${s.postedToday ? "status-ok" : "status-warn"}">
           ${icon(s.postedToday ? "check-circle-2" : "alert-triangle")}
@@ -365,11 +409,13 @@
           <button class="button button-secondary" type="button" data-mark-posted="${platform}">${icon("check")} Marqué que posteé</button>
           ${platform === "x" && !state.preview ? `<button class="button button-secondary" type="button" id="summary-refresh-x" ${state.summaryBusy ? "disabled" : ""}>${icon("refresh-cw")} ${state.summaryBusy ? "Actualizando…" : "Actualizar automático"}</button>` : ""}
         </div>
+        <span class="summary-auto-note">${platform === "x" ? "Se actualiza solo 1 vez al día (además del botón)" : "Sin automatización todavía — cargá seguidores y posts a mano"}</span>
         <form class="form-grid summary-form" data-followers-form="${platform}">
           <div class="field"><label for="followers-${platform}">Actualizar seguidores</label><input id="followers-${platform}" name="followers" type="number" min="0" placeholder="${s.current ? s.current.followers : 0}" /></div>
           <div class="form-foot"><button class="button button-primary" type="submit">Guardar</button></div>
         </form>
         <form class="form-grid summary-form" data-goals-form="${platform}">
+          <div class="field"><label for="goal-growth-${platform}">Meta crecimiento/mes</label><input id="goal-growth-${platform}" name="target_monthly_growth" type="number" min="0" value="${s.goal.target_monthly_growth ?? ""}" /></div>
           <div class="field"><label for="goal-followers-${platform}">Meta seguidores</label><input id="goal-followers-${platform}" name="target_followers" type="number" min="0" value="${s.goal.target_followers ?? ""}" /></div>
           <div class="field"><label for="goal-posts-${platform}">Meta posts/semana</label><input id="goal-posts-${platform}" name="target_posts_per_week" type="number" min="0" step="0.5" value="${s.goal.target_posts_per_week ?? ""}" /></div>
           <div class="form-foot"><button class="button button-secondary" type="submit">Guardar meta</button></div>
@@ -423,8 +469,9 @@
       const fd = new FormData(form);
       const target_followers = fd.get("target_followers") ? Number(fd.get("target_followers")) : null;
       const target_posts_per_week = fd.get("target_posts_per_week") ? Number(fd.get("target_posts_per_week")) : null;
+      const target_monthly_growth = fd.get("target_monthly_growth") ? Number(fd.get("target_monthly_growth")) : null;
       const { data, error } = await supabase.from("social_goals")
-        .upsert({ organization_id: state.org.id, platform, target_followers, target_posts_per_week }, { onConflict: "organization_id,platform" })
+        .upsert({ organization_id: state.org.id, platform, target_followers, target_posts_per_week, target_monthly_growth }, { onConflict: "organization_id,platform" })
         .select().single();
       if (error) return notify("No se pudo guardar la meta.", true);
       state.goals = state.goals.filter((g) => g.platform !== platform).concat(data);

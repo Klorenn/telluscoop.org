@@ -20,20 +20,37 @@ Deno.serve(async (request) => {
     const authorization = request.headers.get("Authorization");
     if (!authorization) return json({ error: "Sesión requerida" }, 401);
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authorization } } },
-    );
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) return json({ error: "Sesión inválida" }, 401);
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const isCron = !!serviceRoleKey && authorization === `Bearer ${serviceRoleKey}`;
 
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("role, organization_id")
-      .neq("role", "viewer")
-      .maybeSingle();
-    if (!membership) return json({ error: "Solo el equipo puede actualizar el resumen" }, 403);
+    let db: ReturnType<typeof createClient>;
+    let organizationId: string;
+
+    if (isCron) {
+      // Trusted server-to-server call from the daily pg_cron job — no
+      // interactive user, so resolve the org directly and use the
+      // service-role client (RLS requires auth.uid(), which a cron job has none of).
+      db = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey!);
+      const { data: org } = await db.from("organizations").select("id").eq("slug", "tellus").maybeSingle();
+      if (!org) return json({ error: "Organización no encontrada" }, 500);
+      organizationId = org.id;
+    } else {
+      db = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authorization } } },
+      );
+      const { data: { user }, error: userError } = await db.auth.getUser();
+      if (userError || !user) return json({ error: "Sesión inválida" }, 401);
+
+      const { data: membership } = await db
+        .from("organization_members")
+        .select("role, organization_id")
+        .neq("role", "viewer")
+        .maybeSingle();
+      if (!membership) return json({ error: "Solo el equipo puede actualizar el resumen" }, 403);
+      organizationId = membership.organization_id as string;
+    }
 
     const body = await request.json();
     const handle = String(body.handle ?? "telluscoop").replace(/^@/, "").trim();
@@ -58,8 +75,8 @@ Deno.serve(async (request) => {
     const latestPost = data.latest_post as { url?: string; posted_at?: string } | null;
 
     if (Number.isFinite(followers) && followers > 0) {
-      const { error } = await supabase.from("social_metrics").insert({
-        organization_id: membership.organization_id,
+      const { error } = await db.from("social_metrics").insert({
+        organization_id: organizationId,
         platform: "x",
         followers: Math.floor(followers),
         source: "scraper",
@@ -68,16 +85,16 @@ Deno.serve(async (request) => {
     }
 
     if (latestPost?.url && latestPost.posted_at) {
-      const { data: account } = await supabase
+      const { data: account } = await db
         .from("social_accounts")
         .select("id")
-        .eq("organization_id", membership.organization_id)
+        .eq("organization_id", organizationId)
         .eq("platform", "x")
         .eq("handle", handle)
         .maybeSingle();
 
-      const { error } = await supabase.from("social_posts").upsert({
-        organization_id: membership.organization_id,
+      const { error } = await db.from("social_posts").upsert({
+        organization_id: organizationId,
         account_id: account?.id ?? null,
         platform: "x",
         author_handle: handle,
