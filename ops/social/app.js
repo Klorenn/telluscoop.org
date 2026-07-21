@@ -34,7 +34,19 @@
     tweetReply: null,
     rewrite: { source: "", busy: false },
     dailyReplies: null,
+    guides: [], guideForm: { chain: "stellar", topic: "" }, guideDrafts: [], guideBusy: false,
+    guideView: null, guideSocialPosts: null,
   };
+
+  const CHAINS = [
+    { id: "stellar", label: "Stellar", docsUrl: "https://developers.stellar.org/docs" },
+    { id: "avalanche", label: "Avalanche", docsUrl: "https://build.avax.network/docs/primary-network" },
+    { id: "circle", label: "Circle / USDC", docsUrl: "https://developers.circle.com/" },
+    { id: "ethereum", label: "Ethereum", docsUrl: "https://ethereum.org/en/developers/docs/" },
+    { id: "solana", label: "Solana", docsUrl: "https://solana.com/docs" },
+    { id: "base", label: "Base", docsUrl: "https://docs.base.org/" },
+    { id: "mantle", label: "Mantle", docsUrl: "https://docs.mantle.xyz/" },
+  ];
 
   const esc = (value = "") => String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
   const fmtDate = (value) => value ? new Intl.DateTimeFormat("es-CL", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(value)) : "Sin fecha";
@@ -134,7 +146,7 @@
 
   async function loadLiveData() {
     const safe = async (query) => { try { return await query; } catch { return { data: [], error: null }; } };
-    const [orgs, accounts, posts, repos, prompts, articles, topics] = await Promise.all([
+    const [orgs, accounts, posts, repos, prompts, articles, topics, guides] = await Promise.all([
       safe(supabase.from("organizations").select("id, name, slug").limit(1)),
       safe(supabase.from("social_accounts").select("*").order("category").order("handle")),
       safe(supabase.from("social_posts").select("*").order("posted_at", { ascending: false, nullsFirst: false }).limit(300)),
@@ -142,6 +154,7 @@
       safe(supabase.from("article_prompts").select("*").eq("active", true).order("key")),
       safe(supabase.from("articles").select("*").order("created_at", { ascending: false }).limit(100)),
       safe(supabase.from("social_topics").select("*").order("label")),
+      safe(supabase.from("guides").select("*").order("created_at", { ascending: false }).limit(100)),
     ]);
     const critical = [orgs, accounts, posts].find((r) => r.error);
     if (critical) throw critical.error;
@@ -152,6 +165,7 @@
     state.prompts = prompts.data || [];
     state.articles = articles.data || [];
     state.topics = topics.data || [];
+    state.guides = guides.data || [];
     if (state.prompts[0]) state.articleForm.prompt_key = state.prompts[0].key;
   }
 
@@ -227,6 +241,7 @@
             ${navButton("repos", "github", "Repos")}
             ${navButton("articles", "newspaper", "Artículos")}
             ${navButton("memes", "image", "Memes")}
+            ${navButton("guides", "book-open", "Guías")}
           </nav>
           <div class="sidebar-foot">
             <div class="lang-toggle" role="group" aria-label="Idioma de generación">
@@ -248,6 +263,7 @@
       : state.view === "repos" ? reposView()
       : state.view === "articles" ? articlesView()
       : state.view === "memes" ? memesView()
+      : state.view === "guides" ? guidesView()
       : feedView();
   }
 
@@ -267,6 +283,7 @@
     if (state.view === "repos") wireRepos();
     if (state.view === "articles") wireArticles();
     if (state.view === "memes") wireMemes();
+    if (state.view === "guides") wireGuides();
   }
 
   // ---------- feed ----------
@@ -1003,6 +1020,224 @@
         <button class="table-link" data-discard-draft="${index}" style="color:var(--red)">Descartar</button>
       </div>
     </article>`;
+  }
+
+  // ---------- guides ----------
+
+  function guidesView() {
+    const chain = CHAINS.find((c) => c.id === state.guideForm.chain) || CHAINS[0];
+    return `
+      <div class="toolbar"><div><span class="eyebrow">Documentación oficial</span><h2>Guías técnicas</h2></div></div>
+      <section class="card" style="margin-bottom:1.2rem">
+        <h3>Generar una guía</h3>
+        <p style="color:var(--muted);margin:.2rem 0 .8rem;line-height:1.5">Elegí la blockchain y el tema exacto. La guía se verifica contra la doc oficial, con código real cuando corresponde, imágenes y posts para X, Discord y LinkedIn.</p>
+        <form id="guide-form" class="form-grid">
+          <div class="field"><label for="guide-chain">Blockchain</label>
+            <select id="guide-chain">${CHAINS.map((c) => `<option value="${c.id}" ${state.guideForm.chain === c.id ? "selected" : ""}>${esc(c.label)}</option>`).join("")}</select>
+            <small>Doc oficial: <a href="${esc(chain.docsUrl)}" target="_blank" rel="noopener">${esc(chain.docsUrl)}</a></small></div>
+          <div class="field span-all"><label for="guide-topic">Tema de la guía</label>
+            <input id="guide-topic" name="topic" value="${esc(state.guideForm.topic)}" placeholder="ej: cómo enviar un pago con el SDK de Stellar" required /></div>
+          <div class="form-foot span-all">
+            <button class="button button-primary" type="submit" ${state.guideBusy || state.preview ? "disabled" : ""}>${icon("sparkles")} ${state.guideBusy ? "Escribiendo guía…" : "Generar guía"}</button>
+          </div>
+        </form>
+        ${state.preview ? `<p style="color:var(--muted);margin:.6rem 0 0">La generación real usa Gemini vía Edge Function; en vista previa está deshabilitada.</p>` : ""}
+      </section>
+
+      ${state.guideDrafts.length ? `<div class="toolbar"><div><span class="eyebrow">Recién generadas</span><h2>Elegí cuáles guardar</h2></div></div>
+        <div class="grid grid-2" style="margin-bottom:1.4rem">${state.guideDrafts.map(guideDraftCard).join("")}</div>` : ""}
+
+      ${guideViewPanel()}
+      ${guideSocialPostsPanel()}
+
+      <div class="toolbar"><div><span class="eyebrow">Guardadas</span><h2>Guías</h2></div></div>
+      ${state.guides.length ? `<div class="card table-wrap"><table>
+        <thead><tr><th>Guía</th><th>Blockchain</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
+        <tbody>${state.guides.map((g) => `<tr>
+          <td><button class="table-link" data-open-guide="${esc(g.id)}" style="text-align:left"><strong>${esc(g.title)}</strong></button><br /><span style="color:var(--muted)">${esc(g.subtitle || "")}</span></td>
+          <td>${esc((CHAINS.find((c) => c.id === g.chain) || {}).label || g.chain)}</td>
+          <td><span class="status status-${g.status === "draft" ? "inbox" : g.status === "discarded" ? "discarded" : "reviewed"}">${esc(articleStatusLabels[g.status] || g.status)}</span></td>
+          <td>${fmtDate(g.created_at)}</td>
+          <td>${state.preview ? "" : `<button class="table-link" data-copy-guide="${esc(g.id)}">Copiar</button>
+            ${g.social_posts ? `<button class="table-link" data-view-guide-posts="${esc(g.id)}">Ver posts</button>` : ""}
+            <button class="table-link" data-guide-posts="${esc(g.id)}" ${state.guideSocialPosts?.busy ? "disabled" : ""}>${g.social_posts ? "Regenerar posts" : "Posts"}</button>
+            <select data-guide-status="${esc(g.id)}" aria-label="Estado" style="margin-top:.4rem">
+              ${Object.entries(articleStatusLabels).map(([value, label]) => `<option value="${value}" ${g.status === value ? "selected" : ""}>${label}</option>`).join("")}
+            </select>`}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>` : `<div class="empty">Todavía no hay guías. Elegí una blockchain, escribí el tema y generá la primera.</div>`}`;
+  }
+
+  function guideDraftCard(draft, index) {
+    return `<article class="card">
+      <h3>${esc(draft.title || "(sin título)")}</h3>
+      <p style="color:var(--muted);margin:.2rem 0 .7rem;line-height:1.5">${esc(draft.subtitle || "")}</p>
+      ${draft.images?.length ? `<div class="grid grid-3" style="margin-bottom:.7rem">${draft.images.map((img) => `<a href="${esc(img.page || img.url)}" target="_blank" rel="noopener"><img src="${esc(img.thumbnail || img.url)}" alt="" style="width:100%;border-radius:8px;max-height:110px;object-fit:cover" loading="lazy" /></a>`).join("")}</div>` : ""}
+      <details style="margin-bottom:.6rem"><summary style="cursor:pointer;color:var(--teal);font-weight:600">Ver guía completa</summary>
+        <div class="article-md" style="margin-top:.5rem;max-height:50vh;overflow-y:auto">${mdToHtml(draft.body_md || "")}</div></details>
+      ${draft.sources?.length ? `<div class="post-meta"><span>${draft.sources.length} fuente(s)</span></div>` : `<div class="post-meta"><span style="color:var(--red)">Sin fuentes — revisá antes de publicar</span></div>`}
+      <div class="form-foot" style="justify-content:start">
+        <button class="button button-secondary" data-save-guide-draft="${index}" style="min-height:38px">Guardar</button>
+        <button class="table-link" data-copy-draft-guide="${index}">Copiar</button>
+        <button class="table-link" data-discard-guide-draft="${index}" style="color:var(--red)">Descartar</button>
+      </div>
+    </article>`;
+  }
+
+  function guideViewPanel() {
+    if (!state.guideView) return "";
+    const guide = state.guides.find((g) => g.id === state.guideView);
+    if (!guide) return "";
+    return `<section class="card" style="margin-bottom:1.4rem">
+      <div class="toolbar" style="margin-bottom:.6rem"><div><span class="eyebrow">Guía completa</span><h2>${esc(guide.title)}</h2></div>
+        <div class="form-foot" style="margin:0">
+          <button class="button button-secondary" data-copy-guide="${esc(guide.id)}">Copiar todo</button>
+          <button class="button button-ghost" id="close-guide">Cerrar</button>
+        </div></div>
+      ${guide.images?.length ? `<div class="grid grid-3" style="margin-bottom:.8rem">${guide.images.map((img) => `<a href="${esc(img.page || img.url)}" target="_blank" rel="noopener"><img src="${esc(img.thumbnail || img.url)}" alt="" style="width:100%;border-radius:8px;max-height:130px;object-fit:cover" loading="lazy" /></a>`).join("")}</div>` : ""}
+      <div class="article-full article-md">${mdToHtml(draftToMarkdown(guide))}</div>
+    </section>`;
+  }
+
+  function guideSocialPostsPanel() {
+    const sp = state.guideSocialPosts;
+    if (!sp) return "";
+    if (sp.busy) return `<div class="card" style="margin-bottom:1.4rem"><p style="color:var(--muted)">Generando posts para «${esc(sp.title)}»…</p></div>`;
+    if (!sp.posts) return "";
+    const block = (label, key) => sp.posts[key] ? `<article class="card">
+      <h3>${label}</h3>
+      <p class="post-content" style="margin:.5rem 0 .7rem;white-space:pre-wrap">${esc(sp.posts[key])}</p>
+      <button class="table-link" data-copy-text="${esc(sp.posts[key])}">Copiar</button>
+    </article>` : "";
+    return `<div class="toolbar" style="margin-top:1.6rem"><div><span class="eyebrow">Difusión</span><h2>Posts para «${esc(sp.title)}»</h2></div></div>
+      ${sp.link ? `<p style="color:var(--muted);margin:0 0 .8rem">Link: <a href="${esc(sp.link)}" target="_blank" rel="noopener">${esc(sp.link)}</a></p>` : ""}
+      <div class="grid grid-3">${block("X", "x")}${block("Discord", "discord")}${block("LinkedIn", "linkedin")}</div>`;
+  }
+
+  async function generateGuide(event) {
+    event.preventDefault();
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const chain = CHAINS.find((c) => c.id === state.guideForm.chain) || CHAINS[0];
+    const topic = state.guideForm.topic.trim();
+    if (!topic) return;
+    state.guideBusy = true;
+    renderShell();
+    const { data, error } = await invokeEdge("generate-article", {
+      format: "guide",
+      chain: chain.id,
+      chain_label: chain.label,
+      docs_url: chain.docsUrl,
+      topic,
+    });
+    state.guideBusy = false;
+    if (error || data?.error) {
+      notify(data?.error || "No se pudo generar la guía.", true);
+      return renderShell();
+    }
+    const draft = data.drafts[0];
+    draft.chain = chain.id;
+    draft.images = [];
+    state.guideDrafts = [draft, ...state.guideDrafts];
+    notify("Guía generada. Buscando una imagen…");
+    renderShell();
+    // Illustrative stock image (not a doc screenshot): fetch after the draft
+    // is already visible so the guide text never waits on it.
+    const { data: media } = await invokeEdge("reddit-search", { query: `${chain.label} blockchain technology`, mode: "images", count: 3 });
+    draft.images = media?.items || [];
+    renderShell();
+  }
+
+  async function saveGuideDraft(index) {
+    const draft = state.guideDrafts[index];
+    if (!draft) return;
+    const row = {
+      organization_id: state.org.id,
+      chain: draft.chain,
+      title: draft.title,
+      subtitle: draft.subtitle,
+      body_md: draft.body_md,
+      sources: draft.sources || [],
+      images: draft.images || [],
+      model: draft.model,
+      status: "draft",
+      created_by: state.session?.user?.id || null,
+    };
+    const { data, error } = await supabase.from("guides").insert(row).select().single();
+    if (error) return notify("No se pudo guardar la guía.", true);
+    state.guides.unshift(data);
+    state.guideDrafts.splice(index, 1);
+    notify("Guía guardada.");
+    renderShell();
+  }
+
+  async function generateGuidePosts(guideId) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const guide = state.guides.find((g) => g.id === guideId);
+    if (!guide) return;
+    const answer = window.prompt("Link público de la guía (opcional — deja vacío y dale OK para seguir sin link):", guide.social_link || state.guideSocialPosts?.link || "");
+    if (answer === null) return;
+    const link = answer.trim();
+    state.guideSocialPosts = { guideId, title: guide.title, link, posts: null, busy: true };
+    renderShell();
+    const { data, error } = await invokeEdge("generate-article", {
+      format: "guide_posts",
+      link,
+      guide: { title: guide.title, subtitle: guide.subtitle },
+    });
+    if (error || data?.error) {
+      state.guideSocialPosts = null;
+      notify(data?.error || "No se pudieron generar los posts.", true);
+      return renderShell();
+    }
+    state.guideSocialPosts = { guideId, title: guide.title, link, posts: data.posts, busy: false };
+    const { error: saveError } = await supabase.from("guides").update({ social_posts: data.posts, social_link: link || null }).eq("id", guideId);
+    if (saveError) notify("Posts generados, pero no se pudieron guardar.", true);
+    else {
+      guide.social_posts = data.posts;
+      guide.social_link = link;
+      notify("Posts generados y guardados.");
+    }
+    renderShell();
+  }
+
+  function viewGuidePosts(guideId) {
+    const guide = state.guides.find((g) => g.id === guideId);
+    if (!guide?.social_posts) return;
+    state.guideSocialPosts = { guideId, title: guide.title, link: guide.social_link || "", posts: guide.social_posts, busy: false };
+    renderShell();
+  }
+
+  function wireGuides() {
+    document.querySelector("#guide-chain")?.addEventListener("change", (e) => { state.guideForm.chain = e.target.value; renderShell(); });
+    document.querySelector("#guide-topic")?.addEventListener("input", (e) => { state.guideForm.topic = e.target.value; });
+    document.querySelector("#guide-form")?.addEventListener("submit", generateGuide);
+
+    document.querySelectorAll("[data-save-guide-draft]").forEach((b) => b.addEventListener("click", () => saveGuideDraft(Number(b.dataset.saveGuideDraft))));
+    document.querySelectorAll("[data-copy-draft-guide]").forEach((b) => b.addEventListener("click", () => copyText(draftToMarkdown(state.guideDrafts[Number(b.dataset.copyDraftGuide)]))));
+    document.querySelectorAll("[data-discard-guide-draft]").forEach((b) => b.addEventListener("click", () => { state.guideDrafts.splice(Number(b.dataset.discardGuideDraft), 1); renderShell(); }));
+
+    document.querySelectorAll("[data-copy-guide]").forEach((b) => b.addEventListener("click", () => {
+      const guide = state.guides.find((g) => g.id === b.dataset.copyGuide);
+      if (guide) copyText(draftToMarkdown(guide));
+    }));
+    document.querySelectorAll("[data-open-guide]").forEach((b) => b.addEventListener("click", () => {
+      state.guideView = b.dataset.openGuide;
+      renderShell();
+      document.querySelector("#main")?.scrollTo?.(0, 0);
+    }));
+    document.querySelector("#close-guide")?.addEventListener("click", () => { state.guideView = null; renderShell(); });
+
+    document.querySelectorAll("[data-guide-posts]").forEach((b) => b.addEventListener("click", () => generateGuidePosts(b.dataset.guidePosts)));
+    document.querySelectorAll("[data-view-guide-posts]").forEach((b) => b.addEventListener("click", () => viewGuidePosts(b.dataset.viewGuidePosts)));
+    document.querySelectorAll("[data-copy-text]").forEach((b) => b.addEventListener("click", () => copyText(b.dataset.copyText)));
+
+    document.querySelectorAll("[data-guide-status]").forEach((select) => select.addEventListener("change", async () => {
+      const { error } = await supabase.from("guides").update({ status: select.value }).eq("id", select.dataset.guideStatus);
+      if (error) return notify("No se pudo actualizar el estado.", true);
+      const guide = state.guides.find((g) => g.id === select.dataset.guideStatus);
+      if (guide) guide.status = select.value;
+      renderShell();
+    }));
   }
 
   // ---------- memes & reddit ----------

@@ -9,6 +9,7 @@ const topicsMigration = await readFile(new URL("../supabase/migrations/202607171
 const articlesMigration = await readFile(new URL("../supabase/migrations/20260717140000_create_articles.sql", import.meta.url), "utf8");
 const edge = await readFile(new URL("../supabase/functions/generate-article/index.ts", import.meta.url), "utf8");
 const redditEdge = await readFile(new URL("../supabase/functions/reddit-search/index.ts", import.meta.url), "utf8");
+const guidesMigration = await readFile(new URL("../supabase/migrations/20260721030000_create_guides.sql", import.meta.url), "utf8");
 
 test("production cache versions match", () => {
   const cssVersion = page.match(/styles\.css\?v=([^"']+)/)?.[1];
@@ -150,6 +151,26 @@ test("style rules enforce Stellar spelling and ban dash punctuation, threaded wi
   assert.match(app, /data-lang="es"/);
   assert.match(app, /data-lang="en"/);
   assert.match(app, /localStorage\.setItem\("gen_lang"/);
+});
+
+test("guides section generates a docs-grounded guide, posts, and images for every chain", () => {
+  assert.match(edge, /body\.format === "guide"/);
+  assert.match(edge, /body\.format === "guide_posts"/);
+  for (const chain of ["stellar", "avalanche", "circle", "ethereum", "solana", "base", "mantle"]) {
+    assert.match(app, new RegExp(`id: "${chain}"`));
+  }
+  assert.match(app, /developers\.stellar\.org\/docs/);
+  assert.match(app, /build\.avax\.network\/docs\/primary-network/);
+  assert.match(app, /developers\.circle\.com/);
+  assert.match(app, /guidesView/);
+  assert.match(app, /guide-form/);
+  assert.match(redditEdge, /mode === "images"/);
+  assert.match(app, /mode: "images"/);
+});
+
+test("guides table is RLS-scoped like articles", () => {
+  assert.match(guidesMigration, /alter table public\.guides enable row level security/);
+  assert.match(guidesMigration, /guides_member_all[\s\S]*?m\.role <> 'viewer'/);
 });
 
 test("daily reply batch comments on the strongest scraped posts in one gemini call", () => {

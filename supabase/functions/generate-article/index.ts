@@ -336,6 +336,91 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
       }
     }
 
+    // Mode: technical blockchain guide, grounded on the chain's official docs.
+    if (body.format === "guide") {
+      const chainLabel = String(body.chain_label ?? "").trim();
+      const docsUrl = String(body.docs_url ?? "").trim();
+      const topic = String(body.topic ?? "").trim();
+      if (!chainLabel || !topic) return json({ error: "Falta la blockchain o el tema de la guía" }, 400);
+
+      const input = `Eres el equipo técnico editorial de Tellus Cooperative. Escribe una guía técnica profesional en Markdown sobre: "${topic}" para ${chainLabel}.
+
+Usa Google Search y revisa la documentación oficial (${docsUrl}) para verificar cada detalle técnico: nombres de funciones, SDKs, parámetros, endpoints, versiones. NO inventes APIs ni parámetros que no existan; si no encuentras algo con certeza, dilo en vez de inventarlo.
+
+Formato obligatorio en Markdown:
+# Título de la guía (claro, específico)
+### Subtítulo: qué va a lograr el lector
+**Nivel:** principiante, intermedio o avanzado
+
+## Qué vas a lograr
+2-3 líneas.
+
+## Requisitos
+Lista de lo que hace falta antes de empezar (SDK, cuenta, versión de lenguaje, etc.).
+
+## Paso a paso
+Desarrollo con subtítulos ##. CUANDO el paso involucre código, SIEMPRE incluye un bloque de código real y funcional en \`\`\`lenguaje (no pseudocódigo, no lo omitas).
+
+## Errores comunes
+2-4 errores típicos y cómo evitarlos.
+
+## Cierre Tellus
+1 párrafo breve conectando esto con la misión de Tellus Cooperative (infraestructura abierta, inclusión financiera).
+
+---
+**SOURCES**
+Links reales de la documentación oficial y otras fuentes que verificaste.
+
+${styleRules(lang)}
+
+Responde ÚNICAMENTE con la guía completa en Markdown, siguiendo exactamente ese formato, sin comentarios extra antes ni después.`;
+
+      try {
+        const { data, model } = await callGemini(apiKey, input);
+        const draft = finalizeArticle(data, model, extractText(data), `Guía de ${chainLabel}`);
+        return json({ drafts: [draft], requested: 1, generated: 1, errors: [] });
+      } catch (error) {
+        return json({ error: "No se pudo generar la guía", detail: [String(error)] }, 502);
+      }
+    }
+
+    // Mode: X + Discord + LinkedIn posts for a published guide, professional
+    // and technical tone (not the casual WhatsApp tone social_posts uses).
+    if (body.format === "guide_posts") {
+      const guide = body.guide as Record<string, unknown> | undefined;
+      if (!guide || typeof guide !== "object" || !guide.title) return json({ error: "Falta la guía" }, 400);
+      const link = String(body.link ?? "").trim();
+
+      const input = `Eres el equipo técnico editorial de Tellus Cooperative. A partir de esta guía técnica ya publicada, escribe un post para cada canal, profesional y directo, sin hype. ${link ? `Cada post DEBE incluir este enlace a la guía: ${link}` : "Aún no hay enlace público: cierra cada post invitando a leer la guía completa, sin inventar links."}
+
+Título: ${String(guide.title)}
+Subtítulo: ${String(guide.subtitle ?? "")}
+
+${styleRules(lang)}
+
+Canales:
+- x: <=270 caracteres, gancho técnico concreto (qué se puede construir/lograr), 1-2 hashtags.
+- discord: 3-5 líneas para un canal de developers: contexto técnico, qué cubre la guía, invitación a preguntas; puede mencionar 1 dato técnico específico.
+- linkedin: 3-5 párrafos cortos, tono profesional, enfocado en por qué importa para el ecosistema/negocio, cierre con invitación a leer.
+
+Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
+{"x": "post para X", "discord": "mensaje para Discord", "linkedin": "post para LinkedIn"}`;
+
+      try {
+        const { data, model } = await callGemini(apiKey, input, false);
+        const parsed = parseJsonLoose(extractText(data));
+        const posts = {
+          x: String(parsed.x ?? "").trim(),
+          discord: String(parsed.discord ?? "").trim(),
+          linkedin: String(parsed.linkedin ?? "").trim(),
+        };
+        if (!posts.x && !posts.discord && !posts.linkedin) return json({ error: "El modelo devolvió una respuesta vacía" }, 502);
+        return json({ posts, model });
+      } catch (error) {
+        return json({ error: "No se pudieron generar los posts de la guía", detail: [String(error)] }, 502);
+      }
+    }
+
     // Mode: rewrite a pasted article/source (any language) in Tellus's voice
     // and the team's own article template, no fresh search needed.
     if (body.format === "rewrite_article") {

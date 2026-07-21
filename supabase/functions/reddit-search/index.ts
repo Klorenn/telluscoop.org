@@ -284,6 +284,17 @@ Deno.serve(async (request) => {
       return json({ items, mode: "create" });
     }
 
+    // Professional illustrative images for guides/articles: always Openverse
+    // (CC-licensed stock/tech photos), never meme GIFs.
+    if (body.mode === "images") {
+      const items = await searchOpenverse(query, limit);
+      return json({
+        items,
+        mode: "images",
+        ...(items.length ? {} : { message: "No se encontraron imágenes para ese tema." }),
+      });
+    }
+
     if (body.mode === "memes") {
       const giphyKey = Deno.env.get("GIPHY_API_KEY");
       if (giphyKey) {
