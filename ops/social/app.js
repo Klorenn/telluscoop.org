@@ -939,7 +939,7 @@
   function repoResultCard(repo) {
     const saved = state.repos.some((r) => r.repo_full_name === repo.full_name);
     return `<article class="card">
-      <h3><a class="table-link" href="${esc(repo.html_url)}" target="_blank" rel="noopener">${esc(repo.full_name)}</a></h3>
+      <h3><a class="table-link" href="${esc(repo.html_url)}" target="_blank" rel="noopener">${esc(repo.full_name)}</a>${repo._source ? ` <span class="chip" style="margin-left:.4rem">${repo._source === "hn" ? "vía HN" : "vía web"}</span>` : ""}</h3>
       <p style="color:var(--muted);margin:.2rem 0 .7rem;line-height:1.5">${esc(repo.description || "Sin descripción")}</p>
       <div class="post-stats"><span>★ ${fmtNum(repo.stargazers_count)}</span><span>${esc(repo.language || "—")}</span><span>${fmtDate(repo.pushed_at)}</span></div>
       <div class="form-foot" style="justify-content:start">
@@ -965,19 +965,79 @@
     </section>`;
   }
 
+  // GitHub's own search only matches name/description/readme, so a term like
+  // "stellar" returns very little. HN (stories + comments) and a Gemini web
+  // search fill in repos that are being *talked about* elsewhere.
+  const GITHUB_PATH_DENYLIST = new Set([
+    "topics", "search", "marketplace", "sponsors", "apps", "orgs", "settings",
+    "notifications", "issues", "pulls", "about", "contact", "pricing", "join",
+    "login", "signup", "site", "features", "collections", "trending", "explore", "events",
+  ]);
+
+  function extractGithubRepos(text) {
+    const out = [];
+    const re = /github\.com\/([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)\/([a-zA-Z0-9._-]+)/g;
+    let match;
+    while ((match = re.exec(String(text || "")))) {
+      const owner = match[1];
+      const repo = match[2].replace(/\.git$/i, "").replace(/\.+$/, "");
+      if (!repo || GITHUB_PATH_DENYLIST.has(owner.toLowerCase())) continue;
+      out.push(`${owner}/${repo}`);
+    }
+    return out;
+  }
+
+  async function searchHN(query) {
+    const fetchTag = async (tag) => {
+      try {
+        const res = await fetch(`https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(query)}&tags=${tag}&hitsPerPage=25`);
+        if (!res.ok) return [];
+        return (await res.json()).hits || [];
+      } catch { return []; }
+    };
+    const [stories, comments] = await Promise.all([fetchTag("story"), fetchTag("comment")]);
+    const names = new Set();
+    for (const hit of stories) extractGithubRepos(hit.url).forEach((n) => names.add(n));
+    for (const hit of comments) extractGithubRepos(hit.comment_text).forEach((n) => names.add(n));
+    return [...names].slice(0, 8);
+  }
+
+  async function fetchRepoMeta(fullName) {
+    try {
+      const res = await fetch(`https://api.github.com/repos/${fullName}`, { headers: { Accept: "application/vnd.github+json" } });
+      if (!res.ok) return null;
+      return { ...(await res.json()), _source: "hn" };
+    } catch { return null; }
+  }
+
   async function searchRepos(query) {
     state.repoBusy = true;
     state.repoQuery = query;
     try {
-      const response = await fetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(query)}&sort=stars&order=desc&per_page=12`, {
+      const ghResponse = await fetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(query)}&sort=stars&order=desc&per_page=12`, {
         headers: { Accept: "application/vnd.github+json" },
-      });
-      if (!response.ok) throw new Error(`GitHub ${response.status}`);
-      const payload = await response.json();
-      state.repoResults = payload.items || [];
-      if (!state.repoResults.length) notify("Sin resultados para esa búsqueda.");
+      }).catch(() => null);
+      const ghItems = ghResponse?.ok ? (await ghResponse.json()).items || [] : [];
+      const known = new Set(ghItems.map((r) => r.full_name));
+
+      const hnNames = (await searchHN(query)).filter((n) => !known.has(n));
+      const hnItems = (await Promise.all(hnNames.map(fetchRepoMeta))).filter(Boolean);
+      hnItems.forEach((r) => known.add(r.full_name));
+
+      let webItems = [];
+      if (known.size < 6 && !state.preview) {
+        const { data, error } = await invokeEdge("repo-search", { query });
+        if (!error && Array.isArray(data?.repos)) {
+          webItems = data.repos.filter((r) => !known.has(r.full_name)).map((r) => ({ ...r, _source: "web" }));
+        }
+      }
+
+      state.repoResults = [...ghItems, ...hnItems, ...webItems];
+      if (!state.repoResults.length) {
+        notify(ghResponse && !ghResponse.ok ? "GitHub no respondió (límite de 60 búsquedas/hora sin token) y no encontramos nada más." : "Sin resultados para esa búsqueda.");
+      }
     } catch (error) {
-      notify("GitHub no respondió (límite de 60 búsquedas/hora sin token).", true);
+      notify("La búsqueda de repos falló. Probá de nuevo en un momento.", true);
     } finally {
       state.repoBusy = false;
       renderShell();

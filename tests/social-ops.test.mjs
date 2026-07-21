@@ -12,6 +12,7 @@ const redditEdge = await readFile(new URL("../supabase/functions/reddit-search/i
 const guidesMigration = await readFile(new URL("../supabase/migrations/20260721030000_create_guides.sql", import.meta.url), "utf8");
 const summaryMigration = await readFile(new URL("../supabase/migrations/20260721040000_create_social_summary.sql", import.meta.url), "utf8");
 const xProfileEdge = await readFile(new URL("../supabase/functions/x-profile/index.ts", import.meta.url), "utf8");
+const repoSearchEdge = await readFile(new URL("../supabase/functions/repo-search/index.ts", import.meta.url), "utf8");
 
 test("production cache versions match", () => {
   const cssVersion = page.match(/styles\.css\?v=([^"']+)/)?.[1];
@@ -280,6 +281,25 @@ test("x-profile writes follower snapshots and the latest own post as scraper-sou
   assert.match(xProfileEdge, /source: "scraper"/);
   assert.match(xProfileEdge, /social_metrics/);
   assert.match(xProfileEdge, /social_posts/);
+});
+
+test("repo search widens beyond GitHub's own API with HN (stories+comments) and a Gemini web fallback", () => {
+  assert.match(app, /function searchHN/);
+  assert.match(app, /hn\.algolia\.com\/api\/v1\/search/);
+  assert.match(app, /fetchTag\("story"\), fetchTag\("comment"\)/);
+  assert.match(app, /function extractGithubRepos/);
+  assert.match(app, /invokeEdge\("repo-search"/);
+  assert.match(app, /vía HN|vía web/);
+  assert.doesNotMatch(app, /GEMINI_API_KEY/);
+});
+
+test("repo-search edge function requires a session, keeps the Gemini key server-side, and validates repos exist on GitHub before returning them", () => {
+  assert.match(repoSearchEdge, /Sesión requerida/);
+  assert.match(repoSearchEdge, /\.neq\("role", "viewer"\)/);
+  assert.match(repoSearchEdge, /Deno\.env\.get\("GEMINI_API_KEY"\)/);
+  assert.match(repoSearchEdge, /google_search/);
+  assert.match(repoSearchEdge, /async function fetchRepoMeta/);
+  assert.match(repoSearchEdge, /api\.github\.com\/repos\//);
 });
 
 test("rewrite_article mode reuses the user's template on pasted source text, any language, no fresh search", () => {
