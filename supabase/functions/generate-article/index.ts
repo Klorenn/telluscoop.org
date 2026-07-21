@@ -69,17 +69,47 @@ function parseJsonLoose(text: string): Record<string, unknown> {
   }
 }
 
+type Lang = "es" | "en";
+
+function readLang(value: unknown): Lang {
+  return value === "en" ? "en" : "es";
+}
+
+// Shared across every generation call: language, the "Stellar" spelling gotcha
+// (Spanish autocorrect/models love to write "estelar"), and a house rule
+// against dash-heavy AI-sounding punctuation.
+function styleRules(lang: Lang): string {
+  const noDashes = 'No uses guiones ("-") ni rayas ("—") como puntuación para separar ideas o hacer pausas dramáticas; usa comas, puntos o dos puntos en su lugar. Sí puedes usar "-" dentro de un handle o URL si corresponde.';
+  const stellar = 'Cuando te refieras a la red/proyecto "Stellar", escribe siempre "Stellar" tal cual, en inglés — NUNCA lo traduzcas ni escribas "estelar" o "Estelar".';
+  if (lang === "en") {
+    return `Write in natural, warm English (Tellus Cooperative editorial voice). ${stellar} ${noDashes.replace("guiones", "hyphens").replace("rayas", "em dashes").replace("Sí puedes usar", "You may still use a hyphen inside a handle or URL if it belongs there").replace(/["“”]/g, '"')}`;
+  }
+  return `Escribe en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos). ${stellar} ${noDashes}`;
+}
+
 // Viral X format the team likes (big AI accounts style). Facts only, no
 // invented numbers.
-const VIRAL_STYLE = `Formato viral para X (estilo cuentas grandes de IA):
+function viralStyle(lang: Lang): string {
+  if (lang === "en") {
+    return `Viral X format (big AI accounts style):
+- First line: hook in ALL CAPS with the strongest concrete fact.
+- Second line: 1 short line of context, lowercase.
+- Then 3-4 bullets starting with "→ " (results, numbers, concrete features).
+- Close with 1 short punchy line.
+- Only real facts from the given context, NOTHING invented. Short sentences. At most 1 emoji or none. At most 1 hashtag.`;
+  }
+  return `Formato viral para X (estilo cuentas grandes de IA):
 - Primera línea: gancho en MAYÚSCULAS con el dato más fuerte y concreto.
 - Segunda línea: contexto en 1 frase corta en minúsculas.
 - Luego 3-4 bullets que empiecen con "→ " (resultados, números, features concretas).
 - Cierre de 1 línea corta con impacto o invitación.
 - Solo datos reales del contexto dado, NADA inventado. Frases cortas. Máximo 1 emoji o ninguno. Máximo 1 hashtag.`;
+}
 
-const POST_JSON_CONTRACT = `Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
-{"post": "Post principal para X en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), <=280 caracteres, con gancho y el enlace del repo", "thread": ["0-3 tweets extra de hilo, opcionales"], "hashtags": ["2-4 hashtags relevantes sin espacios"]}`;
+function postJsonContract(lang: Lang): string {
+  return `Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
+{"post": "${lang === "en" ? "Main X post, <=280 chars, hook + repo link" : "Post principal para X, <=280 caracteres, con gancho y el enlace del repo"}", "thread": ["0-3 tweets extra de hilo, opcionales"], "hashtags": ["2-4 hashtags relevantes sin espacios"]}`;
+}
 
 interface Draft {
   title: string;
@@ -116,21 +146,17 @@ function yesterdayISO(): string {
   return d.toISOString().slice(0, 10);
 }
 
-async function generateOne(apiKey: string, promptMd: string, date: string): Promise<Draft> {
-  // The user's prompt template defines the full article format — the model
-  // returns the complete Markdown untouched; title/subtitle are read from it.
-  const input = `${promptMd}\n\nResume lo ocurrido el día anterior: ${date}. Usa Google Search para verificar cada hecho y cita fuentes reales y recientes. Fecha de publicación: hoy. Responde ÚNICAMENTE con el artículo completo en Markdown, siguiendo exactamente el formato del prompt, sin comentarios extra antes ni después.`;
-
-  const { data, model } = await callGemini(apiKey, input);
-  const text = extractText(data).replace(/^```(markdown|md)?\n?/, "").replace(/\n?```\s*$/, "").trim();
+// Shared post-processing: reads title/subtitle out of the model's own
+// Markdown and guarantees sources are never empty (grounding annotations
+// first, then any markdown links the article itself cites).
+function finalizeArticle(data: Record<string, unknown>, model: string, rawText: string, fallbackTitle: string): Draft {
+  const text = rawText.replace(/^```(markdown|md)?\n?/, "").replace(/\n?```\s*$/, "").trim();
   if (!text) throw new Error(`El modelo ${model} devolvió una respuesta vacía`);
 
   const lines = text.split("\n");
   const title = (lines.find((l) => l.startsWith("# ")) ?? "").replace(/^# +/, "").trim();
   const subtitle = (lines.find((l) => l.startsWith("### ")) ?? "").replace(/^#+ +/, "").trim();
 
-  // Sources must never be empty: grounding annotations first, then any
-  // markdown links the article itself cites (its SOURCES section).
   let sources = collectSources(data);
   if (!sources.length) {
     const seen = new Map<string, string>();
@@ -138,18 +164,43 @@ async function generateOne(apiKey: string, promptMd: string, date: string): Prom
     sources = [...seen].map(([url, sourceTitle]) => ({ url, title: sourceTitle }));
   }
 
-  return {
-    title: title || "Artículo del día",
-    subtitle,
-    summary: [],
-    body_md: text,
-    sources,
-    model,
-  };
+  return { title: title || fallbackTitle, subtitle, summary: [], body_md: text, sources, model };
 }
 
-async function generatePost(apiKey: string, repo: RepoContext): Promise<Draft> {
-  const input = `Escribe un post para X (Twitter) en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos) con la voz editorial de Tellus Cooperative sobre este repositorio de GitHub.
+async function generateOne(apiKey: string, promptMd: string, date: string, lang: Lang): Promise<Draft> {
+  // The user's prompt template defines the full article format — the model
+  // returns the complete Markdown untouched; title/subtitle are read from it.
+  const input = `${promptMd}\n\nResume lo ocurrido el día anterior: ${date}. Usa Google Search para verificar cada hecho y cita fuentes reales y recientes. Fecha de publicación: hoy.
+
+${styleRules(lang)}
+
+Responde ÚNICAMENTE con el artículo completo en Markdown, siguiendo exactamente el formato del prompt, sin comentarios extra antes ni después.`;
+
+  const { data, model } = await callGemini(apiKey, input);
+  return finalizeArticle(data, model, extractText(data), "Artículo del día");
+}
+
+async function rewriteArticle(apiKey: string, promptMd: string, sourceText: string, lang: Lang): Promise<Draft> {
+  // No fresh search: the source material (any language) already has the facts.
+  // The model translates/rewrites into Tellus's voice and the user's template.
+  const input = `${promptMd}
+
+No hagas una búsqueda nueva de noticias. Reescribe el siguiente material fuente con la voz y el formato de arriba, usando SOLO los hechos que contiene (puede venir en cualquier idioma; tradúcelo si hace falta):
+
+"""
+${sourceText.slice(0, 12000)}
+"""
+
+${styleRules(lang)}
+
+Responde ÚNICAMENTE con el artículo completo en Markdown, siguiendo exactamente el formato del prompt, sin comentarios extra antes ni después.`;
+
+  const { data, model } = await callGemini(apiKey, input, false);
+  return finalizeArticle(data, model, extractText(data), "Artículo reescrito");
+}
+
+async function generatePost(apiKey: string, repo: RepoContext, lang: Lang): Promise<Draft> {
+  const input = `Escribe un post para X (Twitter) con la voz editorial de Tellus Cooperative sobre este repositorio de GitHub.
 
 Repositorio: ${repo.full_name ?? ""}
 Descripción: ${repo.description ?? ""}
@@ -159,11 +210,13 @@ Enlace: ${repo.url ?? ""}
 
 Usa Google Search para entender qué hace el proyecto y por qué es interesante.
 
-${VIRAL_STYLE}
+${viralStyle(lang)}
+
+${styleRules(lang)}
 
 El post principal usa ese formato viral e incluye el enlace del repo al final. Opcionalmente agrega 1-3 tweets de hilo con más detalle en tono normal.
 
-${POST_JSON_CONTRACT}`;
+${postJsonContract(lang)}`;
 
   const { data, model } = await callGemini(apiKey, input);
   const text = extractText(data);
@@ -212,6 +265,58 @@ Deno.serve(async (request) => {
     if (!apiKey) return json({ error: "Gemini todavía no está configurado" }, 503);
 
     const body = await request.json();
+    const lang = readLang(body.lang);
+
+    // Mode: a quick reply/comment or quote-tweet for a pasted X post.
+    if (body.format === "tweet_reply") {
+      const handle = String(body.handle ?? "").trim().replace(/^@/, "");
+      const content = String(body.content ?? "").trim();
+      const links = Array.isArray(body.links) ? body.links.map((l: unknown) => String(l)).filter(Boolean) : [];
+      if (!content) return json({ error: "Falta el texto del tweet" }, 400);
+
+      const input = `Eres el equipo de Tellus Cooperative comentando en X. Este es el post original${handle ? ` de @${handle}` : ""}:
+
+"${content}"
+${links.length ? `\nLinks que menciona: ${links.join(", ")}` : ""}
+
+Escribe:
+1. Un comentario/respuesta directa al post (<=270 caracteres): aporta valor real, un dato, una pregunta filosa o un matiz — nunca genérico ni adulón ("gran post!").
+2. Un texto para citar el post (quote tweet, <=250 caracteres) agregando nuestra perspectiva.
+
+${styleRules(lang)}
+
+Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
+{"comment": "comentario para responder", "quote": "texto para citar el post"}`;
+      try {
+        const { data, model } = await callGemini(apiKey, input, false);
+        const parsed = parseJsonLoose(extractText(data));
+        const reply = { comment: String(parsed.comment ?? "").trim(), quote: String(parsed.quote ?? "").trim() };
+        if (!reply.comment && !reply.quote) return json({ error: "El modelo devolvió una respuesta vacía" }, 502);
+        return json({ reply, model });
+      } catch (error) {
+        return json({ error: "No se pudo generar el comentario", detail: [String(error)] }, 502);
+      }
+    }
+
+    // Mode: rewrite a pasted article/source (any language) in Tellus's voice
+    // and the team's own article template, no fresh search needed.
+    if (body.format === "rewrite_article") {
+      const sourceText = String(body.source_text ?? "").trim();
+      if (!sourceText) return json({ error: "Falta el texto a reescribir" }, 400);
+      let promptMd = typeof body.prompt_md === "string" ? body.prompt_md.trim() : "";
+      if (!promptMd) {
+        const key = typeof body.prompt_key === "string" ? body.prompt_key : "crypto";
+        const { data: template } = await supabase.from("article_prompts").select("prompt_md").eq("key", key).maybeSingle();
+        if (!template) return json({ error: `No existe la plantilla '${key}'` }, 400);
+        promptMd = template.prompt_md;
+      }
+      try {
+        const draft = await rewriteArticle(apiKey, promptMd, sourceText, lang);
+        return json({ drafts: [draft], requested: 1, generated: 1, errors: [] });
+      } catch (error) {
+        return json({ error: "No se pudo reescribir el artículo", detail: [String(error)] }, 502);
+      }
+    }
 
     // Mode: social posts (X + WhatsApp + LinkedIn) for a published article,
     // each one carrying the Beehiiv link.
@@ -222,12 +327,14 @@ Deno.serve(async (request) => {
       const link = String(body.link ?? "").trim();
 
       const summary = Array.isArray(article.summary) ? article.summary.map((s: unknown) => `- ${String(s)}`).join("\n") : "";
-      const input = `Eres el equipo editorial de Tellus Cooperative. A partir de este artículo ya publicado, escribe un post para cada canal, en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), claro y humano (sin hype ni tono trader). ${link ? `Cada post DEBE incluir este enlace al artículo: ${link}` : "Aún no hay enlace público: cierra cada post invitando a leer el artículo completo en el newsletter de Tellus, sin inventar links."}
+      const input = `Eres el equipo editorial de Tellus Cooperative. A partir de este artículo ya publicado, escribe un post para cada canal, claro y humano (sin hype ni tono trader). ${link ? `Cada post DEBE incluir este enlace al artículo: ${link}` : "Aún no hay enlace público: cierra cada post invitando a leer el artículo completo en el newsletter de Tellus, sin inventar links."}
 
 Título: ${String(article.title)}
 Subtítulo: ${String(article.subtitle ?? "")}
 Resumen:
 ${summary}
+
+${styleRules(lang)}
 
 Reglas de estilo (obligatorias): tono profesional y editorial, como un medio serio. NADA de tono de guía, tutorial o vendedor. Máximo 1 emoji en total en todos los posts, e idealmente ninguno. Sin listas con viñetas ni "✅". Frases completas, directas, con datos del artículo.
 
@@ -262,7 +369,9 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
       if (!tema && !memeTitle) return json({ error: "Falta el tema o el meme" }, 400);
       const input = `Eres el equipo editorial de Tellus Cooperative. Vamos a publicar un meme/GIF sobre "${tema || memeTitle}"${memeTitle ? ` (plantilla: "${memeTitle}")` : ""}${caption ? `. El texto del meme dice: "${caption}"` : ""}.
 
-Escribe el texto que acompaña al meme en cada canal, en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), con humor inteligente y liviano. NUNCA expliques el chiste. Sin tono de guía ni vendedor.
+Escribe el texto que acompaña al meme en cada canal, con humor inteligente y liviano. NUNCA expliques el chiste. Sin tono de guía ni vendedor.
+
+${styleRules(lang)}
 
 Canales:
 - x: <=250 caracteres, con gancho, 0-1 hashtag.
@@ -299,9 +408,11 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
 Posts reales que circulan ahora en X sobre el tema:
 ${samples || "(sin ejemplos)"}
 
-Escribe 3 posts LISTOS para publicar en X con la voz de Tellus, en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), <=270 caracteres cada uno. Aporta ángulo propio, no repitas los posts de arriba.
+Escribe 3 posts LISTOS para publicar en X con la voz de Tellus, <=270 caracteres cada uno. Aporta ángulo propio, no repitas los posts de arriba.
 
-${VIRAL_STYLE}
+${viralStyle(lang)}
+
+${styleRules(lang)}
 
 Mezcla: el post 1 usa el formato viral de arriba; los posts 2 y 3 son sobrios y editoriales (gancho informativo, sin mayúsculas sostenidas).
 
@@ -322,7 +433,7 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
     if (body.format === "x_post") {
       if (!body.repo || typeof body.repo !== "object") return json({ error: "Falta el repositorio" }, 400);
       try {
-        const draft = await generatePost(apiKey, body.repo as RepoContext);
+        const draft = await generatePost(apiKey, body.repo as RepoContext, lang);
         return json({ drafts: [draft], requested: 1, generated: 1, errors: [] });
       } catch (error) {
         return json({ error: "No se pudo generar el post", detail: [String(error)] }, 502);
@@ -351,7 +462,7 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
     const errors: string[] = [];
     for (let i = 0; i < count; i += 1) {
       try {
-        drafts.push(await generateOne(apiKey, promptMd, date));
+        drafts.push(await generateOne(apiKey, promptMd, date, lang));
       } catch (error) {
         errors.push(error instanceof Error ? error.message : String(error));
       }

@@ -30,6 +30,9 @@
     articleForm: { prompt_key: "crypto", count: 1, prompt_md: "" },
     topics: [], topicBusy: false, topicPosts: null, feedPage: 0,
     memes: { query: "", busy: false, info: null, gifs: [] },
+    lang: localStorage.getItem("gen_lang") === "en" ? "en" : "es",
+    tweetReply: null,
+    rewrite: { source: "", busy: false },
   };
 
   const esc = (value = "") => String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
@@ -152,10 +155,15 @@
   }
 
   async function invokeEdge(name, body) {
+    // Every generation function reads body.lang; inject the user's current
+    // choice here so call sites don't each have to remember it.
+    const withLang = (name === "generate-article" || name === "reddit-search") && body && !("lang" in body)
+      ? { ...body, lang: state.lang }
+      : body;
     const invoke = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       return supabase.functions.invoke(name, {
-        body,
+        body: withLang,
         headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       });
     };
@@ -220,6 +228,10 @@
             ${navButton("memes", "image", "Memes")}
           </nav>
           <div class="sidebar-foot">
+            <div class="lang-toggle" role="group" aria-label="Idioma de generación">
+              <button data-lang="es" class="${state.lang === "es" ? "active" : ""}" title="Generar en español">ES</button>
+              <button data-lang="en" class="${state.lang === "en" ? "active" : ""}" title="Generate in English">EN</button>
+            </div>
             <span>${esc(state.preview ? "Vista previa" : state.session?.user?.email || "")}</span>
             ${state.preview ? "" : `<button class="button button-ghost button-block" id="signout">${icon("log-out")} Salir</button>`}
           </div>
@@ -244,6 +256,11 @@
       renderShell();
     }));
     document.querySelector("#signout")?.addEventListener("click", async () => { await supabase.auth.signOut(); location.reload(); });
+    document.querySelectorAll("[data-lang]").forEach((button) => button.addEventListener("click", () => {
+      state.lang = button.dataset.lang;
+      localStorage.setItem("gen_lang", state.lang);
+      renderShell();
+    }));
     if (state.view === "feed") wireFeed();
     if (state.view === "accounts") wireAccounts();
     if (state.view === "repos") wireRepos();
@@ -274,6 +291,23 @@
           </div>
         </form>
       </section>
+
+      <details class="span-all" style="margin-bottom:1.2rem">
+        <summary style="cursor:pointer;color:var(--teal);font-weight:600">Comentar o citar un post ajeno</summary>
+        <section class="card" style="margin-top:.6rem">
+          <p style="color:var(--muted);margin:0 0 .8rem;line-height:1.5">Pegá los datos de un tweet y te armo un comentario para responder y un texto para citarlo.</p>
+          <form id="tweet-reply-form" class="form-grid">
+            <div class="field"><label for="tr-handle">Handle (@usuario)</label><input id="tr-handle" name="handle" placeholder="midudev" /></div>
+            <div class="field span-all"><label for="tr-content">Qué dice el post</label><textarea id="tr-content" name="content" style="min-height:90px" required placeholder="Pegá acá el texto del post…"></textarea></div>
+            <div class="field span-all"><label for="tr-links">Links que menciona (opcional, uno por línea)</label><textarea id="tr-links" name="links" style="min-height:50px" placeholder="https://…"></textarea></div>
+            <div class="form-foot span-all"><button class="button button-primary" type="submit" ${state.tweetReply?.busy || state.preview ? "disabled" : ""}>${icon("message-circle")} ${state.tweetReply?.busy ? "Escribiendo…" : "Generar comentario"}</button></div>
+          </form>
+          ${state.tweetReply?.posts ? `<div class="grid grid-2" style="margin-top:1rem">
+            <article class="card"><h3>Comentario</h3><p class="post-content" style="margin:.5rem 0;white-space:pre-wrap">${esc(state.tweetReply.posts.comment)}</p><button class="table-link" data-copy-text="${esc(state.tweetReply.posts.comment)}">Copiar</button></article>
+            <article class="card"><h3>Para citar</h3><p class="post-content" style="margin:.5rem 0;white-space:pre-wrap">${esc(state.tweetReply.posts.quote)}</p><button class="table-link" data-copy-text="${esc(state.tweetReply.posts.quote)}">Copiar</button></article>
+          </div>` : ""}
+        </section>
+      </details>
 
       ${state.topicPosts ? `<section class="card" style="margin-bottom:1.2rem">
         <h3>Posts nuestros sobre «${esc(state.topicPosts.query)}»</h3>
@@ -374,8 +408,30 @@
     </article>`;
   }
 
+  async function generateTweetReply(event) {
+    event.preventDefault();
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const form = new FormData(event.target);
+    const handle = String(form.get("handle") || "").trim();
+    const content = String(form.get("content") || "").trim();
+    const links = String(form.get("links") || "").split("\n").map((l) => l.trim()).filter(Boolean);
+    if (!content) return notify("Pegá el texto del post primero.", true);
+    state.tweetReply = { busy: true, posts: null };
+    renderShell();
+    const { data, error } = await invokeEdge("generate-article", { format: "tweet_reply", handle, content, links });
+    if (error || data?.error) {
+      state.tweetReply = null;
+      notify(data?.error || "No se pudo generar el comentario.", true);
+      return renderShell();
+    }
+    state.tweetReply = { busy: false, posts: data.reply };
+    renderShell();
+  }
+
   function wireFeed() {
     const rerender = () => { state.feedPage = 0; renderShell(); };
+    document.querySelector("#tweet-reply-form")?.addEventListener("submit", generateTweetReply);
+    document.querySelectorAll("[data-copy-text]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyText)));
     document.querySelector("#filter-platform")?.addEventListener("change", (e) => { state.filters.platform = e.target.value; rerender(); });
     document.querySelector("#filter-category")?.addEventListener("change", (e) => { state.filters.category = e.target.value; rerender(); });
     document.querySelector("#filter-search")?.addEventListener("input", (e) => {
@@ -832,6 +888,17 @@
         ${state.preview ? `<p style="color:var(--muted);margin:.6rem 0 0">La generación real usa Gemini vía Edge Function; en vista previa está deshabilitada.</p>` : ""}
       </section>
 
+      <details class="span-all" style="margin-bottom:1.2rem">
+        <summary style="cursor:pointer;color:var(--teal);font-weight:600">Reescribir un artículo o fuente pegada</summary>
+        <section class="card" style="margin-top:.6rem">
+          <p style="color:var(--muted);margin:0 0 .8rem;line-height:1.5">Pegá un artículo o texto fuente (puede estar en inglés u otro idioma) y te lo reescribo con el tono de Tellus, usando la misma plantilla de arriba. No hace una búsqueda nueva: usa solo lo que pegaste.</p>
+          <form id="rewrite-form" class="form-grid">
+            <div class="field span-all"><label for="rewrite-source">Texto fuente</label><textarea id="rewrite-source" name="source" style="min-height:180px" required placeholder="Pegá acá el artículo, en el idioma que sea…">${esc(state.rewrite.source)}</textarea></div>
+            <div class="form-foot span-all"><button class="button button-primary" type="submit" ${state.rewrite.busy || state.preview ? "disabled" : ""}>${icon("sparkles")} ${state.rewrite.busy ? "Reescribiendo…" : "Reescribir con la voz de Tellus"}</button></div>
+          </form>
+        </section>
+      </details>
+
       ${state.drafts.length ? `<div class="toolbar"><div><span class="eyebrow">Recién generados</span><h2>Elegí cuáles guardar</h2></div></div>
         <div class="grid grid-2" style="margin-bottom:1.4rem">${state.drafts.map(draftCard).join("")}</div>` : ""}
 
@@ -1151,6 +1218,8 @@
     });
 
     document.querySelector("#art-generate")?.addEventListener("click", generateArticles);
+    document.querySelector("#rewrite-form")?.addEventListener("submit", rewriteArticleFromSource);
+    document.querySelector("#rewrite-source")?.addEventListener("input", (e) => { state.rewrite.source = e.target.value; });
 
     document.querySelectorAll("[data-save-draft]").forEach((button) => button.addEventListener("click", () => saveDraft(Number(button.dataset.saveDraft))));
     document.querySelectorAll("[data-copy-draft]").forEach((button) => button.addEventListener("click", () => copyText(draftToMarkdown(state.drafts[Number(button.dataset.copyDraft)]))));
@@ -1202,6 +1271,30 @@
     state.drafts = data.drafts || [];
     const failed = (data.errors || []).length;
     notify(`Generados ${data.generated} de ${data.requested}${failed ? ` (${failed} fallaron)` : ""}.`);
+    renderShell();
+  }
+
+  async function rewriteArticleFromSource(event) {
+    event.preventDefault();
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const source = String(new FormData(event.target).get("source") || "").trim();
+    if (!source) return;
+    state.rewrite = { source, busy: true };
+    renderShell();
+    const { data, error } = await invokeEdge("generate-article", {
+      format: "rewrite_article",
+      source_text: source,
+      prompt_key: state.articleForm.prompt_key,
+      prompt_md: state.articleForm.prompt_md || undefined,
+    });
+    state.rewrite.busy = false;
+    if (error || data?.error) {
+      notify(data?.error || "No se pudo reescribir el artículo.", true);
+      return renderShell();
+    }
+    state.drafts = [...(data.drafts || []), ...state.drafts];
+    state.rewrite = { source: "", busy: false };
+    notify("Artículo reescrito con la voz de Tellus. Revísalo abajo.");
     renderShell();
   }
 

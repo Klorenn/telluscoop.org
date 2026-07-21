@@ -54,12 +54,30 @@ function collectSources(data: Record<string, unknown>): { url: string; title: st
   return [...sources].map(([url, title]) => ({ url, title }));
 }
 
-async function searchInfo(apiKey: string, query: string) {
+type Lang = "es" | "en";
+
+function readLang(value: unknown): Lang {
+  return value === "en" ? "en" : "es";
+}
+
+// Shared house rules: language, "Stellar" never "estelar", no dash-as-punctuation.
+function styleRules(lang: Lang): string {
+  const noDashes = 'No uses guiones ("-") ni rayas ("—") como puntuación para separar ideas o pausas; usa comas, puntos o dos puntos.';
+  const stellar = 'Cuando te refieras a la red/proyecto "Stellar", escríbelo siempre "Stellar" (en inglés) — NUNCA "estelar" ni "Estelar".';
+  if (lang === "en") {
+    return `Write in natural, warm English (Tellus Cooperative voice). ${stellar} No hyphens or em dashes as punctuation to separate ideas; use commas, periods or colons instead.`;
+  }
+  return `Escribe en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos). ${stellar} ${noDashes}`;
+}
+
+async function searchInfo(apiKey: string, query: string, lang: Lang) {
   const input = `Busca qué se está diciendo ahora sobre "${query}" en Reddit y en foros/comunidades (prioriza resultados de reddit.com en la búsqueda). Resume la conversación real: opiniones, dudas, chistes recurrentes y datos que la gente comparte.
 
-Después, escribe 3 posts LISTOS para publicar en X sobre el tema, en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos), voz Tellus Cooperative, <=270 caracteres cada uno. Cada post debe poder acompañarse de un GIF/meme.
+Después, escribe 3 posts LISTOS para publicar en X sobre el tema, voz Tellus Cooperative, <=270 caracteres cada uno. Cada post debe poder acompañarse de un GIF/meme.
 
 El post 1 usa formato viral (estilo cuentas grandes de IA): primera línea gancho en MAYÚSCULAS con el dato más fuerte, 1 línea de contexto, 3-4 bullets con "→ " concretos, cierre corto de impacto; solo datos reales de la conversación. Los posts 2 y 3 son sobrios, con gancho informativo y el humor o ángulo que domina la conversación.
+
+${styleRules(lang)}
 
 Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
 {"resumen": "2-3 frases con el pulso de la conversación", "puntos": ["4-6 puntos clave: qué se comenta, qué polariza, qué memes circulan"], "posts": ["3 posts listos para publicar"], "gif_busqueda": "2-3 palabras en inglés para buscar el GIF perfecto para estos posts"}`;
@@ -90,8 +108,8 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
   throw new Error(`Gemini falló → ${errors.join(" | ")}`);
 }
 
-async function searchGifs(giphyKey: string, query: string, limit: number) {
-  const url = `https://api.giphy.com/v1/gifs/search?api_key=${giphyKey}&q=${encodeURIComponent(query)}&limit=${limit}&rating=pg-13&lang=es`;
+async function searchGifs(giphyKey: string, query: string, limit: number, lang: Lang) {
+  const url = `https://api.giphy.com/v1/gifs/search?api_key=${giphyKey}&q=${encodeURIComponent(query)}&limit=${limit}&rating=pg-13&lang=${lang}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Giphy ${response.status}`);
   const data = await response.json();
@@ -166,7 +184,7 @@ async function loadMemeTemplates(): Promise<MemeTemplate[]> {
   return pool;
 }
 
-async function createMemes(apiKey: string, query: string, count: number, exclude: string[]) {
+async function createMemes(apiKey: string, query: string, count: number, exclude: string[], lang: Lang) {
   const templates = await loadMemeTemplates();
   const byId = new Map(templates.map((t) => [t.id, t]));
 
@@ -181,9 +199,11 @@ async function createMemes(apiKey: string, query: string, count: number, exclude
   if (midwit && !offered.includes(midwit)) offered.push(midwit);
   const options = offered.map((t) => `${t.id} (${t.lines} textos): ${t.name}`).join("\n");
 
-  const input = `Eres el equipo de memes de Tellus Cooperative (nicho: IA, cripto, tech en español). Tema: "${query}".
+  const input = `Eres el equipo de memes de Tellus Cooperative (nicho: IA, cripto, tech). Tema: "${query}".
 
-Elige ${count} plantillas DISTINTAS de la lista (usa el conocimiento del formato de cada meme para que el chiste calce con la plantilla) y escribe los textos en español chileno neutro (tuteo, sin voseo). Humor inteligente del nicho, cortito y punzante, sin explicar el chiste, sin hashtags. Máximo ~60 caracteres por texto. Cada plantilla indica cuántos textos lleva; en midwit el orden es: extremo izquierdo (simple), centro (el que sufre sobrepensando), extremo derecho (simple).
+Elige ${count} plantillas DISTINTAS de la lista (usa el conocimiento del formato de cada meme para que el chiste calce con la plantilla) y escribe los textos. Humor inteligente del nicho, cortito y punzante, sin explicar el chiste, sin hashtags. Máximo ~60 caracteres por texto. Cada plantilla indica cuántos textos lleva; en midwit el orden es: extremo izquierdo (simple), centro (el que sufre sobrepensando), extremo derecho (simple).
+
+${styleRules(lang)}
 
 Plantillas disponibles (id (textos): nombre):
 ${options}
@@ -251,6 +271,7 @@ Deno.serve(async (request) => {
     const query = String(body.query ?? "").trim();
     if (!query) return json({ error: "Falta query" }, 400);
     const limit = Math.max(1, Math.min(25, Number(body.count) || 12));
+    const lang = readLang(body.lang);
 
     // Own memes: Gemini writes the joke, memegen.link renders it.
     if (body.mode === "create") {
@@ -258,7 +279,7 @@ Deno.serve(async (request) => {
       if (!apiKey) return json({ error: "Gemini todavía no está configurado" }, 503);
       const count = Math.max(1, Math.min(12, Number(body.count) || 8));
       const exclude = Array.isArray(body.exclude) ? body.exclude.map((e: unknown) => String(e)) : [];
-      const items = await createMemes(apiKey, query, count, exclude);
+      const items = await createMemes(apiKey, query, count, exclude, lang);
       if (!items.length) return json({ error: "No salió ningún meme; intenta de nuevo" }, 502);
       return json({ items, mode: "create" });
     }
@@ -267,7 +288,7 @@ Deno.serve(async (request) => {
       const giphyKey = Deno.env.get("GIPHY_API_KEY");
       if (giphyKey) {
         // A bad key or Giphy hiccup should degrade to Openverse, not to nothing.
-        const items = await searchGifs(giphyKey, query, limit).catch(() => []);
+        const items = await searchGifs(giphyKey, query, limit, lang).catch(() => []);
         if (items.length) return json({ items, mode: "memes", via: "giphy" });
       }
       // No Giphy key yet: Openverse serves CC images keyless so every post
@@ -283,7 +304,7 @@ Deno.serve(async (request) => {
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) return json({ error: "Gemini todavía no está configurado" }, 503);
-    const info = await searchInfo(apiKey, query);
+    const info = await searchInfo(apiKey, query, lang);
     return json({ ...info, mode: "info" });
   } catch (error) {
     console.error(error);

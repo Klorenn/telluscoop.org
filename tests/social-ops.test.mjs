@@ -8,6 +8,7 @@ const migration = await readFile(new URL("../supabase/migrations/20260717120000_
 const topicsMigration = await readFile(new URL("../supabase/migrations/20260717150000_create_social_topics.sql", import.meta.url), "utf8");
 const articlesMigration = await readFile(new URL("../supabase/migrations/20260717140000_create_articles.sql", import.meta.url), "utf8");
 const edge = await readFile(new URL("../supabase/functions/generate-article/index.ts", import.meta.url), "utf8");
+const redditEdge = await readFile(new URL("../supabase/functions/reddit-search/index.ts", import.meta.url), "utf8");
 
 test("production cache versions match", () => {
   const cssVersion = page.match(/styles\.css\?v=([^"']+)/)?.[1];
@@ -136,4 +137,32 @@ test("articles keep the user's full markdown format and open in a large view", (
   assert.doesNotMatch(edge, /ARTICLE_JSON_CONTRACT/);
   assert.match(app, /data-open-article/);
   assert.match(app, /article-full/);
+});
+
+test("style rules enforce Stellar spelling and ban dash punctuation, threaded with a language switch", () => {
+  for (const source of [edge, redditEdge]) {
+    assert.match(source, /function styleRules/);
+    assert.match(source, /NUNCA.*estelar|never.*estelar/i);
+    assert.match(source, /No uses guiones/);
+    assert.match(source, /readLang/);
+  }
+  assert.match(app, /state\.lang/);
+  assert.match(app, /data-lang="es"/);
+  assert.match(app, /data-lang="en"/);
+  assert.match(app, /localStorage\.setItem\("gen_lang"/);
+});
+
+test("tweet reply generator produces a comment and a quote from pasted tweet data", () => {
+  assert.match(edge, /body\.format === "tweet_reply"/);
+  assert.match(edge, /"comment".*"quote"/);
+  assert.match(app, /format: "tweet_reply"/);
+  assert.match(app, /tweet-reply-form/);
+});
+
+test("rewrite_article mode reuses the user's template on pasted source text, any language, no fresh search", () => {
+  assert.match(edge, /body\.format === "rewrite_article"/);
+  assert.match(edge, /async function rewriteArticle/);
+  assert.match(edge, /No hagas una búsqueda nueva/);
+  assert.match(app, /format: "rewrite_article"/);
+  assert.match(app, /rewrite-form/);
 });
