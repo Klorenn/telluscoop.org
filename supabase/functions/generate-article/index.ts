@@ -356,16 +356,36 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
       const chainLabel = String(body.chain_label ?? "").trim();
       const docsUrl = String(body.docs_url ?? "").trim();
       const topic = String(body.topic ?? "").trim();
+      const useEmojis = body.use_emojis === true;
       if (!chainLabel || !topic) return json({ error: "Falta la blockchain o el tema de la guía" }, 400);
+
+      // The overused LLM emoji palette reads as AI-generated; if emojis are
+      // on, restrict to plain functional ones instead.
+      const emojiRule = useEmojis
+        ? 'Podés usar emojis con criterio, máximo 1 por sección y nunca en el título. Prohibido el set típico de IA (🚀✨🔥💡🙌🎉👇🧵⚡🤖🔮💯🌟). Si usás alguno, que sea simple y funcional (✅ ❌ 💰 🔗 📊).'
+        : "No uses ningún emoji en toda la guía.";
 
       const input = `Eres el equipo técnico editorial de Tellus Cooperative. Escribe una guía técnica profesional en Markdown sobre: "${topic}" para ${chainLabel}.
 
 Usa Google Search y revisa la documentación oficial (${docsUrl}) para verificar cada detalle técnico: nombres de funciones, SDKs, parámetros, endpoints, versiones. NO inventes APIs ni parámetros que no existan; si no encuentras algo con certeza, dilo en vez de inventarlo.
 
+Cita AL MENOS 2 fuentes reales y distintas (idealmente 2 a 4): la documentación oficial y al menos una fuente técnica adicional (blog oficial, changelog, repo de ejemplos, paper). Si no encontrás una segunda fuente confiable, seguí buscando antes de responder; no publiques con una sola fuente.
+
+Cuando menciones una herramienta, librería o dato externo dentro del texto, agregá el hipervínculo real en el momento (formato [texto](url)), no solo al final en fuentes.
+
+${emojiRule}
+
 Formato obligatorio en Markdown:
-# Título de la guía (claro, específico)
+# Título de la guía (claro, específico, con la keyword principal)
 ### Subtítulo: qué va a lograr el lector
 **Nivel:** principiante, intermedio o avanzado
+
+## Meta SEO
+**Meta descripción:** 1 frase de 140 a 160 caracteres, natural, con la keyword principal, pensada para el snippet de buscadores.
+**Palabras clave:** 5 a 8 palabras clave relevantes separadas por coma.
+
+## TL;DR
+2-3 frases que resuman la guía completa por sí solas (para que un buscador con IA pueda citarlas directamente sin leer el resto).
 
 ## Qué vas a lograr
 2-3 líneas.
@@ -384,7 +404,7 @@ Desarrollo con subtítulos ##. CUANDO el paso involucre código, SIEMPRE incluye
 
 ---
 **SOURCES**
-Links reales de la documentación oficial y otras fuentes que verificaste.
+Mínimo 2 links reales y distintos de la documentación oficial y otras fuentes que verificaste.
 
 ${styleRules(lang)}
 
@@ -393,7 +413,23 @@ Responde ÚNICAMENTE con la guía completa en Markdown, siguiendo exactamente es
       try {
         const { data, model } = await callGemini(apiKey, input);
         const draft = finalizeArticle(data, model, extractText(data), `Guía de ${chainLabel}`);
-        return json({ drafts: [draft], requested: 1, generated: 1, errors: [] });
+
+        // Grounding usually returns real citations, but guarantee the official
+        // docs page is always counted as source #1 — it's always verifiable.
+        if (!draft.sources.some((s) => s.url === docsUrl)) {
+          draft.sources = [{ url: docsUrl, title: `Documentación oficial de ${chainLabel}` }, ...draft.sources];
+        }
+
+        // Best-effort image query in the guide's own language/topic (cheap,
+        // no tools): lets the frontend fetch a photo that actually matches
+        // the content instead of a generic "<chain> blockchain" stock shot.
+        let imageQuery = "";
+        try {
+          const q = await callGemini(apiKey, `Da solo 3 a 6 palabras en inglés (sin comillas, sin explicación) que describan visualmente el tema de esta guía técnica para buscar una foto de stock relacionada: "${topic}" (${chainLabel}).`, false);
+          imageQuery = extractText(q.data).trim().replace(/^["'.]|["'.]$/g, "").split("\n")[0].slice(0, 80);
+        } catch { /* image query is optional polish, never block the guide on it */ }
+
+        return json({ drafts: [draft], requested: 1, generated: 1, errors: [], imageQuery });
       } catch (error) {
         return json({ error: "No se pudo generar la guía", detail: [String(error)] }, 502);
       }

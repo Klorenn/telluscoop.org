@@ -35,7 +35,7 @@
     tweetReply: null,
     rewrite: { source: "", busy: false },
     dailyReplies: null,
-    guides: [], guideForm: { chain: "stellar", topic: "" }, guideDrafts: [], guideBusy: false,
+    guides: [], guideForm: { chain: "stellar", topic: "", useImages: true, useEmojis: false }, guideDrafts: [], guideBusy: false,
     guideView: null, guideSocialPosts: null,
   };
 
@@ -1104,10 +1104,17 @@
             <small>Doc oficial: <a href="${esc(chain.docsUrl)}" target="_blank" rel="noopener">${esc(chain.docsUrl)}</a></small></div>
           <div class="field span-all"><label for="guide-topic">Tema de la guía</label>
             <input id="guide-topic" name="topic" value="${esc(state.guideForm.topic)}" placeholder="ej: cómo enviar un pago con el SDK de Stellar" required /></div>
+          <div class="form-foot span-all" style="justify-content:flex-start;gap:1.2rem">
+            <label style="display:flex;align-items:center;gap:.4rem;color:var(--muted);font-size:.85rem">
+              <input type="checkbox" id="guide-use-images" style="min-height:auto;width:auto" ${state.guideForm.useImages ? "checked" : ""} /> Buscar imagen del tema</label>
+            <label style="display:flex;align-items:center;gap:.4rem;color:var(--muted);font-size:.85rem">
+              <input type="checkbox" id="guide-use-emojis" style="min-height:auto;width:auto" ${state.guideForm.useEmojis ? "checked" : ""} /> Usar emojis (con criterio, sin los típicos de IA)</label>
+          </div>
           <div class="form-foot span-all">
             <button class="button button-primary" type="submit" ${state.guideBusy || state.preview ? "disabled" : ""}>${icon("sparkles")} ${state.guideBusy ? "Escribiendo guía…" : "Generar guía"}</button>
           </div>
         </form>
+        <p style="color:var(--muted);margin:.6rem 0 0;font-size:.85rem">Verificada contra la doc oficial, con mínimo 2 fuentes, hipervínculos en el texto, y sección SEO (meta descripción, keywords, TL;DR) para buscadores y motores con IA.</p>
         ${state.preview ? `<p style="color:var(--muted);margin:.6rem 0 0">La generación real usa Gemini vía Edge Function; en vista previa está deshabilitada.</p>` : ""}
       </section>
 
@@ -1142,7 +1149,7 @@
       ${draft.images?.length ? `<div class="grid grid-3" style="margin-bottom:.7rem">${draft.images.map((img) => `<a href="${esc(img.page || img.url)}" target="_blank" rel="noopener"><img src="${esc(img.thumbnail || img.url)}" alt="" style="width:100%;border-radius:8px;max-height:110px;object-fit:cover" loading="lazy" /></a>`).join("")}</div>` : ""}
       <details style="margin-bottom:.6rem"><summary style="cursor:pointer;color:var(--teal);font-weight:600">Ver guía completa</summary>
         <div class="article-md" style="margin-top:.5rem;max-height:50vh;overflow-y:auto">${mdToHtml(stripSourcesSection(draft.body_md || ""))}${sourcesBlock(draft.sources)}</div></details>
-      ${draft.sources?.length ? `<div class="post-meta"><span>${draft.sources.length} fuente(s)</span></div>` : `<div class="post-meta"><span style="color:var(--red)">Sin fuentes — revisá antes de publicar</span></div>`}
+      ${(draft.sources?.length || 0) >= 2 ? `<div class="post-meta"><span>${draft.sources.length} fuentes</span></div>` : `<div class="post-meta"><span style="color:var(--red)">${draft.sources?.length ? "Solo 1 fuente" : "Sin fuentes"} — mínimo 2, revisá antes de publicar</span></div>`}
       <div class="form-foot" style="justify-content:start">
         <button class="button button-secondary" data-save-guide-draft="${index}" style="min-height:38px">Guardar</button>
         <button class="table-link" data-copy-draft-guide="${index}">Copiar</button>
@@ -1195,6 +1202,7 @@
       chain_label: chain.label,
       docs_url: chain.docsUrl,
       topic,
+      use_emojis: state.guideForm.useEmojis,
     });
     state.guideBusy = false;
     if (error || data?.error) {
@@ -1205,11 +1213,15 @@
     draft.chain = chain.id;
     draft.images = [];
     state.guideDrafts = [draft, ...state.guideDrafts];
-    notify("Guía generada. Buscando una imagen…");
+    if (draft.sources.length < 2) notify("Guía generada, pero con menos de 2 fuentes — revisala antes de publicar.", true);
+    else notify(state.guideForm.useImages ? "Guía generada. Buscando una imagen del tema…" : "Guía generada.");
     renderShell();
-    // Illustrative stock image (not a doc screenshot): fetch after the draft
-    // is already visible so the guide text never waits on it.
-    const { data: media } = await invokeEdge("reddit-search", { query: `${chain.label} blockchain technology`, mode: "images", count: 3 });
+    if (!state.guideForm.useImages) return;
+    // Illustrative stock image matched to the actual topic (not a generic
+    // "<chain> blockchain" shot): the model already suggested the query.
+    // Fetched after the draft is visible so the text never waits on it.
+    const imageQuery = data.imageQuery || `${chain.label} blockchain technology`;
+    const { data: media } = await invokeEdge("reddit-search", { query: imageQuery, mode: "images", count: 3 });
     draft.images = media?.items || [];
     renderShell();
   }
@@ -1277,6 +1289,8 @@
   function wireGuides() {
     document.querySelector("#guide-chain")?.addEventListener("change", (e) => { state.guideForm.chain = e.target.value; renderShell(); });
     document.querySelector("#guide-topic")?.addEventListener("input", (e) => { state.guideForm.topic = e.target.value; });
+    document.querySelector("#guide-use-images")?.addEventListener("change", (e) => { state.guideForm.useImages = e.target.checked; });
+    document.querySelector("#guide-use-emojis")?.addEventListener("change", (e) => { state.guideForm.useEmojis = e.target.checked; });
     document.querySelector("#guide-form")?.addEventListener("submit", generateGuide);
 
     document.querySelectorAll("[data-save-guide-draft]").forEach((b) => b.addEventListener("click", () => saveGuideDraft(Number(b.dataset.saveGuideDraft))));

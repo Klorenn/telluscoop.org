@@ -192,6 +192,25 @@ test("guides section generates a docs-grounded guide, posts, and images for ever
   assert.match(app, /mode: "images"/);
 });
 
+test("guides let the user toggle images/emojis, enforce >=2 sources, add inline hyperlinks, and include SEO/GEO metadata", () => {
+  const guideFn = edge.match(/if \(body\.format === "guide"\)[\s\S]*?\n    \}/)?.[0];
+  assert.ok(guideFn, "guide format block not found");
+  assert.match(guideFn, /AL MENOS 2 fuentes/);
+  assert.match(guideFn, /docsUrl.*title.*Documentación oficial/s);
+  assert.match(guideFn, /hipervínculo real/);
+  assert.match(guideFn, /use_emojis/);
+  assert.match(guideFn, /set típico de IA/);
+  assert.match(guideFn, /Meta descripción/);
+  assert.match(guideFn, /Palabras clave/);
+  assert.match(guideFn, /TL;DR/);
+  assert.match(guideFn, /imageQuery/);
+
+  assert.match(app, /guide-use-images/);
+  assert.match(app, /guide-use-emojis/);
+  assert.match(app, /data\.imageQuery/);
+  assert.match(app, /sources\.length < 2/);
+});
+
 test("guides table is RLS-scoped like articles", () => {
   assert.match(guidesMigration, /alter table public\.guides enable row level security/);
   assert.match(guidesMigration, /guides_member_all[\s\S]*?m\.role <> 'viewer'/);
