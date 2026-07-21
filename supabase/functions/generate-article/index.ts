@@ -87,6 +87,12 @@ function styleRules(lang: Lang): string {
   return `Escribe en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos). ${stellar} ${noDashes}`;
 }
 
+// Language-agnostic house rules for features that reply to someone ELSE's
+// post: the reply must match THAT post's language, not the app's toggle.
+function houseRules(): string {
+  return 'Cuando menciones "Stellar" (la red/proyecto), escríbelo siempre "Stellar" en inglés, nunca "estelar" ni "Estelar". No uses guiones ("-") ni rayas ("—") como puntuación para separar ideas; usa comas, puntos o dos puntos.';
+}
+
 // Viral X format the team likes (big AI accounts style). Facts only, no
 // invented numbers.
 function viralStyle(lang: Lang): string {
@@ -279,11 +285,17 @@ Deno.serve(async (request) => {
 "${content}"
 ${links.length ? `\nLinks que menciona: ${links.join(", ")}` : ""}
 
+Primero, identifica en qué idioma está escrito el post original y responde en ESE MISMO idioma (inglés si el post es en inglés, español si es en español), sin importar ningún otro idioma configurado.
+
+Adapta el tono a lo que dice el post:
+- Si es un lanzamiento de repo/proyecto o un anuncio técnico: sé genuinamente entusiasta y técnico, como un par que reconoce buen trabajo. Podés destacar un detalle concreto o hacer una pregunta técnica puntual. NUNCA negativo, sarcástico ni pesado.
+- Si es una opinión, debate o hot take: podés aportar un matiz, un dato o un contrapunto respetuoso — nunca genérico ni adulón ("gran post!").
+
 Escribe:
-1. Un comentario/respuesta directa al post (<=270 caracteres): aporta valor real, un dato, una pregunta filosa o un matiz — nunca genérico ni adulón ("gran post!").
+1. Un comentario/respuesta directa al post (<=270 caracteres).
 2. Un texto para citar el post (quote tweet, <=250 caracteres) agregando nuestra perspectiva.
 
-${styleRules(lang)}
+${houseRules()}
 
 Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
 {"comment": "comentario para responder", "quote": "texto para citar el post"}`;
@@ -308,11 +320,14 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
 
 ${list}
 
-Para CADA uno, en el mismo orden, escribe:
-- comment: un comentario/respuesta directa (<=270 caracteres). Aporta valor real, un dato o un matiz filoso. NUNCA genérico ni adulón ("gran post!", "totalmente de acuerdo!").
+Para CADA uno, en el mismo orden:
+- Identifica en qué idioma está escrito ESE post puntual y responde en ese mismo idioma (inglés si el post es en inglés, español si es en español) — cada post de la lista puede estar en un idioma distinto, tratalos de forma independiente.
+- Si el post es un lanzamiento de repo/proyecto o un anuncio técnico: sé entusiasta y técnico, destacá algo concreto o hacé una pregunta técnica puntual. NUNCA negativo, sarcástico ni pesado.
+- Si el post es una opinión, debate o hot take: podés aportar un matiz, un dato o un contrapunto respetuoso — nunca genérico ni adulón ("gran post!", "totalmente de acuerdo!").
+- comment: comentario/respuesta directa (<=270 caracteres).
 - quote: texto para citar el post (<=250 caracteres) agregando nuestra perspectiva.
 
-${styleRules(lang)}
+${houseRules()}
 
 Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra, mismo orden y misma cantidad que la lista:
 {"replies": [{"comment": "...", "quote": "..."}]}`;

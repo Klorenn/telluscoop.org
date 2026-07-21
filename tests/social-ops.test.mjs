@@ -129,15 +129,39 @@ test("social posts mode accepts an optional Beehiiv link and covers every channe
   assert.match(edge, /sin inventar links/);
   assert.match(app, /format: "social_posts"/);
   for (const channel of ["whatsapp", "linkedin"]) assert.match(edge, new RegExp(channel));
-  assert.match(app, /data-social-posts/);
+  assert.match(app, /data-open-social/);
   assert.match(app, /data-copy-social/);
 });
 
-test("articles keep the user's full markdown format and open in a large view", () => {
+test("articles keep the user's full markdown format and open in a popup", () => {
   assert.match(edge, /el artículo completo en Markdown/);
   assert.doesNotMatch(edge, /ARTICLE_JSON_CONTRACT/);
   assert.match(app, /data-open-article/);
-  assert.match(app, /article-full/);
+  assert.match(app, /modal-overlay/);
+  assert.match(app, /function modalShell/);
+});
+
+test("markdown renderer supports fenced code blocks with a copy button, and sources render as their own block", () => {
+  assert.match(app, /function mdToHtml/);
+  assert.match(app, /fence = raw\.trim\(\)\.match/);
+  assert.match(app, /data-copy-code/);
+  assert.match(app, /function stripSourcesSection/);
+  assert.match(app, /function sourcesBlock/);
+});
+
+test("articles list has filters, pagination, and a single diffusion action per row", () => {
+  assert.match(app, /art-filter-status/);
+  assert.match(app, /art-filter-template/);
+  assert.match(app, /art-filter-search/);
+  assert.match(app, /data-article-page/);
+  assert.match(app, /data-open-social/);
+  assert.doesNotMatch(app, /data-social-posts=/);
+});
+
+test("rewritten and generated drafts are tagged with their real origin, not the currently selected template", () => {
+  assert.match(app, /prompt_key: "reescrito"/);
+  assert.match(app, /draft\.prompt_key \|\| state\.articleForm\.prompt_key/);
+  assert.match(app, /function articleTemplateLabel/);
 });
 
 test("style rules enforce Stellar spelling and ban dash punctuation, threaded with a language switch", () => {
@@ -186,6 +210,19 @@ test("tweet reply generator produces a comment and a quote from pasted tweet dat
   assert.match(edge, /"comment".*"quote"/);
   assert.match(app, /format: "tweet_reply"/);
   assert.match(app, /tweet-reply-form/);
+});
+
+test("reply generators detect the original post's own language and soften tone for repo/project posts", () => {
+  const single = edge.match(/if \(body\.format === "tweet_reply"\)[\s\S]*?\n    \}/)?.[0];
+  const batch = edge.match(/if \(body\.format === "tweet_reply_batch"\)[\s\S]*?\n    \}/)?.[0];
+  assert.ok(single, "tweet_reply block not found");
+  assert.ok(batch, "tweet_reply_batch block not found");
+  for (const block of [single, batch]) {
+    assert.match(block, /responde en ese mismo idioma|responde en (el )?ese mismo idioma/i);
+    assert.match(block, /NUNCA negativo/);
+    assert.match(block, /lanzamiento de repo/);
+  }
+  assert.match(edge, /function houseRules/);
 });
 
 test("rewrite_article mode reuses the user's template on pasted source text, any language, no fresh search", () => {

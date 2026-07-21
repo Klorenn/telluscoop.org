@@ -28,6 +28,7 @@
     repoPostDraft: null, repoPostBusy: false,
     prompts: [], articles: [], drafts: [], articleBusy: false, articleView: null,
     articleForm: { prompt_key: "crypto", count: 1, prompt_md: "" },
+    articleFilters: { status: "", template: "", search: "" }, articlePage: 0,
     topics: [], topicBusy: false, topicPosts: null, feedPage: 0,
     memes: { query: "", busy: false, info: null, gifs: [] },
     lang: localStorage.getItem("gen_lang") === "en" ? "en" : "es",
@@ -276,6 +277,15 @@
     document.querySelectorAll("[data-lang]").forEach((button) => button.addEventListener("click", () => {
       state.lang = button.dataset.lang;
       localStorage.setItem("gen_lang", state.lang);
+      renderShell();
+    }));
+    // Popups used by Articles/Guides: click the code-block copy button, or
+    // click the dimmed backdrop itself (not the panel) to close.
+    document.querySelectorAll("[data-copy-code]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyCode)));
+    document.querySelectorAll("[data-modal-overlay]").forEach((overlay) => overlay.addEventListener("click", (e) => {
+      if (e.target !== overlay) return;
+      state.articleView = null;
+      state.guideView = null;
       renderShell();
     }));
     if (state.view === "feed") wireFeed();
@@ -921,9 +931,30 @@
 
   function currentPrompt() { return state.prompts.find((p) => p.key === state.articleForm.prompt_key) || state.prompts[0]; }
 
+  // "crypto"/"ai" show their template name; special keys from other flows get
+  // a human label instead of the raw key.
+  function articleTemplateLabel(key) {
+    if (key === "x_post") return "Post de repo (X)";
+    if (key === "reescrito") return "Reescrito de fuente";
+    return state.prompts.find((p) => p.key === key)?.name || key || "—";
+  }
+
+  function filteredArticles() {
+    const { status, template, search } = state.articleFilters;
+    const term = search.trim().toLowerCase();
+    return state.articles.filter((a) => {
+      if (status && a.status !== status) return false;
+      if (template && (a.prompt_key || "") !== template) return false;
+      if (term && !`${a.title} ${a.subtitle || ""}`.toLowerCase().includes(term)) return false;
+      return true;
+    });
+  }
+
   function articlesView() {
     const prompt = currentPrompt();
     const draftText = state.articleForm.prompt_md || prompt?.prompt_md || "";
+    const articles = filteredArticles();
+    const templates = [...new Set(state.articles.map((a) => a.prompt_key || ""))].sort();
     return `
       <div class="toolbar"><div><span class="eyebrow">Boletín Beehiiv</span><h2>Generador de artículos</h2></div></div>
       <section class="card" style="margin-bottom:1.2rem">
@@ -955,54 +986,90 @@
         </section>
       </details>
 
-      ${state.drafts.length ? `<div class="toolbar"><div><span class="eyebrow">Recién generados</span><h2>Elegí cuáles guardar</h2></div></div>
+      ${state.drafts.length ? `<div class="toolbar"><div><span class="eyebrow">Recién generados, sin guardar</span><h2>Elegí cuáles guardar</h2></div></div>
         <div class="grid grid-2" style="margin-bottom:1.4rem">${state.drafts.map(draftCard).join("")}</div>` : ""}
 
-      ${state.articleView ? (() => {
-        const article = state.articles.find((a) => a.id === state.articleView);
-        if (!article) return "";
-        return `<section class="card" style="margin-bottom:1.4rem">
-          <div class="toolbar" style="margin-bottom:.6rem"><div><span class="eyebrow">Artículo completo</span><h2>${esc(article.title)}</h2></div>
-            <div class="form-foot" style="margin:0">
-              <button class="button button-secondary" data-copy-article="${esc(article.id)}">Copiar todo</button>
-              <button class="button button-ghost" id="close-article">Cerrar</button>
-            </div></div>
-          <div class="article-full article-md">${mdToHtml(draftToMarkdown(article))}</div>
-        </section>`;
-      })() : ""}
+      ${articleViewModal()}
 
-      <div class="toolbar"><div><span class="eyebrow">Guardados</span><h2>Artículos</h2></div></div>
-      ${state.articles.length ? `<div class="card table-wrap"><table>
-        <thead><tr><th>Título</th><th>Plantilla</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
-        <tbody>${state.articles.map((article) => `<tr>
-          <td><button class="table-link" data-open-article="${esc(article.id)}" style="text-align:left"><strong>${esc(article.title)}</strong></button><br /><span style="color:var(--muted)">${esc(article.subtitle || "")}</span></td>
-          <td>${esc(article.prompt_key)}</td>
-          <td><span class="status status-${article.status === "draft" ? "inbox" : article.status === "discarded" ? "discarded" : "reviewed"}">${esc(articleStatusLabels[article.status] || article.status)}</span></td>
-          <td>${fmtDate(article.created_at)}</td>
-          <td>${state.preview ? "" : `<button class="table-link" data-copy-article="${esc(article.id)}">Copiar</button>
-            ${article.social_posts ? `<button class="table-link" data-view-posts="${esc(article.id)}">Ver posts</button>` : ""}
-            <button class="table-link" data-social-posts="${esc(article.id)}" ${state.socialPosts?.busy ? "disabled" : ""}>${article.social_posts ? "Regenerar" : "Posts"}</button>
-            <select data-article-status="${esc(article.id)}" aria-label="Estado" style="margin-top:.4rem">
-              ${Object.entries(articleStatusLabels).map(([value, label]) => `<option value="${value}" ${article.status === value ? "selected" : ""}>${label}</option>`).join("")}
-            </select>`}</td>
-        </tr>`).join("")}</tbody>
-      </table></div>` : `<div class="empty">Todavía no hay artículos. Elegí una plantilla, cuántos querés y presioná Generar.</div>`}
-      ${socialPostsSection()}`;
+      <div class="toolbar"><div><span class="eyebrow">Guardados</span><h2>Artículos (${articles.length}${articles.length !== state.articles.length ? ` de ${state.articles.length}` : ""})</h2></div></div>
+
+      ${socialPostsSection()}
+
+      ${state.articles.length ? `<div class="filters">
+        <select id="art-filter-status" aria-label="Estado">
+          <option value="">Todos los estados</option>
+          ${Object.entries(articleStatusLabels).map(([value, label]) => `<option value="${value}" ${state.articleFilters.status === value ? "selected" : ""}>${label}</option>`).join("")}
+        </select>
+        <select id="art-filter-template" aria-label="Plantilla">
+          <option value="">Todas las plantillas</option>
+          ${templates.map((t) => `<option value="${esc(t)}" ${state.articleFilters.template === t ? "selected" : ""}>${esc(articleTemplateLabel(t))}</option>`).join("")}
+        </select>
+        <input id="art-filter-search" type="search" placeholder="Buscar por título…" value="${esc(state.articleFilters.search)}" aria-label="Buscar" />
+      </div>` : ""}
+
+      ${articles.length ? (() => {
+        const perPage = 20;
+        const pages = Math.max(1, Math.ceil(articles.length / perPage));
+        const page = Math.min(state.articlePage, pages - 1);
+        const pageItems = articles.slice(page * perPage, (page + 1) * perPage);
+        const pager = pages > 1 ? `<div class="form-foot" style="justify-content:center;gap:1rem;margin-top:1rem">
+          <button class="button button-secondary" data-article-page="${page - 1}" ${page === 0 ? "disabled" : ""}>← Anterior</button>
+          <span style="color:var(--muted)">Página ${page + 1} de ${pages}</span>
+          <button class="button button-secondary" data-article-page="${page + 1}" ${page >= pages - 1 ? "disabled" : ""}>Siguiente →</button>
+        </div>` : "";
+        return `<div class="card table-wrap"><table>
+          <thead><tr><th>Artículo</th><th>Origen</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+          <tbody>${pageItems.map((article) => `<tr>
+            <td><button class="table-link" data-open-article="${esc(article.id)}" style="text-align:left"><strong>${esc(article.title)}</strong></button><br /><span style="color:var(--muted)">${esc(article.subtitle || "")}</span></td>
+            <td>${esc(articleTemplateLabel(article.prompt_key))}</td>
+            <td><span class="status status-${article.status === "draft" ? "inbox" : article.status === "discarded" ? "discarded" : "reviewed"}">${esc(articleStatusLabels[article.status] || article.status)}</span></td>
+            <td>${fmtDate(article.created_at)}</td>
+            <td>${state.preview ? "" : `<div style="display:flex;flex-wrap:wrap;gap:.4rem;align-items:center">
+              <button class="table-link" data-copy-article="${esc(article.id)}">${icon("copy")} Copiar</button>
+              <button class="table-link" data-open-social="${esc(article.id)}" ${state.socialPosts?.busy ? "disabled" : ""}>${icon("message-circle")} ${article.social_posts ? "Difusión ✓" : "Difusión"}</button>
+              <select data-article-status="${esc(article.id)}" aria-label="Estado">
+                ${Object.entries(articleStatusLabels).map(([value, label]) => `<option value="${value}" ${article.status === value ? "selected" : ""}>${label}</option>`).join("")}
+              </select>
+            </div>`}</td>
+          </tr>`).join("")}</tbody>
+        </table></div>${pager}`;
+      })() : state.articles.length ? `<div class="empty">Ningún artículo coincide con el filtro.</div>` : `<div class="empty">Todavía no hay artículos. Elegí una plantilla, cuántos querés y presioná Generar.</div>`}`;
+  }
+
+  function articleViewModal() {
+    if (!state.articleView) return "";
+    const article = state.articles.find((a) => a.id === state.articleView);
+    if (!article) return "";
+    const head = `<h2 style="margin:0">${esc(article.title)}</h2>
+      <div class="form-foot" style="margin:0">
+        <button class="button button-secondary" data-copy-article="${esc(article.id)}">${icon("copy")} Copiar todo</button>
+        <button class="button button-ghost" id="close-article">${icon("x")} Cerrar</button>
+      </div>`;
+    const body = `${imagesGallery(article.images)}
+      <div class="article-md">${mdToHtml(stripSourcesSection(draftToMarkdown(article)))}</div>
+      ${sourcesBlock(article.sources)}`;
+    return modalShell(head, body);
   }
 
   function socialPostsSection() {
     const sp = state.socialPosts;
     if (!sp) return "";
-    if (sp.busy) return `<div class="card" style="margin-top:1.4rem"><p style="color:var(--muted)">Generando posts para «${esc(sp.title)}»…</p></div>`;
+    if (sp.busy) return `<section class="card" style="margin-bottom:1.2rem"><p style="color:var(--muted);margin:0">Generando posts para «${esc(sp.title)}»…</p></section>`;
     if (!sp.posts) return "";
     const block = (label, key) => sp.posts[key] ? `<article class="card">
       <h3>${label}</h3>
       <p class="post-content" style="margin:.5rem 0 .7rem;white-space:pre-wrap">${esc(sp.posts[key])}</p>
       <button class="table-link" data-copy-social="${key}">Copiar</button>
     </article>` : "";
-    return `<div class="toolbar" style="margin-top:1.6rem"><div><span class="eyebrow">Difusión</span><h2>Posts para «${esc(sp.title)}»</h2></div></div>
-      <p style="color:var(--muted);margin:0 0 .8rem">Link: <a href="${esc(sp.link)}" target="_blank" rel="noopener">${esc(sp.link)}</a></p>
-      <div class="grid grid-3">${block("X", "x")}${block("WhatsApp", "whatsapp")}${block("LinkedIn", "linkedin")}</div>`;
+    return `<section class="card" style="margin-bottom:1.2rem">
+      <div class="toolbar" style="margin-bottom:.6rem"><div><span class="eyebrow">Difusión</span><h2>Posts para «${esc(sp.title)}»</h2></div>
+        <div class="form-foot" style="margin:0">
+          <button class="button button-secondary" data-regen-social="${esc(sp.articleId)}">${icon("sparkles")} Regenerar</button>
+          <button class="button button-ghost" id="close-social">${icon("x")} Cerrar</button>
+        </div></div>
+      ${sp.link ? `<p style="color:var(--muted);margin:0 0 .8rem">Link: <a href="${esc(sp.link)}" target="_blank" rel="noopener">${esc(sp.link)}</a></p>` : ""}
+      <div class="grid grid-3">${block("X", "x")}${block("WhatsApp", "whatsapp")}${block("LinkedIn", "linkedin")}</div>
+    </section>`;
   }
 
   function draftCard(draft, index) {
@@ -1011,7 +1078,7 @@
       <p style="color:var(--muted);margin:.2rem 0 .7rem;line-height:1.5">${esc(draft.subtitle || "")}</p>
       ${draft.summary?.length ? `<ul style="margin:0 0 .7rem;padding-left:1.1rem;line-height:1.5">${draft.summary.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : ""}
       <details style="margin-bottom:.6rem"><summary style="cursor:pointer;color:var(--teal);font-weight:600">Ver cuerpo</summary>
-        <div class="article-md" style="margin-top:.5rem;max-height:50vh;overflow-y:auto">${mdToHtml(draft.body_md || "")}</div></details>
+        <div class="article-md" style="margin-top:.5rem;max-height:50vh;overflow-y:auto">${mdToHtml(stripSourcesSection(draft.body_md || ""))}${sourcesBlock(draft.sources)}</div></details>
       ${draft.sources?.length ? `<div class="post-meta"><span>${draft.sources.length} fuente(s)</span></div>` : `<div class="post-meta"><span style="color:var(--red)">Sin fuentes — revisá antes de publicar</span></div>`}
       <div class="form-foot" style="justify-content:start">
         <button class="button button-secondary" data-save-draft="${index}" style="min-height:38px">Guardar</button>
@@ -1074,7 +1141,7 @@
       <p style="color:var(--muted);margin:.2rem 0 .7rem;line-height:1.5">${esc(draft.subtitle || "")}</p>
       ${draft.images?.length ? `<div class="grid grid-3" style="margin-bottom:.7rem">${draft.images.map((img) => `<a href="${esc(img.page || img.url)}" target="_blank" rel="noopener"><img src="${esc(img.thumbnail || img.url)}" alt="" style="width:100%;border-radius:8px;max-height:110px;object-fit:cover" loading="lazy" /></a>`).join("")}</div>` : ""}
       <details style="margin-bottom:.6rem"><summary style="cursor:pointer;color:var(--teal);font-weight:600">Ver guía completa</summary>
-        <div class="article-md" style="margin-top:.5rem;max-height:50vh;overflow-y:auto">${mdToHtml(draft.body_md || "")}</div></details>
+        <div class="article-md" style="margin-top:.5rem;max-height:50vh;overflow-y:auto">${mdToHtml(stripSourcesSection(draft.body_md || ""))}${sourcesBlock(draft.sources)}</div></details>
       ${draft.sources?.length ? `<div class="post-meta"><span>${draft.sources.length} fuente(s)</span></div>` : `<div class="post-meta"><span style="color:var(--red)">Sin fuentes — revisá antes de publicar</span></div>`}
       <div class="form-foot" style="justify-content:start">
         <button class="button button-secondary" data-save-guide-draft="${index}" style="min-height:38px">Guardar</button>
@@ -1088,15 +1155,15 @@
     if (!state.guideView) return "";
     const guide = state.guides.find((g) => g.id === state.guideView);
     if (!guide) return "";
-    return `<section class="card" style="margin-bottom:1.4rem">
-      <div class="toolbar" style="margin-bottom:.6rem"><div><span class="eyebrow">Guía completa</span><h2>${esc(guide.title)}</h2></div>
-        <div class="form-foot" style="margin:0">
-          <button class="button button-secondary" data-copy-guide="${esc(guide.id)}">Copiar todo</button>
-          <button class="button button-ghost" id="close-guide">Cerrar</button>
-        </div></div>
-      ${guide.images?.length ? `<div class="grid grid-3" style="margin-bottom:.8rem">${guide.images.map((img) => `<a href="${esc(img.page || img.url)}" target="_blank" rel="noopener"><img src="${esc(img.thumbnail || img.url)}" alt="" style="width:100%;border-radius:8px;max-height:130px;object-fit:cover" loading="lazy" /></a>`).join("")}</div>` : ""}
-      <div class="article-full article-md">${mdToHtml(draftToMarkdown(guide))}</div>
-    </section>`;
+    const head = `<h2 style="margin:0">${esc(guide.title)}</h2>
+      <div class="form-foot" style="margin:0">
+        <button class="button button-secondary" data-copy-guide="${esc(guide.id)}">${icon("copy")} Copiar todo</button>
+        <button class="button button-ghost" id="close-guide">${icon("x")} Cerrar</button>
+      </div>`;
+    const body = `${imagesGallery(guide.images)}
+      <div class="article-md">${mdToHtml(stripSourcesSection(draftToMarkdown(guide)))}</div>
+      ${sourcesBlock(guide.sources)}`;
+    return modalShell(head, body);
   }
 
   function guideSocialPostsPanel() {
@@ -1424,7 +1491,8 @@
   }
 
   // Tiny safe Markdown renderer: text is HTML-escaped first, then headers,
-  // bold, italics, lists, links and rules are applied. Enough for articles.
+  // bold, italics, lists, links, rules and fenced code blocks are applied.
+  // Enough for articles/guides without pulling in a Markdown library.
   function mdToHtml(md) {
     const inline = (s) => s
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
@@ -1433,8 +1501,26 @@
       .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
     let html = "";
     let inList = false;
+    let inCode = false;
+    let codeLang = "";
+    let codeLines = [];
     const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
+    const flushCode = () => {
+      // The lines were already HTML-escaped by esc(md) below, so the same
+      // escaped text is safe to reuse verbatim as the copy button's attribute
+      // value — the browser decodes entities back to the original code on read.
+      const code = codeLines.join("\n");
+      html += `<div class="code-block"><div class="code-head"><span>${codeLang || "code"}</span><button type="button" class="code-copy" data-copy-code="${code}">${icon("copy")} Copiar</button></div><pre><code>${code}</code></pre></div>`;
+      inCode = false; codeLang = ""; codeLines = [];
+    };
     for (const raw of esc(md).split("\n")) {
+      const fence = raw.trim().match(/^```([a-zA-Z0-9_+-]*)\s*$/);
+      if (fence) {
+        if (inCode) flushCode();
+        else { closeList(); inCode = true; codeLang = fence[1]; codeLines = []; }
+        continue;
+      }
+      if (inCode) { codeLines.push(raw); continue; }
       const t = raw.trim();
       const heading = t.match(/^(#{1,6}) (.*)$/);
       if (heading) { closeList(); const level = heading[1].length; html += `<h${level}>${inline(heading[2])}</h${level}>`; }
@@ -1443,6 +1529,7 @@
       else if (t === "") { closeList(); }
       else { closeList(); html += `<p>${inline(t)}</p>`; }
     }
+    if (inCode) flushCode();
     closeList();
     return html;
   }
@@ -1462,6 +1549,34 @@
     lines.push(body, "");
     if (draft.sources?.length) { lines.push("## Sources", ...draft.sources.map((s) => `- [${s.title}](${s.url})`)); }
     return lines.join("\n").trim();
+  }
+
+  // The full-text copy keeps the model's own SOURCES tail (useful verbatim
+  // for Beehiiv), but the on-screen view renders sources as their own block
+  // instead, so this strips that tail before handing text to mdToHtml.
+  function stripSourcesSection(md) {
+    return md.replace(/\n(?:-{3,}\s*\n)?\s*(?:\*\*SOURCES\*\*|##\s*Sources|##\s*Fuentes)[\s\S]*$/i, "").trimEnd();
+  }
+
+  // Shared shell for the article/guide "view full content" popup: backdrop +
+  // centered panel, closed by the × button, a backdrop click, or Escape.
+  function modalShell(headHtml, bodyHtml) {
+    return `<div class="modal-overlay" data-modal-overlay>
+      <section class="card modal-panel">
+        <div class="modal-head">${headHtml}</div>
+        <div class="modal-body">${bodyHtml}</div>
+      </section>
+    </div>`;
+  }
+
+  function sourcesBlock(sources) {
+    if (!sources?.length) return "";
+    return `<div class="sources-block"><h3>Fuentes (${sources.length})</h3><ol>${sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title || s.url)}</a></li>`).join("")}</ol></div>`;
+  }
+
+  function imagesGallery(images) {
+    if (!images?.length) return "";
+    return `<div class="modal-gallery">${images.map((img) => `<a href="${esc(img.page || img.url)}" target="_blank" rel="noopener"><img src="${esc(img.thumbnail || img.url)}" alt="" loading="lazy" /></a>`).join("")}</div>`;
   }
 
   async function copyText(text) {
@@ -1506,15 +1621,19 @@
       const article = state.articles.find((a) => a.id === button.dataset.copyArticle);
       if (article) copyText(draftToMarkdown(article));
     }));
-    document.querySelectorAll("[data-social-posts]").forEach((button) => button.addEventListener("click", () => generateSocialPosts(button.dataset.socialPosts)));
     document.querySelectorAll("[data-draft-posts]").forEach((button) => button.addEventListener("click", () => generateDraftPosts(Number(button.dataset.draftPosts))));
     document.querySelectorAll("[data-open-article]").forEach((button) => button.addEventListener("click", () => {
       state.articleView = button.dataset.openArticle;
       renderShell();
-      document.querySelector("#main")?.scrollTo?.(0, 0);
     }));
     document.querySelector("#close-article")?.addEventListener("click", () => { state.articleView = null; renderShell(); });
-    document.querySelectorAll("[data-view-posts]").forEach((button) => button.addEventListener("click", () => viewSocialPosts(button.dataset.viewPosts)));
+    document.querySelectorAll("[data-open-social]").forEach((button) => button.addEventListener("click", () => {
+      const article = state.articles.find((a) => a.id === button.dataset.openSocial);
+      if (article?.social_posts) viewSocialPosts(article.id);
+      else generateSocialPosts(button.dataset.openSocial);
+    }));
+    document.querySelectorAll("[data-regen-social]").forEach((button) => button.addEventListener("click", () => generateSocialPosts(button.dataset.regenSocial)));
+    document.querySelector("#close-social")?.addEventListener("click", () => { state.socialPosts = null; renderShell(); });
     document.querySelectorAll("[data-copy-social]").forEach((button) => button.addEventListener("click", () => {
       const post = state.socialPosts?.posts?.[button.dataset.copySocial];
       if (post) copyText(post);
@@ -1524,6 +1643,17 @@
       if (error) return notify("No se pudo actualizar el estado.", true);
       const article = state.articles.find((a) => a.id === select.dataset.articleStatus);
       if (article) article.status = select.value;
+      renderShell();
+    }));
+    document.querySelector("#art-filter-status")?.addEventListener("change", (e) => { state.articleFilters.status = e.target.value; state.articlePage = 0; renderShell(); });
+    document.querySelector("#art-filter-template")?.addEventListener("change", (e) => { state.articleFilters.template = e.target.value; state.articlePage = 0; renderShell(); });
+    document.querySelector("#art-filter-search")?.addEventListener("input", (e) => {
+      state.articleFilters.search = e.target.value;
+      state.articlePage = 0;
+      clearTimeout(wireArticles._t); wireArticles._t = setTimeout(renderShell, 350);
+    });
+    document.querySelectorAll("[data-article-page]").forEach((button) => button.addEventListener("click", () => {
+      state.articlePage = Math.max(0, Number(button.dataset.articlePage) || 0);
       renderShell();
     }));
   }
@@ -1542,7 +1672,10 @@
       notify(data?.error || "No se pudo generar. Revisá que Gemini esté configurado.", true);
       return renderShell();
     }
-    state.drafts = data.drafts || [];
+    // Tag each draft with the template that produced it at creation time, not
+    // whatever happens to be selected in the dropdown when it's later saved.
+    const promptKey = state.articleForm.prompt_key;
+    state.drafts = (data.drafts || []).map((d) => ({ ...d, prompt_key: promptKey }));
     const failed = (data.errors || []).length;
     notify(`Generados ${data.generated} de ${data.requested}${failed ? ` (${failed} fallaron)` : ""}.`);
     renderShell();
@@ -1566,7 +1699,8 @@
       notify(data?.error || "No se pudo reescribir el artículo.", true);
       return renderShell();
     }
-    state.drafts = [...(data.drafts || []), ...state.drafts];
+    const rewritten = (data.drafts || []).map((d) => ({ ...d, prompt_key: "reescrito" }));
+    state.drafts = [...rewritten, ...state.drafts];
     state.rewrite = { source: "", busy: false };
     notify("Artículo reescrito con la voz de Tellus. Revísalo abajo.");
     renderShell();
@@ -1642,7 +1776,7 @@
     if (!draft) return;
     const row = {
       organization_id: state.org.id,
-      prompt_key: state.articleForm.prompt_key,
+      prompt_key: draft.prompt_key || state.articleForm.prompt_key,
       title: draft.title,
       subtitle: draft.subtitle,
       summary: draft.summary || [],
@@ -1683,5 +1817,13 @@
   }
 
   supabase.auth.onAuthStateChange((_event, session) => { state.session = session; });
+  // Escape closes whichever article/guide popup is open. Bound once, not on
+  // every render, since it never needs to change.
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || (!state.articleView && !state.guideView)) return;
+    state.articleView = null;
+    state.guideView = null;
+    renderShell();
+  });
   boot();
 })();
