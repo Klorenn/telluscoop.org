@@ -87,6 +87,16 @@ function styleRules(lang: Lang): string {
   return `Escribe en español chileno neutro (tuteo, natural, sin voseo argentino ni españolismos). ${stellar} ${noDashes}`;
 }
 
+// Every named entity in an article links to its official site on first
+// mention, and factual claims link their source inline — not just in the
+// sources block at the end.
+function inlineLinkRules(lang: Lang): string {
+  if (lang === "en") {
+    return `Inline links (mandatory): the FIRST time you mention any project, company, protocol, token, product or tool (e.g. Stellar, Circle, USDC, Ethereum, Bitcoin, OpenAI, an exchange, a wallet), turn that mention into a real Markdown hyperlink to its OFFICIAL site — e.g. [Stellar](https://stellar.org), [Circle](https://www.circle.com). Verify the URL with Google Search; never invent domains. For news claims (a launch, a license, a hack, a price move), link the claim to its real source article inline. Link each entity only on its first mention; later mentions stay plain text.`;
+  }
+  return `Hipervínculos en el texto (obligatorio): la PRIMERA vez que menciones cualquier proyecto, empresa, protocolo, token, producto o herramienta (ej: Stellar, Circle, USDC, Ethereum, Bitcoin, OpenAI, un exchange, una wallet), convierte esa mención en un hipervínculo Markdown real a su sitio OFICIAL — ej: [Stellar](https://stellar.org), [Circle](https://www.circle.com). Verifica la URL con Google Search; nunca inventes dominios. Para afirmaciones noticiosas (un lanzamiento, una licencia, un hackeo, un movimiento de precio), enlaza la afirmación a su fuente real en el mismo párrafo. Cada entidad se enlaza solo en su primera mención; las siguientes van en texto plano.`;
+}
+
 // Language-agnostic house rules for features that reply to someone ELSE's
 // post: the reply must match THAT post's language, not the app's toggle.
 function houseRules(): string {
@@ -180,6 +190,8 @@ async function generateOne(apiKey: string, promptMd: string, date: string, lang:
 
 ${styleRules(lang)}
 
+${inlineLinkRules(lang)}
+
 Responde ÚNICAMENTE con el artículo completo en Markdown, siguiendo exactamente el formato del prompt, sin comentarios extra antes ni después.`;
 
   const { data, model } = await callGemini(apiKey, input);
@@ -198,6 +210,8 @@ ${sourceText.slice(0, 12000)}
 """
 
 ${styleRules(lang)}
+
+${inlineLinkRules(lang)}
 
 Responde ÚNICAMENTE con el artículo completo en Markdown, siguiendo exactamente el formato del prompt, sin comentarios extra antes ni después.`;
 

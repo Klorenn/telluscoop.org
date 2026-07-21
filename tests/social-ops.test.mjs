@@ -402,6 +402,18 @@ test("meme_picks table is RLS-scoped like the rest", () => {
   assert.match(refreshAllMigration, /meme_picks_member_all[\s\S]*?m\.role <> 'viewer'/);
 });
 
+test("articles hyperlink every mentioned entity to its official site, in both generate and rewrite flows", () => {
+  assert.match(edge, /function inlineLinkRules/);
+  assert.match(edge, /https:\/\/stellar\.org/);
+  assert.match(edge, /primera mención|first mention/i);
+  const genFn = edge.match(/async function generateOne[\s\S]*?\n\}/)?.[0];
+  const rewriteFn = edge.match(/async function rewriteArticle[\s\S]*?\n\}/)?.[0];
+  assert.ok(genFn, "generateOne not found");
+  assert.ok(rewriteFn, "rewriteArticle not found");
+  assert.match(genFn, /inlineLinkRules\(lang\)/);
+  assert.match(rewriteFn, /inlineLinkRules\(lang\)/);
+});
+
 test("rewrite_article mode reuses the user's template on pasted source text, any language, no fresh search", () => {
   assert.match(edge, /body\.format === "rewrite_article"/);
   assert.match(edge, /async function rewriteArticle/);
