@@ -298,6 +298,44 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
       }
     }
 
+    // Mode: reply + quote for several scraped tweets at once (the daily
+    // engagement batch). One Gemini call for the whole batch, quota-friendly.
+    if (body.format === "tweet_reply_batch") {
+      const tweets = Array.isArray(body.tweets) ? body.tweets.slice(0, 8) : [];
+      if (!tweets.length) return json({ error: "Falta la lista de posts" }, 400);
+      const list = tweets.map((t: Record<string, unknown>, i: number) => `${i + 1}. @${String(t.handle ?? "")}: "${String(t.content ?? "").slice(0, 280)}"`).join("\n");
+      const input = `Eres el equipo de Tellus Cooperative comentando en X. Estos son posts recientes de cuentas del nicho (IA, cripto, tech):
+
+${list}
+
+Para CADA uno, en el mismo orden, escribe:
+- comment: un comentario/respuesta directa (<=270 caracteres). Aporta valor real, un dato o un matiz filoso. NUNCA genérico ni adulón ("gran post!", "totalmente de acuerdo!").
+- quote: texto para citar el post (<=250 caracteres) agregando nuestra perspectiva.
+
+${styleRules(lang)}
+
+Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra, mismo orden y misma cantidad que la lista:
+{"replies": [{"comment": "...", "quote": "..."}]}`;
+      try {
+        const { data, model } = await callGemini(apiKey, input, false);
+        const parsed = parseJsonLoose(extractText(data));
+        const replies = Array.isArray(parsed.replies) ? parsed.replies as Record<string, unknown>[] : [];
+        const results = tweets
+          .map((t: Record<string, unknown>, i: number) => ({
+            handle: String(t.handle ?? ""),
+            url: String(t.url ?? ""),
+            content: String(t.content ?? ""),
+            comment: String(replies[i]?.comment ?? "").trim(),
+            quote: String(replies[i]?.quote ?? "").trim(),
+          }))
+          .filter((r) => r.comment || r.quote);
+        if (!results.length) return json({ error: "El modelo devolvió una respuesta vacía" }, 502);
+        return json({ replies: results, model });
+      } catch (error) {
+        return json({ error: "No se pudieron generar los comentarios", detail: [String(error)] }, 502);
+      }
+    }
+
     // Mode: rewrite a pasted article/source (any language) in Tellus's voice
     // and the team's own article template, no fresh search needed.
     if (body.format === "rewrite_article") {

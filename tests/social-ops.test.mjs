@@ -152,6 +152,14 @@ test("style rules enforce Stellar spelling and ban dash punctuation, threaded wi
   assert.match(app, /localStorage\.setItem\("gen_lang"/);
 });
 
+test("daily reply batch comments on the strongest scraped posts in one gemini call", () => {
+  assert.match(edge, /body\.format === "tweet_reply_batch"/);
+  assert.match(edge, /"replies":\s*\[/);
+  assert.match(app, /format: "tweet_reply_batch"/);
+  assert.match(app, /gen-daily-replies/);
+  assert.match(app, /sort\(\(a, b\) => \(b\.views \|\| 0\) - \(a\.views \|\| 0\)\)/);
+});
+
 test("tweet reply generator produces a comment and a quote from pasted tweet data", () => {
   assert.match(edge, /body\.format === "tweet_reply"/);
   assert.match(edge, /"comment".*"quote"/);

@@ -33,6 +33,7 @@
     lang: localStorage.getItem("gen_lang") === "en" ? "en" : "es",
     tweetReply: null,
     rewrite: { source: "", busy: false },
+    dailyReplies: null,
   };
 
   const esc = (value = "") => String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
@@ -292,6 +293,20 @@
         </form>
       </section>
 
+      <section class="card" style="margin-bottom:1.2rem">
+        <h3>Comentarios del día</h3>
+        <p style="color:var(--muted);margin:.2rem 0 .8rem;line-height:1.5">Crecer en X se hace comentando cuentas grandes del nicho, no solo publicando solo. Te armo comentario + cita para los posts más fuertes que ya capturaste.</p>
+        <div class="form-foot" style="justify-content:start">
+          <button class="button button-primary" id="gen-daily-replies" ${state.dailyReplies?.busy || state.preview ? "disabled" : ""}>${icon("message-circle")} ${state.dailyReplies?.busy ? "Escribiendo…" : "Generar comentarios del día"}</button>
+        </div>
+        ${state.dailyReplies?.items?.length ? `<div class="grid grid-2" style="margin-top:1rem">${state.dailyReplies.items.map((r) => `<article class="card">
+          <p style="color:var(--muted);margin:0 0 .4rem;font-size:.85rem">@${esc(r.handle)}: “${esc(r.content.slice(0, 90))}${r.content.length > 90 ? "…" : ""}”
+            ${r.url ? ` · <a href="${esc(r.url)}" target="_blank" rel="noopener">Ver original</a>` : ""}</p>
+          ${r.comment ? `<p class="post-content" style="margin:.3rem 0"><strong>Comentario:</strong> ${esc(r.comment)}</p><button class="table-link" data-copy-text="${esc(r.comment)}">Copiar comentario</button>` : ""}
+          ${r.quote ? `<p class="post-content" style="margin:.5rem 0 .3rem"><strong>Cita:</strong> ${esc(r.quote)}</p><button class="table-link" data-copy-text="${esc(r.quote)}">Copiar cita</button>` : ""}
+        </article>`).join("")}</div>` : ""}
+      </section>
+
       <details class="span-all" style="margin-bottom:1.2rem">
         <summary style="cursor:pointer;color:var(--teal);font-weight:600">Comentar o citar un post ajeno</summary>
         <section class="card" style="margin-top:.6rem">
@@ -428,8 +443,32 @@
     renderShell();
   }
 
+  // Daily engagement batch: pick the strongest recent scraped posts (by
+  // views) and write a reply + quote for each in one Gemini call.
+  async function generateDailyReplies() {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const candidates = state.posts
+      .filter((p) => p.source === "scraper" && p.url && p.content)
+      .sort((a, b) => (b.views || 0) - (a.views || 0))
+      .slice(0, 8);
+    if (!candidates.length) return notify("Todavía no hay posts capturados. Buscá un tema o traé recientes de tus cuentas primero.", true);
+    state.dailyReplies = { busy: true, items: state.dailyReplies?.items || [] };
+    renderShell();
+    const tweets = candidates.map((p) => ({ handle: p.author_handle, content: p.content, url: p.url }));
+    const { data, error } = await invokeEdge("generate-article", { format: "tweet_reply_batch", tweets });
+    state.dailyReplies.busy = false;
+    if (error || data?.error) {
+      notify(data?.error || "No se pudieron generar los comentarios.", true);
+      return renderShell();
+    }
+    state.dailyReplies.items = data.replies;
+    notify(`${data.replies.length} comentarios listos para publicar.`);
+    renderShell();
+  }
+
   function wireFeed() {
     const rerender = () => { state.feedPage = 0; renderShell(); };
+    document.querySelector("#gen-daily-replies")?.addEventListener("click", generateDailyReplies);
     document.querySelector("#tweet-reply-form")?.addEventListener("submit", generateTweetReply);
     document.querySelectorAll("[data-copy-text]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyText)));
     document.querySelector("#filter-platform")?.addEventListener("change", (e) => { state.filters.platform = e.target.value; rerender(); });
