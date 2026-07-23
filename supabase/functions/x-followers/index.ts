@@ -71,7 +71,12 @@ Deno.serve(async (request) => {
     if (body.mode !== "followback") {
       const users = await fetchList(serverUrl, handle, "followers", 70000);
       if ("error" in users) return json(users, 502);
-      return json({ mode: "prospects", handle, users });
+      return json({
+        mode: "prospects",
+        handle,
+        users,
+        ...(users.length ? {} : { note: "X no alcanzó a cargar la lista (el scraper gratis se queda corto con listas grandes). Reintentá en un momento." }),
+      });
     }
 
     // Follow-back mode: cross our own followers and following lists. Two

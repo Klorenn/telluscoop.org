@@ -1030,6 +1030,9 @@
       <button class="button button-ghost" type="button" data-close-follow>${icon("x")} Cerrar</button>`;
     if (fv.busy) return modalShell(head, `<p style="color:var(--muted);margin:.4rem 0 0">Leyendo listas de X… esto tarda hasta 1-2 minutos (scroll real en la página).</p>`);
     if (fv.mode !== "followback") {
+      if (!fv.users.length) {
+        return modalShell(head, `<p style="color:var(--amber);margin:0;line-height:1.5">${esc(fv.note || "X no cargó la lista esta vez.")}<br /><button class="button button-secondary" type="button" data-retry-follow style="margin-top:.8rem">${icon("refresh-cw")} Reintentar</button></p>`);
+      }
       return modalShell(head, `<p style="color:var(--muted);margin:0">Primeros ${fv.users.length} seguidores de @${esc(fv.handle)} — prospectos para seguir.</p>${saveToListBar(fv.users.length)}${followListRows(fv.users)}`);
     }
     const tabs = [["mutuals", `Mutuals (${fv.mutuals.length})`], ["not_back", `No devuelven (${fv.not_back.length})`], ["fans", `Nos siguen y no seguimos (${fv.fans.length})`]];
@@ -1179,6 +1182,10 @@
       if (state.followView) { state.followView.tab = button.dataset.followTab; renderShell(); }
     }));
     document.querySelector("[data-close-follow]")?.addEventListener("click", () => { state.followView = null; renderShell(); });
+    document.querySelector("[data-retry-follow]")?.addEventListener("click", () => {
+      const fv = state.followView;
+      if (fv) loadFollowView({ mode: fv.mode, handle: fv.handle });
+    });
     document.querySelectorAll("[data-follow-x]").forEach((button) => button.addEventListener("click", () => {
       const handle = button.dataset.followX.toLowerCase();
       const followed = followedSet();
@@ -1281,12 +1288,14 @@
       progress.fail(data?.error || "No se pudo leer la lista de X.");
       return renderShell();
     }
-    progress.done(mode === "followback"
+    const captured = mode === "followback" ? (data.counts?.followers || 0) + (data.counts?.following || 0) : (data.users || []).length;
+    if (!captured && data.note) progress.fail(data.note);
+    else progress.done(mode === "followback"
       ? `${data.counts.followers} seguidores vs ${data.counts.following} seguidos cruzados`
-      : `${(data.users || []).length} cuentas capturadas`);
+      : `${(data.users || []).length} cuentas capturadas${data.partial ? " (parcial)" : ""}`);
     state.followView = mode === "followback"
       ? { mode, handle, busy: false, tab: "mutuals", counts: data.counts, mutuals: data.mutuals || [], not_back: data.not_back || [], fans: data.fans || [] }
-      : { mode, handle, busy: false, users: data.users || [] };
+      : { mode, handle, busy: false, users: data.users || [], note: data.note || "" };
     renderShell();
   }
 
