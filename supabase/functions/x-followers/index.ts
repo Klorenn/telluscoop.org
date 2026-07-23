@@ -34,10 +34,11 @@ async function wakeServer(serverUrl: string): Promise<boolean> {
 }
 
 async function fetchList(serverUrl: string, handle: string, list: "followers" | "following", budgetMs: number): Promise<XUser[] | { error: string }> {
+  // Light sample: ask for ~50 so the server doesn't deep-scroll and OOM.
   const response = await fetch(`${serverUrl}/follow-list`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ handle, list, count: 400, budget_ms: budgetMs }),
+    body: JSON.stringify({ handle, list, count: 50, budget_ms: budgetMs }),
     signal: AbortSignal.timeout(budgetMs + 25000),
   }).catch(() => null);
   if (!response) return { error: "El servidor de X no respondió a tiempo. Reintentá en 1-2 min." };
@@ -50,15 +51,9 @@ async function fetchList(serverUrl: string, handle: string, list: "followers" | 
   }
 }
 
-// Follower-list scraping is disabled: rendering X's follower SPA OOM-kills the
-// free Render instance and takes /profile and /search down with it. Lists are
-// built manually now. Re-enable on a >=2GB instance.
-const SCRAPE_DISABLED = true;
-
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (request.method !== "POST") return json({ error: "Método no permitido" }, 405);
-  if (SCRAPE_DISABLED) return json({ error: "El scrape de listas de seguidores está desactivado (consume demasiada memoria en el server gratis). Cargá las listas a mano.", disabled: true }, 503);
 
   try {
     const authorization = request.headers.get("Authorization");
@@ -91,24 +86,25 @@ Deno.serve(async (request) => {
     const awake = await wakeServer(serverUrl);
     if (!awake) return json({ error: "El servidor de X no despertó a tiempo. Reintentá en 1 minuto." }, 502);
 
-    // Prospect mode: who follows the given (watched) account.
+    // Single-list mode: a light sample of an account's followers or following.
     if (body.mode !== "followback") {
-      const users = await fetchList(serverUrl, handle, "followers", 70000);
+      const which = body.list === "following" ? "following" : "followers";
+      const users = await fetchList(serverUrl, handle, which, 45000);
       if ("error" in users) return json(users, 502);
       return json({
         mode: "prospects",
+        list: which,
         handle,
         users,
-        ...(users.length ? {} : { note: "X no alcanzó a cargar la lista (el scraper gratis se queda corto con listas grandes). Reintentá en un momento." }),
+        ...(users.length ? {} : { note: "X no alcanzó a cargar la lista esta vez (el scraper gratis toma una muestra). Reintentá en un momento." }),
       });
     }
 
     // Follow-back mode: cross our own followers and following lists. Two
-    // sequential scrapes (the server serializes anyway) with tighter budgets
-    // so both fit inside this function's own wall clock.
-    const followers = await fetchList(serverUrl, handle, "followers", 50000);
+    // light sequential scrapes.
+    const followers = await fetchList(serverUrl, handle, "followers", 40000);
     if ("error" in followers) return json(followers, 502);
-    const following = await fetchList(serverUrl, handle, "following", 50000);
+    const following = await fetchList(serverUrl, handle, "following", 40000);
     if ("error" in following) return json(following, 502);
 
     const followerSet = new Set(followers.map((u) => u.handle.toLowerCase()));

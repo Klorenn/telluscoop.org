@@ -437,15 +437,24 @@ test("repo X post follows the viral thread style: caps hook, → bullets, cómo 
   assert.match(app, /x_reply/);
 });
 
-test("follower-list scraping is disabled (OOMs the free instance) at the edge and gone from the UI", () => {
-  assert.match(xFollowersEdge, /SCRAPE_DISABLED = true/);
-  assert.match(xFollowersEdge, /disabled: true/);
-  assert.doesNotMatch(app, /data-follow-prospects/);
-  assert.doesNotMatch(app, /followback-btn/);
-  assert.doesNotMatch(app, /invokeEdge\("x-followers"/);
+test("follower scraping runs in light sample mode and wakes the server first", () => {
+  assert.match(xFollowersEdge, /function wakeServer/);
+  assert.match(xFollowersEdge, /count: 50/);
+  assert.doesNotMatch(xFollowersEdge, /SCRAPE_DISABLED/);
+  assert.match(app, /function scrapeToList/);
+  assert.match(app, /data-scrape-handle/);
+  assert.match(app, /invokeEdge\("x-followers"/);
 });
 
-test("follow lists are built by pasting handles, no scraping", () => {
+test("rolling prospect pipeline: Traer más appends only new people, followed ones stay out via upsert", () => {
+  assert.match(app, /data-refill/);
+  assert.match(app, /ignoreDuplicates: true/);
+  assert.match(app, /localStorage\.setItem\(`listdir:/);
+  // Followed targets leave the pending view (filter excludes them).
+  assert.match(app, /filter === "followed"[\s\S]*?: pending/);
+});
+
+test("follow lists can also be built by pasting handles", () => {
   assert.match(app, /function addHandlesToList/);
   assert.match(app, /id="list-add-form"/);
   assert.match(app, /follow_targets/);

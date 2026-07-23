@@ -1030,10 +1030,18 @@
     const head = `<h2 style="margin:0">Lista «${esc(lv.name)}»</h2>
       <button class="button button-ghost" type="button" data-close-list>${icon("x")} Cerrar</button>`;
     const filters = [["pending", `Pendientes (${targets.filter((t) => t.status === "pending").length})`], ["followed", `Seguidos (${targets.filter((t) => t.status === "followed").length})`], ["all", `Todos (${targets.length})`]];
+    // A list fed by scraping remembers its source account so "Traer más"
+    // pulls fresh people (already-followed ones never come back — they're
+    // still in the DB, so the upsert skips them).
+    const source = targets.find((t) => t.source_handle)?.source_handle;
+    const dir = localStorage.getItem(`listdir:${lv.name}`) || "followers";
     const body = `
       <div class="save-list-bar">
-        <span>Seguí de a poco: abrí 5, confirmá el follow en X, marcá acá.</span>
-        <button class="button button-primary" type="button" data-open-batch ${pending.length ? "" : "disabled"} style="min-height:38px">${icon("external-link")} Abrir 5 pendientes en X</button>
+        <span>Seguí de a poco: abrí 5, confirmá en X, marcá acá. Los que seguís salen de la lista.</span>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          ${source ? `<button class="button button-secondary" type="button" data-refill="${esc(source)}" data-refill-dir="${esc(dir)}" ${state.listView?.busy ? "disabled" : ""} style="min-height:38px">${icon("refresh-cw")} ${state.listView?.busy ? "Trayendo…" : "Traer más"}</button>` : ""}
+          <button class="button button-primary" type="button" data-open-batch ${pending.length ? "" : "disabled"} style="min-height:38px">${icon("external-link")} Abrir 5 en X</button>
+        </div>
       </div>
       <div class="modal-tabs" role="tablist" aria-label="Estado" style="margin-top:.4rem">
         ${filters.map(([key, label]) => `<button type="button" role="tab" aria-selected="${lv.filter === key}" class="${lv.filter === key ? "active" : ""}" data-list-filter="${key}">${esc(label)}</button>`).join("")}
@@ -1089,7 +1097,7 @@
           <td><span class="chip chip-platform-${esc(account.platform)}">${esc(platformLabels[account.platform] || account.platform)}</span></td>
           <td>${esc(categoryLabel(account.category))}</td>
           <td>${account.active ? "Activa" : "Pausada"}</td>
-          <td>${state.preview ? "" : `<button class="table-link" data-toggle-account="${esc(account.id)}">${account.active ? "Pausar" : "Activar"}</button>`}</td>
+          <td>${state.preview ? "" : `${account.platform === "x" ? `<button class="table-link" data-scrape-list="followers" data-scrape-handle="${esc(account.handle)}">${icon("users")} Seguidores</button><br /><button class="table-link" data-scrape-list="following" data-scrape-handle="${esc(account.handle)}" style="margin-top:.3rem">${icon("user-plus")} Sigue a</button><br />` : ""}<button class="table-link" data-toggle-account="${esc(account.id)}" style="margin-top:.3rem">${account.active ? "Pausar" : "Activar"}</button>`}</td>
         </tr>`).join("")}</tbody>
       </table></div>`;
   }
@@ -1121,6 +1129,12 @@
       renderShell();
     }));
     document.querySelector("#list-add-form")?.addEventListener("submit", addHandlesToList);
+    document.querySelectorAll("[data-scrape-handle]").forEach((button) => button.addEventListener("click", () => {
+      scrapeToList(button.dataset.scrapeHandle, button.dataset.scrapeList);
+    }));
+    document.querySelector("[data-refill]")?.addEventListener("click", (e) => {
+      scrapeToList(e.currentTarget.dataset.refill, e.currentTarget.dataset.refillDir, true);
+    });
     document.querySelectorAll("[data-open-list]").forEach((button) => button.addEventListener("click", () => {
       state.listView = { name: button.dataset.openList, filter: "pending" };
       renderShell();
@@ -1134,9 +1148,48 @@
     document.querySelector("[data-open-batch]")?.addEventListener("click", openNextBatch);
   }
 
-  // Add pasted handles to a named list as pending targets — the raw fuel for
-  // assisted following. Manual because scraping follower lists OOMs the free
-  // instance; paste from X yourself.
+  // Scrape a light sample of an account's followers/following and stock them
+  // into a list as pending targets. Re-running (Traer más) appends only NEW
+  // people — anyone already in the list, including those you already followed,
+  // is skipped by the upsert, so the pending view keeps flowing with fresh
+  // faces as you work through it.
+  async function scrapeToList(handle, list, refill = false) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const dirLabel = list === "following" ? "Sigue a @" : "Seguidores de @";
+    const listName = `${dirLabel}${handle}`;
+    if (refill && state.listView) state.listView.busy = true;
+    renderShell();
+    const progress = createProgress(refill ? `Trayendo más de @${handle}` : `${dirLabel}${handle}`);
+    progress.auto(["Despertando el scraper…", `Abriendo x.com/${handle}/${list}…`, "Capturando una muestra…"], 15000);
+    const { data, error } = await invokeEdge("x-followers", { handle, list });
+    if (state.listView) state.listView.busy = false;
+    if (error || data?.error) { progress.fail(data?.error || "No se pudo leer la lista."); return renderShell(); }
+    const users = data.users || [];
+    if (!users.length) { progress.fail(data.note || "X no cargó la lista esta vez. Reintentá."); return renderShell(); }
+    const rows = users.map((u) => ({
+      organization_id: state.org.id,
+      list_name: listName,
+      handle: u.handle,
+      display_name: u.name || null,
+      bio: u.bio || null,
+      followers: u.followers || 0,
+      source_handle: handle,
+      added_by: state.session?.user?.id || null,
+    }));
+    const { data: saved, error: saveErr } = await supabase.from("follow_targets")
+      .upsert(rows, { onConflict: "organization_id,list_name,handle", ignoreDuplicates: true })
+      .select();
+    if (saveErr) { progress.fail("No se pudo guardar: " + saveErr.message); return renderShell(); }
+    const added = saved || [];
+    state.followTargets = [...added, ...state.followTargets];
+    localStorage.setItem(`listdir:${listName}`, list);
+    state.listView = { name: listName, filter: "pending" };
+    progress.done(added.length ? `+${added.length} nuevos en «${listName}»` : "Sin gente nueva — ya los tenías todos");
+    renderShell();
+  }
+
+  // Add pasted handles to a named list as pending targets — manual alternative
+  // to scraping.
   async function addHandlesToList(event) {
     event.preventDefault();
     if (state.preview) return notify("La vista previa es de solo lectura.", true);
