@@ -14,6 +14,7 @@ const guidesMigration = await readFile(new URL("../supabase/migrations/202607210
 const summaryMigration = await readFile(new URL("../supabase/migrations/20260721040000_create_social_summary.sql", import.meta.url), "utf8");
 const xProfileEdge = await readFile(new URL("../supabase/functions/x-profile/index.ts", import.meta.url), "utf8");
 const repoSearchEdge = await readFile(new URL("../supabase/functions/repo-search/index.ts", import.meta.url), "utf8");
+const xFollowersEdge = await readFile(new URL("../supabase/functions/x-followers/index.ts", import.meta.url), "utf8");
 const growthMigration = await readFile(new URL("../supabase/migrations/20260721050000_monthly_growth_goal_and_cron.sql", import.meta.url), "utf8");
 const refreshAllMigration = await readFile(new URL("../supabase/migrations/20260721060000_refresh_all_default_goals_meme_picks.sql", import.meta.url), "utf8");
 
@@ -433,6 +434,24 @@ test("repo X post follows the viral thread style: caps hook, → bullets, cómo 
   assert.match(fn, /SIN el link del repo/);
   assert.match(app, /repo-post-reply/);
   assert.match(app, /x_reply/);
+});
+
+test("accounts can open followers as prospects and telluscoop gets a follow-back analysis", () => {
+  assert.match(app, /data-follow-prospects/);
+  assert.match(app, /followback-btn/);
+  assert.match(app, /function followViewModal/);
+  assert.match(app, /invokeEdge\("x-followers"/);
+  for (const group of ["mutuals", "not_back", "fans"]) assert.match(app, new RegExp(group));
+});
+
+test("x-followers edge requires a session and crosses followers/following server-side", () => {
+  assert.match(xFollowersEdge, /Sesión requerida/);
+  assert.match(xFollowersEdge, /\.neq\("role", "viewer"\)/);
+  assert.match(xFollowersEdge, /mode !== "followback"/);
+  assert.match(xFollowersEdge, /followerSet/);
+  assert.match(xFollowersEdge, /not_back/);
+  assert.match(xFollowersEdge, /Deno\.env\.get\("X_SEARCH_SERVER_URL"\)/);
+  assert.doesNotMatch(app, /X_SEARCH_SERVER_URL/);
 });
 
 test("rewrite_article mode reuses the user's template on pasted source text, any language, no fresh search", () => {

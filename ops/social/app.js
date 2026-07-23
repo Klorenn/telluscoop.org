@@ -39,6 +39,7 @@
     guides: [], guideForm: { chain: "stellar", topic: "", useImages: true, useEmojis: false }, guideDrafts: [], guideBusy: false,
     guideView: null, guideSocialPosts: null,
     metrics: [], goals: [], summaryBusy: false,
+    followView: null,
   };
 
   const CHAINS = [
@@ -316,6 +317,7 @@
       state.articleView = null;
       state.guideView = null;
       state.repoPostDraft = null;
+      state.followView = null;
       renderShell();
     }));
     if (state.view === "summary") wireSummary();
@@ -902,9 +904,44 @@
 
   // ---------- accounts ----------
 
+  function followListRows(users) {
+    if (!users?.length) return `<p style="color:var(--muted);margin:.6rem 0 0">Nadie en esta lista.</p>`;
+    return `<div class="table-wrap" style="margin-top:.6rem"><table>
+      <thead><tr><th>Cuenta</th><th>Seguidores</th><th>Bio</th><th></th></tr></thead>
+      <tbody>${users.map((u) => `<tr>
+        <td><strong>@${esc(u.handle)}</strong><br /><span style="color:var(--muted);font-size:.82rem">${esc(u.name || "")}</span></td>
+        <td>${fmtNum(u.followers)}</td>
+        <td style="color:var(--muted);font-size:.82rem;max-width:340px">${esc((u.bio || "").slice(0, 120))}</td>
+        <td><a class="table-link" href="${esc(u.url)}" target="_blank" rel="noopener">${icon("external-link")} Ver en X</a></td>
+      </tr>`).join("")}</tbody>
+    </table></div>`;
+  }
+
+  function followViewModal() {
+    const fv = state.followView;
+    if (!fv) return "";
+    const head = `<h2 style="margin:0">${fv.mode === "followback" ? `Follow-back de @${esc(fv.handle)}` : `Seguidores de @${esc(fv.handle)}`}</h2>
+      <button class="button button-ghost" type="button" data-close-follow>${icon("x")} Cerrar</button>`;
+    if (fv.busy) return modalShell(head, `<p style="color:var(--muted);margin:.4rem 0 0">Leyendo listas de X… esto tarda hasta 1-2 minutos (scroll real en la página).</p>`);
+    if (fv.mode !== "followback") {
+      return modalShell(head, `<p style="color:var(--muted);margin:0">Primeros ${fv.users.length} seguidores — prospectos para seguir desde @telluscoop.</p>${followListRows(fv.users)}`);
+    }
+    const tabs = [["mutuals", `Mutuals (${fv.mutuals.length})`], ["not_back", `No devuelven (${fv.not_back.length})`], ["fans", `Nos siguen y no seguimos (${fv.fans.length})`]];
+    return modalShell(head, `
+      <p style="color:var(--muted);margin:0">Leímos ${fv.counts.followers} seguidores y ${fv.counts.following} seguidos (primeras páginas).</p>
+      <div class="modal-tabs" role="tablist" aria-label="Grupo" style="margin-top:.7rem">
+        ${tabs.map(([key, label]) => `<button type="button" role="tab" aria-selected="${fv.tab === key}" class="${fv.tab === key ? "active" : ""}" data-follow-tab="${key}">${esc(label)}</button>`).join("")}
+      </div>
+      ${followListRows(fv[fv.tab])}`);
+  }
+
   function accountsView() {
+    const ownX = state.accounts.find((a) => a.platform === "x" && a.category === "tellus-own");
     return `
-      <div class="toolbar"><div><span class="eyebrow">Cuentas observadas</span><h2>Cuentas</h2></div></div>
+      <div class="toolbar"><div><span class="eyebrow">Cuentas observadas</span><h2>Cuentas</h2></div>
+        ${ownX && !state.preview ? `<button class="button button-secondary" type="button" id="followback-btn" ${state.followView?.busy ? "disabled" : ""}>${icon("users")} ${state.followView?.busy ? "Analizando…" : `Follow-back @${esc(ownX.handle)}`}</button>` : ""}
+      </div>
+      ${followViewModal()}
       <section class="card" style="margin-bottom:1.2rem">
         <h3>Agregar cuenta</h3>
         <form id="account-form" class="form-grid">
@@ -924,7 +961,7 @@
           <td><span class="chip chip-platform-${esc(account.platform)}">${esc(platformLabels[account.platform] || account.platform)}</span></td>
           <td>${esc(categoryLabel(account.category))}</td>
           <td>${account.active ? "Activa" : "Pausada"}</td>
-          <td>${state.preview ? "" : `<button class="table-link" data-toggle-account="${esc(account.id)}">${account.active ? "Pausar" : "Activar"}</button>`}</td>
+          <td>${state.preview ? "" : `${account.platform === "x" ? `<button class="table-link" data-follow-prospects="${esc(account.handle)}" ${state.followView?.busy ? "disabled" : ""}>${icon("users")} Seguidores</button><br />` : ""}<button class="table-link" data-toggle-account="${esc(account.id)}" style="margin-top:.3rem">${account.active ? "Pausar" : "Activar"}</button>`}</td>
         </tr>`).join("")}</tbody>
       </table></div>`;
   }
@@ -955,6 +992,33 @@
       account.active = !account.active;
       renderShell();
     }));
+    document.querySelector("#followback-btn")?.addEventListener("click", () => {
+      const ownX = state.accounts.find((a) => a.platform === "x" && a.category === "tellus-own");
+      if (ownX) loadFollowView({ mode: "followback", handle: ownX.handle });
+    });
+    document.querySelectorAll("[data-follow-prospects]").forEach((button) => button.addEventListener("click", () => {
+      loadFollowView({ mode: "prospects", handle: button.dataset.followProspects });
+    }));
+    document.querySelectorAll("[data-follow-tab]").forEach((button) => button.addEventListener("click", () => {
+      if (state.followView) { state.followView.tab = button.dataset.followTab; renderShell(); }
+    }));
+    document.querySelector("[data-close-follow]")?.addEventListener("click", () => { state.followView = null; renderShell(); });
+  }
+
+  async function loadFollowView({ mode, handle }) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    state.followView = { mode, handle, busy: true, tab: "mutuals" };
+    renderShell();
+    const { data, error } = await invokeEdge("x-followers", { mode, handle });
+    if (error || data?.error) {
+      state.followView = null;
+      notify(data?.error || "No se pudo leer la lista de X.", true);
+      return renderShell();
+    }
+    state.followView = mode === "followback"
+      ? { mode, handle, busy: false, tab: "mutuals", counts: data.counts, mutuals: data.mutuals || [], not_back: data.not_back || [], fans: data.fans || [] }
+      : { mode, handle, busy: false, users: data.users || [] };
+    renderShell();
   }
 
   // ---------- repos ----------
@@ -2258,10 +2322,11 @@
   // Escape closes whichever article/guide/repo-post popup is open. Bound
   // once, not on every render, since it never needs to change.
   document.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape" || (!state.articleView && !state.guideView && !state.repoPostDraft)) return;
+    if (e.key !== "Escape" || (!state.articleView && !state.guideView && !state.repoPostDraft && !state.followView)) return;
     state.articleView = null;
     state.guideView = null;
     state.repoPostDraft = null;
+    state.followView = null;
     renderShell();
   });
   boot();
