@@ -414,6 +414,27 @@ test("articles hyperlink every mentioned entity to its official site, in both ge
   assert.match(rewriteFn, /inlineLinkRules\(lang\)/);
 });
 
+test("Stellar chip runs a super search: parallel GitHub queries plus HN and the web pass", () => {
+  assert.match(app, /function githubSearch/);
+  assert.match(app, /"topic:stellar"/);
+  assert.match(app, /"topic:soroban"/);
+  assert.match(app, /"org:stellar"/);
+  assert.match(app, /const deep = Array\.isArray\(query\)/);
+  assert.match(app, /\(deep \|\| known\.size < 6\)/);
+});
+
+test("repo X post follows the viral thread style: caps hook, → bullets, cómo lo logra, repo link in tweet 2", () => {
+  const fn = edge.match(/async function generateRepoSocialPosts[\s\S]*?\n\}/)?.[0];
+  assert.ok(fn, "generateRepoSocialPosts not found");
+  assert.match(fn, /MAYÚSCULAS/);
+  assert.match(fn, /→/);
+  assert.match(fn, /¿Cómo lo logra\?/);
+  assert.match(fn, /x_reply/);
+  assert.match(fn, /SIN el link del repo/);
+  assert.match(app, /repo-post-reply/);
+  assert.match(app, /x_reply/);
+});
+
 test("rewrite_article mode reuses the user's template on pasted source text, any language, no fresh search", () => {
   assert.match(edge, /body\.format === "rewrite_article"/);
   assert.match(edge, /async function rewriteArticle/);

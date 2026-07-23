@@ -959,7 +959,10 @@
 
   // ---------- repos ----------
 
-  // Curated GitHub searches; dates are computed at click time.
+  // Curated GitHub searches; dates are computed at click time. An array means
+  // "super search": every query runs in parallel and results merge — needed
+  // for ecosystems like Stellar where a single narrow query hides the 1400+
+  // open-source repos that actually exist.
   const REPO_CATEGORIES = [
     ["Trending semana", () => `created:>${daysAgo(7)} stars:>50`],
     ["Claude", () => `claude in:name,description stars:>30 pushed:>${daysAgo(60)}`],
@@ -969,7 +972,13 @@
     ["UI/UX", () => `topic:ui topic:design-system stars:>300 pushed:>${daysAgo(90)}`],
     ["Componentes", () => `topic:components stars:>300 pushed:>${daysAgo(90)}`],
     ["Librerías nuevas", () => `topic:library created:>${daysAgo(120)} stars:>100`],
-    ["Cripto/Stellar", () => `stellar blockchain in:name,description stars:>20 pushed:>${daysAgo(90)}`],
+    ["Cripto/Stellar", () => [
+      "topic:stellar",
+      "topic:soroban",
+      `soroban in:name,description pushed:>${daysAgo(365)}`,
+      `stellar in:name,description pushed:>${daysAgo(180)}`,
+      "org:stellar",
+    ]],
   ];
 
   function daysAgo(n) {
@@ -1039,6 +1048,8 @@
         ${REPO_POST_CHANNELS.map(([key, label]) => `<button type="button" role="tab" aria-selected="${draft.tab === key}" class="${draft.tab === key ? "active" : ""}" data-repo-tab="${key}">${esc(label)}</button>`).join("")}
       </div>
       <textarea id="repo-post-text" style="width:100%;min-height:160px;margin:.8rem 0;border:1px solid var(--line);border-radius:11px;padding:.72rem .85rem">${esc(draft.posts[draft.tab] || "")}</textarea>
+      ${draft.tab === "x" ? `<label for="repo-post-reply" style="font-weight:600;font-size:.85rem">Tweet 2 (respuesta con el repo)</label>
+      <textarea id="repo-post-reply" style="width:100%;min-height:56px;margin:.4rem 0 .8rem;border:1px solid var(--line);border-radius:11px;padding:.72rem .85rem">${esc(draft.posts.x_reply || "")}</textarea>` : ""}
       ${draft.sources?.length ? `<div class="post-meta"><span>${draft.sources.length} fuente(s):</span> ${draft.sources.slice(0, 4).map((s) => `<a class="table-link" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join(" · ")}</div>`
         : `<div class="post-meta"><span style="color:var(--red)">Sin fuentes verificadas — revisá antes de publicar.</span></div>`}
       <div class="form-foot" style="justify-content:start;margin-top:.7rem">
@@ -1093,31 +1104,51 @@
     } catch { return null; }
   }
 
-  async function searchRepos(query) {
-    state.repoBusy = true;
-    state.repoQuery = query;
-    try {
-      const ghResponse = await fetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(query)}&sort=stars&order=desc&per_page=12`, {
-        headers: { Accept: "application/vnd.github+json" },
-      }).catch(() => null);
-      const ghItems = ghResponse?.ok ? (await ghResponse.json()).items || [] : [];
-      const known = new Set(ghItems.map((r) => r.full_name));
+  async function githubSearch(query, perPage) {
+    const res = await fetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(query)}&sort=stars&order=desc&per_page=${perPage}`, {
+      headers: { Accept: "application/vnd.github+json" },
+    }).catch(() => null);
+    if (!res?.ok) return { ok: false, items: [] };
+    return { ok: true, items: (await res.json()).items || [] };
+  }
 
-      const hnNames = (await searchHN(query)).filter((n) => !known.has(n));
+  // A string runs one GitHub query; an array runs a "super search": every
+  // query in parallel, merged and deduped, plus HN mentions and the Gemini
+  // web pass — so ecosystem-wide searches surface far more than 12 repos.
+  async function searchRepos(query) {
+    const deep = Array.isArray(query);
+    const queries = deep ? query : [query];
+    state.repoBusy = true;
+    state.repoQuery = deep ? queries[0] : query;
+    try {
+      const responses = await Promise.all(queries.map((q) => githubSearch(q, deep ? 30 : 20)));
+      const anyOk = responses.some((r) => r.ok);
+      const known = new Set();
+      const ghItems = [];
+      for (const r of responses) for (const item of r.items) {
+        if (known.has(item.full_name)) continue;
+        known.add(item.full_name);
+        ghItems.push(item);
+      }
+      ghItems.sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0));
+
+      const hnNames = (await searchHN(deep ? "stellar soroban" : query)).filter((n) => !known.has(n));
       const hnItems = (await Promise.all(hnNames.map(fetchRepoMeta))).filter(Boolean);
       hnItems.forEach((r) => known.add(r.full_name));
 
       let webItems = [];
-      if (known.size < 6 && !state.preview) {
-        const { data, error } = await invokeEdge("repo-search", { query });
+      if ((deep || known.size < 6) && !state.preview) {
+        const { data, error } = await invokeEdge("repo-search", { query: deep ? "repositorios open source del ecosistema Stellar y Soroban" : query });
         if (!error && Array.isArray(data?.repos)) {
           webItems = data.repos.filter((r) => !known.has(r.full_name)).map((r) => ({ ...r, _source: "web" }));
         }
       }
 
-      state.repoResults = [...ghItems, ...hnItems, ...webItems];
+      state.repoResults = [...ghItems.slice(0, deep ? 60 : 20), ...hnItems, ...webItems];
       if (!state.repoResults.length) {
-        notify(ghResponse && !ghResponse.ok ? "GitHub no respondió (límite de 60 búsquedas/hora sin token) y no encontramos nada más." : "Sin resultados para esa búsqueda.");
+        notify(!anyOk ? "GitHub no respondió (límite de 60 búsquedas/hora sin token) y no encontramos nada más." : "Sin resultados para esa búsqueda.");
+      } else if (deep) {
+        notify(`${state.repoResults.length} repos encontrados (GitHub multi-búsqueda + HN + web).`);
       }
     } catch (error) {
       notify("La búsqueda de repos falló. Probá de nuevo en un momento.", true);
@@ -1183,6 +1214,9 @@
     document.querySelector("#repo-post-text")?.addEventListener("input", (e) => {
       if (state.repoPostDraft) state.repoPostDraft.posts[state.repoPostDraft.tab] = e.target.value;
     });
+    document.querySelector("#repo-post-reply")?.addEventListener("input", (e) => {
+      if (state.repoPostDraft) state.repoPostDraft.posts.x_reply = e.target.value;
+    });
     document.querySelector("#repo-post-copy")?.addEventListener("click", () => {
       const draft = state.repoPostDraft;
       if (draft) copyText(draft.posts[draft.tab] || "");
@@ -1211,7 +1245,10 @@
     if (!draft) return;
     const body_md = REPO_POST_CHANNELS
       .filter(([key]) => draft.posts[key]?.trim())
-      .map(([key, label]) => `## ${label}\n\n${draft.posts[key].trim()}`)
+      .map(([key, label]) => {
+        const section = `## ${label}\n\n${draft.posts[key].trim()}`;
+        return key === "x" && draft.posts.x_reply?.trim() ? `${section}\n\n**Tweet 2:** ${draft.posts.x_reply.trim()}` : section;
+      })
       .join("\n\n");
     const row = {
       organization_id: state.org.id,

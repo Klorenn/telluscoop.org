@@ -270,25 +270,37 @@ Usa Google Search para entender qué hace el proyecto y por qué es interesante 
 ${styleRules(lang)}
 
 Canales:
-- x: <=270 caracteres, gancho fuerte, incluye el enlace al final, 1-2 hashtags máximo.
+- x: post principal SIN el link del repo (el link va en el segundo tweet). Formato obligatorio, igual a este ejemplo:
+"¡ENVÍO DE AYUDA HUMANITARIA DIRECTA CON BLOCKCHAIN!
+Soter (27 estrellas) usa @StellarOrg y AI para enviar ayuda directo.
+→ Donantes y ONGs crean links de cobro fáciles.
+→ La IA verifica necesidades en privado.
+→ Impacto on-chain, privacidad total.
+Súmate a construir el futuro
+
+¿Cómo lo logra? Soter usa Smart Contracts de Soroban para crear \\"claim links\\" simples. Las ONGs y donantes generan estos enlaces, y una IA verifica de forma privada las necesidades, asegurando una distribución justa y eficiente."
+OJO: ese ejemplo es de un repo blockchain, pero es SOLO un ejemplo de FORMATO — el formato aplica a CUALQUIER repo (IA, dev tools, UI, scraping, lo que sea) adaptando el contenido al dominio real del repo. Estructura: 1) gancho en MAYÚSCULAS con ¡...! sobre lo que hace el repo, 2) línea "Nombre (N estrellas) usa/hace X para Y" — menciona la @cuenta de X del proyecto o ecosistema SOLO si existe y la conoces con certeza (ej: @StellarOrg, @OpenAI); si no, omite la mención, 3) 3 bullets "→ " con lo concreto, 4) cierre corto invitando a la acción, 5) párrafo final "¿Cómo lo logra? ..." explicando la técnica en 2-3 frases. Solo datos reales del repo.
+- x_reply: el segundo tweet del hilo: SOLO el enlace del repo con 1 línea corta invitando a verlo (ej: "El repo, open source: <enlace>").
 - whatsapp: 2-4 líneas sobrias para compartir en grupos técnicos, sin emojis, termina con el enlace.
 - discord: 2-4 líneas para un canal de comunidad/dev, tono cercano pero sin hype vacío, termina con el enlace.
 - linkedin: 3-5 párrafos cortos, tono profesional, explica el valor o caso de uso, cierre con el enlace.
 - instagram: caption de 2-3 líneas + 3-5 hashtags al final (sin link clickeable — invita a buscarlo o "link en bio").
 
 Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
-{"x": "post para X", "whatsapp": "mensaje para WhatsApp", "discord": "mensaje para Discord", "linkedin": "post para LinkedIn", "instagram": "caption para Instagram"}`;
+{"x": "post principal para X (sin link)", "x_reply": "segundo tweet con el enlace del repo", "whatsapp": "mensaje para WhatsApp", "discord": "mensaje para Discord", "linkedin": "post para LinkedIn", "instagram": "caption para Instagram"}`;
 
   const { data, model } = await callGemini(apiKey, input);
   const parsed = parseJsonLoose(extractText(data));
   const posts = {
     x: String(parsed.x ?? "").trim(),
+    x_reply: String(parsed.x_reply ?? "").trim() || (repo.url ? `El repo, open source: ${repo.url}` : ""),
     whatsapp: String(parsed.whatsapp ?? "").trim(),
     discord: String(parsed.discord ?? "").trim(),
     linkedin: String(parsed.linkedin ?? "").trim(),
     instagram: String(parsed.instagram ?? "").trim(),
   };
-  if (!Object.values(posts).some(Boolean)) throw new Error(`El modelo ${model} devolvió una respuesta vacía`);
+  // x_reply has a local fallback, so it can't vouch for the generation.
+  if (![posts.x, posts.whatsapp, posts.discord, posts.linkedin, posts.instagram].some(Boolean)) throw new Error(`El modelo ${model} devolvió una respuesta vacía`);
   return { posts, sources: collectSources(data), model };
 }
 
