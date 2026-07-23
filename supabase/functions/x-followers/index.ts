@@ -20,6 +20,19 @@ interface XUser {
   url: string;
 }
 
+// Render's free instance sleeps after ~15 min idle; the first request wakes
+// it but the heavy /follow-list call times out during the cold boot. Ping
+// /health until it answers (instant when warm, ~30-45s when cold) so the real
+// scrape always hits an awake server on the first try.
+async function wakeServer(serverUrl: string): Promise<boolean> {
+  for (let i = 0; i < 6; i++) {
+    const r = await fetch(`${serverUrl}/health`, { signal: AbortSignal.timeout(20000) }).catch(() => null);
+    if (r?.ok) return true;
+    await new Promise((res) => setTimeout(res, 3000));
+  }
+  return false;
+}
+
 async function fetchList(serverUrl: string, handle: string, list: "followers" | "following", budgetMs: number): Promise<XUser[] | { error: string }> {
   const response = await fetch(`${serverUrl}/follow-list`, {
     method: "POST",
@@ -66,6 +79,11 @@ Deno.serve(async (request) => {
     const body = await request.json();
     const handle = String(body.handle ?? "").replace(/^@/, "").trim();
     if (!handle) return json({ error: "Falta handle" }, 400);
+
+    // Wake the free instance before the heavy scrape so a cold server no
+    // longer surfaces as "no respondió".
+    const awake = await wakeServer(serverUrl);
+    if (!awake) return json({ error: "El servidor de X no despertó a tiempo. Reintentá en 1 minuto." }, 502);
 
     // Prospect mode: who follows the given (watched) account.
     if (body.mode !== "followback") {

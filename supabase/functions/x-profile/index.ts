@@ -63,6 +63,17 @@ async function liFollowers(slug: string): Promise<number | null> {
   }
 }
 
+// Render's free instance sleeps after ~15 min idle; ping /health until it
+// answers (instant when warm) so the X scrape hits an awake server.
+async function wakeServer(serverUrl: string): Promise<boolean> {
+  for (let i = 0; i < 6; i++) {
+    const r = await fetch(`${serverUrl}/health`, { signal: AbortSignal.timeout(20000) }).catch(() => null);
+    if (r?.ok) return true;
+    await new Promise((res) => setTimeout(res, 3000));
+  }
+  return false;
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (request.method !== "POST") return json({ error: "Método no permitido" }, 405);
@@ -137,6 +148,8 @@ Deno.serve(async (request) => {
     const serverUrl = Deno.env.get("X_SEARCH_SERVER_URL");
     if (!serverUrl) {
       errors.push("x: X_SEARCH_SERVER_URL no configurado");
+    } else if (!(await wakeServer(serverUrl))) {
+      errors.push("x: el servidor no despertó a tiempo, reintentá en 1 min");
     } else {
       const response = await fetch(`${serverUrl}/profile`, {
         method: "POST",

@@ -113,6 +113,13 @@ Deno.serve(async (request) => {
     // The Render free instance sleeps and can OOM, so cap the wait and fall
     // back to a Gemini google_search pass when the scraper is unavailable.
     const callServer = async () => {
+      // Wake the sleeping instance first so a cold start doesn't waste the
+      // whole /search budget.
+      for (let i = 0; i < 6; i++) {
+        const h = await fetch(`${serverUrl}/health`, { signal: AbortSignal.timeout(20000) }).catch(() => null);
+        if (h?.ok) break;
+        await new Promise((res) => setTimeout(res, 3000));
+      }
       const response = await fetch(`${serverUrl}/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
