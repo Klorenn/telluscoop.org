@@ -20,20 +20,20 @@ interface XUser {
   url: string;
 }
 
-async function fetchList(serverUrl: string, handle: string, list: "followers" | "following"): Promise<XUser[] | { error: string }> {
+async function fetchList(serverUrl: string, handle: string, list: "followers" | "following", budgetMs: number): Promise<XUser[] | { error: string }> {
   const response = await fetch(`${serverUrl}/follow-list`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ handle, list, count: 400 }),
-    signal: AbortSignal.timeout(120000),
+    body: JSON.stringify({ handle, list, count: 400, budget_ms: budgetMs }),
+    signal: AbortSignal.timeout(budgetMs + 25000),
   }).catch(() => null);
-  if (!response) return { error: "El servidor de X no respondió. Puede estar dormido, reintentá en 1-2 min." };
+  if (!response) return { error: "El servidor de X no respondió a tiempo. Reintentá en 1-2 min." };
   try {
     const data = JSON.parse(await response.text());
     if (!response.ok) return { error: (data.error as string) || "No se pudo leer la lista" };
     return (data.users ?? []) as XUser[];
   } catch {
-    return { error: "Respuesta inválida del servidor de X" };
+    return { error: "El servidor de X se cortó a mitad de la lectura (proxy de Render). Reintentá — quedó menos lista por leer." };
   }
 }
 
@@ -69,16 +69,17 @@ Deno.serve(async (request) => {
 
     // Prospect mode: who follows the given (watched) account.
     if (body.mode !== "followback") {
-      const users = await fetchList(serverUrl, handle, "followers");
+      const users = await fetchList(serverUrl, handle, "followers", 70000);
       if ("error" in users) return json(users, 502);
       return json({ mode: "prospects", handle, users });
     }
 
     // Follow-back mode: cross our own followers and following lists. Two
-    // sequential scrapes (the server serializes anyway).
-    const followers = await fetchList(serverUrl, handle, "followers");
+    // sequential scrapes (the server serializes anyway) with tighter budgets
+    // so both fit inside this function's own wall clock.
+    const followers = await fetchList(serverUrl, handle, "followers", 50000);
     if ("error" in followers) return json(followers, 502);
-    const following = await fetchList(serverUrl, handle, "following");
+    const following = await fetchList(serverUrl, handle, "following", 50000);
     if ("error" in following) return json(following, 502);
 
     const followerSet = new Set(followers.map((u) => u.handle.toLowerCase()));
