@@ -134,6 +134,7 @@ a { color: inherit; }
 .modal-body { overflow-y: auto; }
 .modal-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .6rem; margin-bottom: 1rem; }
 .modal-gallery img { width: 100%; border-radius: 8px; max-height: 150px; object-fit: cover; }
+.save-list-bar { display: flex; align-items: center; justify-content: space-between; gap: .8rem; flex-wrap: wrap; margin: .8rem 0 .2rem; padding: .6rem .8rem; background: var(--surface-2); border-radius: 10px; font-size: .84rem; color: var(--muted); }
 .follow-pill { min-width: 104px; padding: .42rem 1rem; border: 1px solid var(--teal-dark); border-radius: 999px; background: var(--teal-dark); color: #fff; font-weight: 700; font-size: .82rem; transition: background .15s ease, color .15s ease, border-color .15s ease; }
 .follow-pill:hover { background: var(--teal); border-color: var(--teal); }
 .follow-pill.following { background: transparent; color: var(--teal-dark); border-color: var(--line); }

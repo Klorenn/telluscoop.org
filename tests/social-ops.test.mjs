@@ -17,6 +17,7 @@ const repoSearchEdge = await readFile(new URL("../supabase/functions/repo-search
 const xFollowersEdge = await readFile(new URL("../supabase/functions/x-followers/index.ts", import.meta.url), "utf8");
 const growthMigration = await readFile(new URL("../supabase/migrations/20260721050000_monthly_growth_goal_and_cron.sql", import.meta.url), "utf8");
 const refreshAllMigration = await readFile(new URL("../supabase/migrations/20260721060000_refresh_all_default_goals_meme_picks.sql", import.meta.url), "utf8");
+const followTargetsMigration = await readFile(new URL("../supabase/migrations/20260721070000_follow_targets.sql", import.meta.url), "utf8");
 
 test("production cache versions match", () => {
   const cssVersion = page.match(/styles\.css\?v=([^"']+)/)?.[1];
@@ -470,6 +471,20 @@ test("long operations show a floating progress card with staged steps", () => {
   assert.match(app, /progress\.done\(/);
   assert.match(app, /progress\.fail\(/);
   assert.match(app, /progress\.auto\(/);
+});
+
+test("follow lists: save prospects, assisted batch follow, per-target status, no headless mass-follow", () => {
+  assert.match(followTargetsMigration, /create table public\.follow_targets/);
+  assert.match(followTargetsMigration, /alter table public\.follow_targets enable row level security/);
+  assert.match(followTargetsMigration, /follow_targets_member_all[\s\S]*?m\.role <> 'viewer'/);
+  assert.match(app, /function saveProspectsToList/);
+  assert.match(app, /function listsSection/);
+  assert.match(app, /function listViewModal/);
+  assert.match(app, /function openNextBatch/);
+  assert.match(app, /data-open-batch/);
+  assert.match(app, /data-target-follow/);
+  // Assisted only: batch opens X profiles in tabs, never follows headless.
+  assert.match(app, /window\.open\(`https:\/\/x\.com\/\$\{t\.handle\}`/);
 });
 
 test("rewrite_article mode reuses the user's template on pasted source text, any language, no fresh search", () => {

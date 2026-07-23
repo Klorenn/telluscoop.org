@@ -39,7 +39,7 @@
     guides: [], guideForm: { chain: "stellar", topic: "", useImages: true, useEmojis: false }, guideDrafts: [], guideBusy: false,
     guideView: null, guideSocialPosts: null,
     metrics: [], goals: [], summaryBusy: false,
-    followView: null,
+    followView: null, followTargets: [], listView: null,
   };
 
   const CHAINS = [
@@ -213,8 +213,12 @@
       safe(supabase.from("social_metrics").select("*").order("captured_at", { ascending: false }).limit(400)),
       safe(supabase.from("social_goals").select("*")),
     ]);
-    const memePicks = await safe(supabase.from("meme_picks").select("*").neq("status", "discarded").order("created_at", { ascending: false }).limit(60));
+    const [memePicks, followTargets] = await Promise.all([
+      safe(supabase.from("meme_picks").select("*").neq("status", "discarded").order("created_at", { ascending: false }).limit(60)),
+      safe(supabase.from("follow_targets").select("*").order("created_at", { ascending: false }).limit(1000)),
+    ]);
     state.memePicks = memePicks.data || [];
+    state.followTargets = followTargets.data || [];
     const critical = [orgs, accounts, posts].find((r) => r.error);
     if (critical) throw critical.error;
     state.org = orgs.data[0] || null;
@@ -285,6 +289,10 @@
       { id: "g1", platform: "x", target_followers: 3000, target_posts_per_week: 7, target_monthly_growth: 100 },
       { id: "g2", platform: "linkedin", target_followers: 1500, target_posts_per_week: 3, target_monthly_growth: 50 },
       { id: "g3", platform: "instagram", target_followers: 1000, target_posts_per_week: 4, target_monthly_growth: 40 },
+    ];
+    state.followTargets = [
+      { id: "ft1", list_name: "Prospectos de @midudev", handle: "goncy", display_name: "goncy.tsx", bio: "Forward Deployed Engineer en Vercel", followers: 90000, source_handle: "midudev", status: "pending" },
+      { id: "ft2", list_name: "Prospectos de @midudev", handle: "maripydev", display_name: "Maripy", bio: "Just a girl in tech", followers: 48000, source_handle: "midudev", status: "followed" },
     ];
     state.repos = [
       { id: "r1", repo_full_name: "D4Vinci/Scrapling", url: "https://github.com/D4Vinci/Scrapling", description: "Undetectable, powerful, flexible web scraping for Python", stars: 12400, language: "Python", status: "inbox", topics: ["scraping"] },
@@ -369,6 +377,7 @@
       state.guideView = null;
       state.repoPostDraft = null;
       state.followView = null;
+      state.listView = null;
       renderShell();
     }));
     if (state.view === "summary") wireSummary();
@@ -1007,6 +1016,13 @@
     </table></div>`;
   }
 
+  function saveToListBar(count) {
+    return `<div class="save-list-bar">
+      <span>${count} cuentas</span>
+      <button class="button button-primary" type="button" data-save-list style="min-height:38px">${icon("list-plus")} Guardar en una lista</button>
+    </div>`;
+  }
+
   function followViewModal() {
     const fv = state.followView;
     if (!fv) return "";
@@ -1014,7 +1030,7 @@
       <button class="button button-ghost" type="button" data-close-follow>${icon("x")} Cerrar</button>`;
     if (fv.busy) return modalShell(head, `<p style="color:var(--muted);margin:.4rem 0 0">Leyendo listas de X… esto tarda hasta 1-2 minutos (scroll real en la página).</p>`);
     if (fv.mode !== "followback") {
-      return modalShell(head, `<p style="color:var(--muted);margin:0">Primeros ${fv.users.length} seguidores — prospectos para seguir desde @telluscoop.</p>${followListRows(fv.users)}`);
+      return modalShell(head, `<p style="color:var(--muted);margin:0">Primeros ${fv.users.length} seguidores de @${esc(fv.handle)} — prospectos para seguir.</p>${saveToListBar(fv.users.length)}${followListRows(fv.users)}`);
     }
     const tabs = [["mutuals", `Mutuals (${fv.mutuals.length})`], ["not_back", `No devuelven (${fv.not_back.length})`], ["fans", `Nos siguen y no seguimos (${fv.fans.length})`]];
     return modalShell(head, `
@@ -1022,7 +1038,75 @@
       <div class="modal-tabs" role="tablist" aria-label="Grupo" style="margin-top:.7rem">
         ${tabs.map(([key, label]) => `<button type="button" role="tab" aria-selected="${fv.tab === key}" class="${fv.tab === key ? "active" : ""}" data-follow-tab="${key}">${esc(label)}</button>`).join("")}
       </div>
+      ${saveToListBar((fv[fv.tab] || []).length)}
       ${followListRows(fv[fv.tab])}`);
+  }
+
+  // Distinct list names with their pending/followed counts.
+  function followListsSummary() {
+    const byList = new Map();
+    for (const t of state.followTargets) {
+      if (!byList.has(t.list_name)) byList.set(t.list_name, { pending: 0, followed: 0, total: 0 });
+      const b = byList.get(t.list_name);
+      b.total += 1;
+      if (t.status === "followed") b.followed += 1;
+      else if (t.status === "pending") b.pending += 1;
+    }
+    return [...byList.entries()].map(([name, c]) => ({ name, ...c }));
+  }
+
+  function listsSection() {
+    const lists = followListsSummary();
+    if (!lists.length) return "";
+    return `<section class="card" style="margin-bottom:1.2rem">
+      <h3>Listas de follow</h3>
+      <p style="color:var(--muted);margin:.2rem 0 .8rem">Prospectos guardados. Abrí una lista para seguirlos de a poco desde X, a ritmo humano.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Lista</th><th>Pendientes</th><th>Seguidos</th><th></th></tr></thead>
+        <tbody>${lists.map((l) => `<tr>
+          <td><strong>${esc(l.name)}</strong> <span style="color:var(--muted)">· ${l.total}</span></td>
+          <td>${l.pending}</td>
+          <td>${l.followed}</td>
+          <td><button class="table-link" data-open-list="${esc(l.name)}">${icon("play")} Abrir</button></td>
+        </tr>`).join("")}</tbody>
+      </table></div>
+    </section>`;
+  }
+
+  function listViewModal() {
+    const lv = state.listView;
+    if (!lv) return "";
+    const targets = state.followTargets.filter((t) => t.list_name === lv.name);
+    const pending = targets.filter((t) => t.status === "pending");
+    const shown = lv.filter === "followed" ? targets.filter((t) => t.status === "followed")
+      : lv.filter === "all" ? targets : pending;
+    const head = `<h2 style="margin:0">Lista «${esc(lv.name)}»</h2>
+      <button class="button button-ghost" type="button" data-close-list>${icon("x")} Cerrar</button>`;
+    const filters = [["pending", `Pendientes (${targets.filter((t) => t.status === "pending").length})`], ["followed", `Seguidos (${targets.filter((t) => t.status === "followed").length})`], ["all", `Todos (${targets.length})`]];
+    const body = `
+      <div class="save-list-bar">
+        <span>Seguí de a poco: abrí 5, confirmá el follow en X, marcá acá.</span>
+        <button class="button button-primary" type="button" data-open-batch ${pending.length ? "" : "disabled"} style="min-height:38px">${icon("external-link")} Abrir 5 pendientes en X</button>
+      </div>
+      <div class="modal-tabs" role="tablist" aria-label="Estado" style="margin-top:.4rem">
+        ${filters.map(([key, label]) => `<button type="button" role="tab" aria-selected="${lv.filter === key}" class="${lv.filter === key ? "active" : ""}" data-list-filter="${key}">${esc(label)}</button>`).join("")}
+      </div>
+      ${targetRows(shown)}`;
+    return modalShell(head, body);
+  }
+
+  function targetRows(targets) {
+    if (!targets.length) return `<p style="color:var(--muted);margin:.6rem 0 0">Nada en esta vista.</p>`;
+    return `<div class="table-wrap" style="margin-top:.6rem"><table>
+      <thead><tr><th>Cuenta</th><th>Seguidores</th><th>Bio</th><th></th></tr></thead>
+      <tbody>${targets.map((t) => `<tr>
+        <td><a href="https://x.com/${esc(t.handle)}" target="_blank" rel="noopener" style="text-decoration:none"><strong>@${esc(t.handle)}</strong></a><br /><span style="color:var(--muted);font-size:.82rem">${esc(t.display_name || "")}</span></td>
+        <td>${fmtNum(t.followers)}</td>
+        <td style="color:var(--muted);font-size:.82rem;max-width:320px">${esc((t.bio || "").slice(0, 110))}</td>
+        <td><button type="button" class="follow-pill${t.status === "followed" ? " following" : ""}" data-target-follow="${esc(t.id)}">${t.status === "followed" ? "Siguiendo" : "Seguir"}</button>
+          <button class="table-link" data-target-skip="${esc(t.id)}" style="margin-left:.5rem;color:var(--muted)">Saltar</button></td>
+      </tr>`).join("")}</tbody>
+    </table></div>`;
   }
 
   function accountsView() {
@@ -1032,6 +1116,8 @@
         ${ownX && !state.preview ? `<button class="button button-secondary" type="button" id="followback-btn" ${state.followView?.busy ? "disabled" : ""}>${icon("users")} ${state.followView?.busy ? "Analizando…" : `Follow-back @${esc(ownX.handle)}`}</button>` : ""}
       </div>
       ${followViewModal()}
+      ${listViewModal()}
+      ${listsSection()}
       <section class="card" style="margin-bottom:1.2rem">
         <h3>Agregar cuenta</h3>
         <form id="account-form" class="form-grid">
@@ -1108,6 +1194,77 @@
       }
       renderShell();
     }));
+
+    document.querySelector("[data-save-list]")?.addEventListener("click", saveProspectsToList);
+    document.querySelectorAll("[data-open-list]").forEach((button) => button.addEventListener("click", () => {
+      state.listView = { name: button.dataset.openList, filter: "pending" };
+      renderShell();
+    }));
+    document.querySelector("[data-close-list]")?.addEventListener("click", () => { state.listView = null; renderShell(); });
+    document.querySelectorAll("[data-list-filter]").forEach((button) => button.addEventListener("click", () => {
+      if (state.listView) { state.listView.filter = button.dataset.listFilter; renderShell(); }
+    }));
+    document.querySelectorAll("[data-target-follow]").forEach((button) => button.addEventListener("click", () => toggleTargetFollow(button.dataset.targetFollow)));
+    document.querySelectorAll("[data-target-skip]").forEach((button) => button.addEventListener("click", () => setTargetStatus(button.dataset.targetSkip, "skipped")));
+    document.querySelector("[data-open-batch]")?.addEventListener("click", openNextBatch);
+  }
+
+  // Save the accounts currently shown in the follow modal as pending targets
+  // in a named list — the raw fuel for assisted following.
+  async function saveProspectsToList() {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const fv = state.followView;
+    if (!fv) return;
+    const users = fv.mode === "followback" ? (fv[fv.tab] || []) : fv.users;
+    if (!users.length) return notify("No hay cuentas para guardar.", true);
+    const name = (window.prompt("Nombre de la lista:", `Prospectos de @${fv.handle}`) || "").trim();
+    if (!name) return;
+    const rows = users.map((u) => ({
+      organization_id: state.org.id,
+      list_name: name,
+      handle: u.handle,
+      display_name: u.name || null,
+      bio: u.bio || null,
+      followers: u.followers || 0,
+      source_handle: fv.handle,
+      added_by: state.session?.user?.id || null,
+    }));
+    const { data, error } = await supabase.from("follow_targets")
+      .upsert(rows, { onConflict: "organization_id,list_name,handle", ignoreDuplicates: true })
+      .select();
+    if (error) return notify("No se pudo guardar la lista: " + error.message, true);
+    const added = data || [];
+    state.followTargets = [...added, ...state.followTargets];
+    notify(`${added.length} cuentas guardadas en «${name}»${added.length < rows.length ? ` (${rows.length - added.length} ya estaban)` : ""}.`);
+    renderShell();
+  }
+
+  async function setTargetStatus(id, status) {
+    const target = state.followTargets.find((t) => t.id === id);
+    if (!target) return;
+    const { error } = await supabase.from("follow_targets").update({ status }).eq("id", id);
+    if (error) return notify("No se pudo actualizar.", true);
+    target.status = status;
+    renderShell();
+  }
+
+  function toggleTargetFollow(id) {
+    const target = state.followTargets.find((t) => t.id === id);
+    if (!target) return;
+    if (target.status === "followed") return setTargetStatus(id, "pending");
+    window.open(`https://x.com/${target.handle}`, "_blank", "noopener");
+    notify(`Abrimos @${target.handle} en X — confirmá el follow allá.`);
+    setTargetStatus(id, "followed");
+  }
+
+  // Assisted batch: open the next few pending profiles in tabs so you follow
+  // them by hand in X. Never a headless mass-follow — that gets the account
+  // suspended.
+  function openNextBatch() {
+    const pending = state.followTargets.filter((t) => t.list_name === state.listView?.name && t.status === "pending").slice(0, 5);
+    if (!pending.length) return notify("No quedan pendientes en esta lista.", true);
+    for (const t of pending) window.open(`https://x.com/${t.handle}`, "_blank", "noopener");
+    notify(`Abrimos ${pending.length} perfiles en X. Seguilos ahí y marcá "Siguiendo" acá.`);
   }
 
   async function loadFollowView({ mode, handle }) {
@@ -2463,11 +2620,12 @@
   // Escape closes whichever article/guide/repo-post popup is open. Bound
   // once, not on every render, since it never needs to change.
   document.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape" || (!state.articleView && !state.guideView && !state.repoPostDraft && !state.followView)) return;
+    if (e.key !== "Escape" || (!state.articleView && !state.guideView && !state.repoPostDraft && !state.followView && !state.listView)) return;
     state.articleView = null;
     state.guideView = null;
     state.repoPostDraft = null;
     state.followView = null;
+    state.listView = null;
     renderShell();
   });
   boot();
