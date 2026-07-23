@@ -988,62 +988,6 @@
 
   // ---------- accounts ----------
 
-  // "Siguiendo" marks live in localStorage: the panel can't follow for real
-  // (the scraper session is read-only), so the button opens the profile on X
-  // and remembers that you followed them.
-  function followedSet() {
-    try { return new Set(JSON.parse(localStorage.getItem("followed_handles") || "[]")); } catch { return new Set(); }
-  }
-
-  function saveFollowedSet(set) {
-    localStorage.setItem("followed_handles", JSON.stringify([...set].slice(-2000)));
-  }
-
-  function followListRows(users) {
-    if (!users?.length) return `<p style="color:var(--muted);margin:.6rem 0 0">Nadie en esta lista.</p>`;
-    const followed = followedSet();
-    return `<div class="table-wrap" style="margin-top:.6rem"><table>
-      <thead><tr><th>Cuenta</th><th>Seguidores</th><th>Bio</th><th></th></tr></thead>
-      <tbody>${users.map((u) => {
-        const isFollowed = followed.has(u.handle.toLowerCase());
-        return `<tr>
-        <td><a href="${esc(u.url)}" target="_blank" rel="noopener" style="text-decoration:none"><strong>@${esc(u.handle)}</strong></a><br /><span style="color:var(--muted);font-size:.82rem">${esc(u.name || "")}</span></td>
-        <td>${fmtNum(u.followers)}</td>
-        <td style="color:var(--muted);font-size:.82rem;max-width:340px">${esc((u.bio || "").slice(0, 120))}</td>
-        <td><button type="button" class="follow-pill${isFollowed ? " following" : ""}" data-follow-x="${esc(u.handle)}" data-follow-url="${esc(u.url)}">${isFollowed ? "Siguiendo" : "Seguir"}</button></td>
-      </tr>`;
-      }).join("")}</tbody>
-    </table></div>`;
-  }
-
-  function saveToListBar(count) {
-    return `<div class="save-list-bar">
-      <span>${count} cuentas</span>
-      <button class="button button-primary" type="button" data-save-list style="min-height:38px">${icon("list-plus")} Guardar en una lista</button>
-    </div>`;
-  }
-
-  function followViewModal() {
-    const fv = state.followView;
-    if (!fv) return "";
-    const head = `<h2 style="margin:0">${fv.mode === "followback" ? `Follow-back de @${esc(fv.handle)}` : `Seguidores de @${esc(fv.handle)}`}</h2>
-      <button class="button button-ghost" type="button" data-close-follow>${icon("x")} Cerrar</button>`;
-    if (fv.busy) return modalShell(head, `<p style="color:var(--muted);margin:.4rem 0 0">Leyendo listas de X… esto tarda hasta 1-2 minutos (scroll real en la página).</p>`);
-    if (fv.mode !== "followback") {
-      if (!fv.users.length) {
-        return modalShell(head, `<p style="color:var(--amber);margin:0;line-height:1.5">${esc(fv.note || "X no cargó la lista esta vez.")}<br /><button class="button button-secondary" type="button" data-retry-follow style="margin-top:.8rem">${icon("refresh-cw")} Reintentar</button></p>`);
-      }
-      return modalShell(head, `<p style="color:var(--muted);margin:0">Primeros ${fv.users.length} seguidores de @${esc(fv.handle)} — prospectos para seguir.</p>${saveToListBar(fv.users.length)}${followListRows(fv.users)}`);
-    }
-    const tabs = [["mutuals", `Mutuals (${fv.mutuals.length})`], ["not_back", `No devuelven (${fv.not_back.length})`], ["fans", `Nos siguen y no seguimos (${fv.fans.length})`]];
-    return modalShell(head, `
-      <p style="color:var(--muted);margin:0">Leímos ${fv.counts.followers} seguidores y ${fv.counts.following} seguidos (primeras páginas).</p>
-      <div class="modal-tabs" role="tablist" aria-label="Grupo" style="margin-top:.7rem">
-        ${tabs.map(([key, label]) => `<button type="button" role="tab" aria-selected="${fv.tab === key}" class="${fv.tab === key ? "active" : ""}" data-follow-tab="${key}">${esc(label)}</button>`).join("")}
-      </div>
-      ${saveToListBar((fv[fv.tab] || []).length)}
-      ${followListRows(fv[fv.tab])}`);
-  }
 
   // Distinct list names with their pending/followed counts.
   function followListsSummary() {
@@ -1113,14 +1057,19 @@
   }
 
   function accountsView() {
-    const ownX = state.accounts.find((a) => a.platform === "x" && a.category === "tellus-own");
     return `
-      <div class="toolbar"><div><span class="eyebrow">Cuentas observadas</span><h2>Cuentas</h2></div>
-        ${ownX && !state.preview ? `<button class="button button-secondary" type="button" id="followback-btn" ${state.followView?.busy ? "disabled" : ""}>${icon("users")} ${state.followView?.busy ? "Analizando…" : `Follow-back @${esc(ownX.handle)}`}</button>` : ""}
-      </div>
-      ${followViewModal()}
+      <div class="toolbar"><div><span class="eyebrow">Cuentas observadas</span><h2>Cuentas</h2></div></div>
       ${listViewModal()}
       ${listsSection()}
+      <section class="card" style="margin-bottom:1.2rem">
+        <h3>Listas de follow</h3>
+        <p style="color:var(--muted);margin:.2rem 0 .8rem;line-height:1.5">Pegá los handles que querés seguir (uno por línea o separados por coma) y guardalos en una lista. Después la abrís y los seguís de a poco desde X.</p>
+        <form id="list-add-form" class="form-grid">
+          <div class="field"><label for="list-name">Lista</label><input id="list-name" name="list_name" placeholder="Prospectos IA" required /></div>
+          <div class="field span-all"><label for="list-handles">Handles</label><textarea id="list-handles" name="handles" style="min-height:80px" placeholder="midudev, goncy&#10;@teffcode" required></textarea></div>
+          <div class="form-foot span-all"><button class="button button-primary" type="submit">${icon("list-plus")} Guardar en la lista</button></div>
+        </form>
+      </section>
       <section class="card" style="margin-bottom:1.2rem">
         <h3>Agregar cuenta</h3>
         <form id="account-form" class="form-grid">
@@ -1140,7 +1089,7 @@
           <td><span class="chip chip-platform-${esc(account.platform)}">${esc(platformLabels[account.platform] || account.platform)}</span></td>
           <td>${esc(categoryLabel(account.category))}</td>
           <td>${account.active ? "Activa" : "Pausada"}</td>
-          <td>${state.preview ? "" : `${account.platform === "x" ? `<button class="table-link" data-follow-prospects="${esc(account.handle)}" ${state.followView?.busy ? "disabled" : ""}>${icon("users")} Seguidores</button><br />` : ""}<button class="table-link" data-toggle-account="${esc(account.id)}" style="margin-top:.3rem">${account.active ? "Pausar" : "Activar"}</button>`}</td>
+          <td>${state.preview ? "" : `<button class="table-link" data-toggle-account="${esc(account.id)}">${account.active ? "Pausar" : "Activar"}</button>`}</td>
         </tr>`).join("")}</tbody>
       </table></div>`;
   }
@@ -1171,38 +1120,7 @@
       account.active = !account.active;
       renderShell();
     }));
-    document.querySelector("#followback-btn")?.addEventListener("click", () => {
-      const ownX = state.accounts.find((a) => a.platform === "x" && a.category === "tellus-own");
-      if (ownX) loadFollowView({ mode: "followback", handle: ownX.handle });
-    });
-    document.querySelectorAll("[data-follow-prospects]").forEach((button) => button.addEventListener("click", () => {
-      loadFollowView({ mode: "prospects", handle: button.dataset.followProspects });
-    }));
-    document.querySelectorAll("[data-follow-tab]").forEach((button) => button.addEventListener("click", () => {
-      if (state.followView) { state.followView.tab = button.dataset.followTab; renderShell(); }
-    }));
-    document.querySelector("[data-close-follow]")?.addEventListener("click", () => { state.followView = null; renderShell(); });
-    document.querySelector("[data-retry-follow]")?.addEventListener("click", () => {
-      const fv = state.followView;
-      if (fv) loadFollowView({ mode: fv.mode, handle: fv.handle });
-    });
-    document.querySelectorAll("[data-follow-x]").forEach((button) => button.addEventListener("click", () => {
-      const handle = button.dataset.followX.toLowerCase();
-      const followed = followedSet();
-      if (followed.has(handle)) {
-        followed.delete(handle);
-        saveFollowedSet(followed);
-        notify(`@${button.dataset.followX} desmarcado.`);
-      } else {
-        followed.add(handle);
-        saveFollowedSet(followed);
-        window.open(button.dataset.followUrl, "_blank", "noopener");
-        notify(`Abrimos @${button.dataset.followX} en X — confirmá el follow allá.`);
-      }
-      renderShell();
-    }));
-
-    document.querySelector("[data-save-list]")?.addEventListener("click", saveProspectsToList);
+    document.querySelector("#list-add-form")?.addEventListener("submit", addHandlesToList);
     document.querySelectorAll("[data-open-list]").forEach((button) => button.addEventListener("click", () => {
       state.listView = { name: button.dataset.openList, filter: "pending" };
       renderShell();
@@ -1216,33 +1134,32 @@
     document.querySelector("[data-open-batch]")?.addEventListener("click", openNextBatch);
   }
 
-  // Save the accounts currently shown in the follow modal as pending targets
-  // in a named list — the raw fuel for assisted following.
-  async function saveProspectsToList() {
+  // Add pasted handles to a named list as pending targets — the raw fuel for
+  // assisted following. Manual because scraping follower lists OOMs the free
+  // instance; paste from X yourself.
+  async function addHandlesToList(event) {
+    event.preventDefault();
     if (state.preview) return notify("La vista previa es de solo lectura.", true);
-    const fv = state.followView;
-    if (!fv) return;
-    const users = fv.mode === "followback" ? (fv[fv.tab] || []) : fv.users;
-    if (!users.length) return notify("No hay cuentas para guardar.", true);
-    const name = (window.prompt("Nombre de la lista:", `Prospectos de @${fv.handle}`) || "").trim();
-    if (!name) return;
-    const rows = users.map((u) => ({
+    const form = new FormData(event.target);
+    const name = String(form.get("list_name") || "").trim();
+    const handles = [...new Set(String(form.get("handles") || "")
+      .split(/[\s,]+/).map((h) => h.replace(/^@/, "").trim().toLowerCase()).filter((h) => /^[a-z0-9_]{1,15}$/.test(h)))];
+    if (!name) return notify("Poné un nombre de lista.", true);
+    if (!handles.length) return notify("No reconocí ningún handle válido.", true);
+    const rows = handles.map((h) => ({
       organization_id: state.org.id,
       list_name: name,
-      handle: u.handle,
-      display_name: u.name || null,
-      bio: u.bio || null,
-      followers: u.followers || 0,
-      source_handle: fv.handle,
+      handle: h,
       added_by: state.session?.user?.id || null,
     }));
     const { data, error } = await supabase.from("follow_targets")
       .upsert(rows, { onConflict: "organization_id,list_name,handle", ignoreDuplicates: true })
       .select();
-    if (error) return notify("No se pudo guardar la lista: " + error.message, true);
+    if (error) return notify("No se pudo guardar: " + error.message, true);
     const added = data || [];
     state.followTargets = [...added, ...state.followTargets];
-    notify(`${added.length} cuentas guardadas en «${name}»${added.length < rows.length ? ` (${rows.length - added.length} ya estaban)` : ""}.`);
+    event.target.reset();
+    notify(`${added.length} cuentas en «${name}»${added.length < rows.length ? ` (${rows.length - added.length} ya estaban)` : ""}.`);
     renderShell();
   }
 
@@ -1272,31 +1189,6 @@
     if (!pending.length) return notify("No quedan pendientes en esta lista.", true);
     for (const t of pending) window.open(`https://x.com/${t.handle}`, "_blank", "noopener");
     notify(`Abrimos ${pending.length} perfiles en X. Seguilos ahí y marcá "Siguiendo" acá.`);
-  }
-
-  async function loadFollowView({ mode, handle }) {
-    if (state.preview) return notify("La vista previa es de solo lectura.", true);
-    state.followView = { mode, handle, busy: true, tab: "mutuals" };
-    renderShell();
-    const progress = createProgress(mode === "followback" ? `Follow-back de @${handle}` : `Seguidores de @${handle}`);
-    progress.auto(mode === "followback"
-      ? [`Abriendo la lista de seguidores de @${handle}…`, "Scrolleando la lista (paciencia, es X de verdad)…", `Ahora la lista de seguidos…`, "Cruzando las dos listas…"]
-      : [`Abriendo x.com/${handle}/followers…`, "Scrolleando y capturando cuentas…"], 20000);
-    const { data, error } = await invokeEdge("x-followers", { mode, handle });
-    if (error || data?.error) {
-      state.followView = null;
-      progress.fail(data?.error || "No se pudo leer la lista de X.");
-      return renderShell();
-    }
-    const captured = mode === "followback" ? (data.counts?.followers || 0) + (data.counts?.following || 0) : (data.users || []).length;
-    if (!captured && data.note) progress.fail(data.note);
-    else progress.done(mode === "followback"
-      ? `${data.counts.followers} seguidores vs ${data.counts.following} seguidos cruzados`
-      : `${(data.users || []).length} cuentas capturadas${data.partial ? " (parcial)" : ""}`);
-    state.followView = mode === "followback"
-      ? { mode, handle, busy: false, tab: "mutuals", counts: data.counts, mutuals: data.mutuals || [], not_back: data.not_back || [], fans: data.fans || [] }
-      : { mode, handle, busy: false, users: data.users || [], note: data.note || "" };
-    renderShell();
   }
 
   // ---------- repos ----------

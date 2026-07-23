@@ -50,9 +50,15 @@ async function fetchList(serverUrl: string, handle: string, list: "followers" | 
   }
 }
 
+// Follower-list scraping is disabled: rendering X's follower SPA OOM-kills the
+// free Render instance and takes /profile and /search down with it. Lists are
+// built manually now. Re-enable on a >=2GB instance.
+const SCRAPE_DISABLED = true;
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (request.method !== "POST") return json({ error: "Método no permitido" }, 405);
+  if (SCRAPE_DISABLED) return json({ error: "El scrape de listas de seguidores está desactivado (consume demasiada memoria en el server gratis). Cargá las listas a mano.", disabled: true }, 503);
 
   try {
     const authorization = request.headers.get("Authorization");

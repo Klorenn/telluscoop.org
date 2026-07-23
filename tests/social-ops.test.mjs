@@ -437,30 +437,18 @@ test("repo X post follows the viral thread style: caps hook, → bullets, cómo 
   assert.match(app, /x_reply/);
 });
 
-test("follow lists show an X-style Seguir/Siguiendo pill that opens the profile and persists locally", () => {
-  assert.match(app, /follow-pill/);
-  assert.match(app, /data-follow-x/);
-  assert.match(app, /function followedSet/);
-  assert.match(app, /localStorage\.getItem\("followed_handles"/);
-  assert.match(app, /window\.open\(button\.dataset\.followUrl/);
+test("follower-list scraping is disabled (OOMs the free instance) at the edge and gone from the UI", () => {
+  assert.match(xFollowersEdge, /SCRAPE_DISABLED = true/);
+  assert.match(xFollowersEdge, /disabled: true/);
+  assert.doesNotMatch(app, /data-follow-prospects/);
+  assert.doesNotMatch(app, /followback-btn/);
+  assert.doesNotMatch(app, /invokeEdge\("x-followers"/);
 });
 
-test("accounts can open followers as prospects and telluscoop gets a follow-back analysis", () => {
-  assert.match(app, /data-follow-prospects/);
-  assert.match(app, /followback-btn/);
-  assert.match(app, /function followViewModal/);
-  assert.match(app, /invokeEdge\("x-followers"/);
-  for (const group of ["mutuals", "not_back", "fans"]) assert.match(app, new RegExp(group));
-});
-
-test("x-followers edge requires a session and crosses followers/following server-side", () => {
-  assert.match(xFollowersEdge, /Sesión requerida/);
-  assert.match(xFollowersEdge, /\.neq\("role", "viewer"\)/);
-  assert.match(xFollowersEdge, /mode !== "followback"/);
-  assert.match(xFollowersEdge, /followerSet/);
-  assert.match(xFollowersEdge, /not_back/);
-  assert.match(xFollowersEdge, /Deno\.env\.get\("X_SEARCH_SERVER_URL"\)/);
-  assert.doesNotMatch(app, /X_SEARCH_SERVER_URL/);
+test("follow lists are built by pasting handles, no scraping", () => {
+  assert.match(app, /function addHandlesToList/);
+  assert.match(app, /id="list-add-form"/);
+  assert.match(app, /follow_targets/);
 });
 
 test("long operations show a floating progress card with staged steps", () => {
@@ -477,7 +465,7 @@ test("follow lists: save prospects, assisted batch follow, per-target status, no
   assert.match(followTargetsMigration, /create table public\.follow_targets/);
   assert.match(followTargetsMigration, /alter table public\.follow_targets enable row level security/);
   assert.match(followTargetsMigration, /follow_targets_member_all[\s\S]*?m\.role <> 'viewer'/);
-  assert.match(app, /function saveProspectsToList/);
+  assert.match(app, /function addHandlesToList/);
   assert.match(app, /function listsSection/);
   assert.match(app, /function listViewModal/);
   assert.match(app, /function openNextBatch/);
