@@ -436,6 +436,14 @@ test("repo X post follows the viral thread style: caps hook, → bullets, cómo 
   assert.match(app, /x_reply/);
 });
 
+test("follow lists show an X-style Seguir/Siguiendo pill that opens the profile and persists locally", () => {
+  assert.match(app, /follow-pill/);
+  assert.match(app, /data-follow-x/);
+  assert.match(app, /function followedSet/);
+  assert.match(app, /localStorage\.getItem\("followed_handles"/);
+  assert.match(app, /window\.open\(button\.dataset\.followUrl/);
+});
+
 test("accounts can open followers as prospects and telluscoop gets a follow-back analysis", () => {
   assert.match(app, /data-follow-prospects/);
   assert.match(app, /followback-btn/);

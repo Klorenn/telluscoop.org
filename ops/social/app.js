@@ -979,16 +979,31 @@
 
   // ---------- accounts ----------
 
+  // "Siguiendo" marks live in localStorage: the panel can't follow for real
+  // (the scraper session is read-only), so the button opens the profile on X
+  // and remembers that you followed them.
+  function followedSet() {
+    try { return new Set(JSON.parse(localStorage.getItem("followed_handles") || "[]")); } catch { return new Set(); }
+  }
+
+  function saveFollowedSet(set) {
+    localStorage.setItem("followed_handles", JSON.stringify([...set].slice(-2000)));
+  }
+
   function followListRows(users) {
     if (!users?.length) return `<p style="color:var(--muted);margin:.6rem 0 0">Nadie en esta lista.</p>`;
+    const followed = followedSet();
     return `<div class="table-wrap" style="margin-top:.6rem"><table>
       <thead><tr><th>Cuenta</th><th>Seguidores</th><th>Bio</th><th></th></tr></thead>
-      <tbody>${users.map((u) => `<tr>
-        <td><strong>@${esc(u.handle)}</strong><br /><span style="color:var(--muted);font-size:.82rem">${esc(u.name || "")}</span></td>
+      <tbody>${users.map((u) => {
+        const isFollowed = followed.has(u.handle.toLowerCase());
+        return `<tr>
+        <td><a href="${esc(u.url)}" target="_blank" rel="noopener" style="text-decoration:none"><strong>@${esc(u.handle)}</strong></a><br /><span style="color:var(--muted);font-size:.82rem">${esc(u.name || "")}</span></td>
         <td>${fmtNum(u.followers)}</td>
         <td style="color:var(--muted);font-size:.82rem;max-width:340px">${esc((u.bio || "").slice(0, 120))}</td>
-        <td><a class="table-link" href="${esc(u.url)}" target="_blank" rel="noopener">${icon("external-link")} Ver en X</a></td>
-      </tr>`).join("")}</tbody>
+        <td><button type="button" class="follow-pill${isFollowed ? " following" : ""}" data-follow-x="${esc(u.handle)}" data-follow-url="${esc(u.url)}">${isFollowed ? "Siguiendo" : "Seguir"}</button></td>
+      </tr>`;
+      }).join("")}</tbody>
     </table></div>`;
   }
 
@@ -1078,6 +1093,21 @@
       if (state.followView) { state.followView.tab = button.dataset.followTab; renderShell(); }
     }));
     document.querySelector("[data-close-follow]")?.addEventListener("click", () => { state.followView = null; renderShell(); });
+    document.querySelectorAll("[data-follow-x]").forEach((button) => button.addEventListener("click", () => {
+      const handle = button.dataset.followX.toLowerCase();
+      const followed = followedSet();
+      if (followed.has(handle)) {
+        followed.delete(handle);
+        saveFollowedSet(followed);
+        notify(`@${button.dataset.followX} desmarcado.`);
+      } else {
+        followed.add(handle);
+        saveFollowedSet(followed);
+        window.open(button.dataset.followUrl, "_blank", "noopener");
+        notify(`Abrimos @${button.dataset.followX} en X — confirmá el follow allá.`);
+      }
+      renderShell();
+    }));
   }
 
   async function loadFollowView({ mode, handle }) {

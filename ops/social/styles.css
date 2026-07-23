@@ -134,6 +134,12 @@ a { color: inherit; }
 .modal-body { overflow-y: auto; }
 .modal-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .6rem; margin-bottom: 1rem; }
 .modal-gallery img { width: 100%; border-radius: 8px; max-height: 150px; object-fit: cover; }
+.follow-pill { min-width: 104px; padding: .42rem 1rem; border: 1px solid var(--teal-dark); border-radius: 999px; background: var(--teal-dark); color: #fff; font-weight: 700; font-size: .82rem; transition: background .15s ease, color .15s ease, border-color .15s ease; }
+.follow-pill:hover { background: var(--teal); border-color: var(--teal); }
+.follow-pill.following { background: transparent; color: var(--teal-dark); border-color: var(--line); }
+.follow-pill.following:hover { color: var(--red); border-color: var(--red); background: #f8e5e2; }
+.follow-pill.following:hover::before { content: "Dejar · "; font-weight: 600; }
+
 .modal-tabs { display: flex; flex-wrap: wrap; gap: .3rem; border-bottom: 1px solid var(--surface-2); }
 .modal-tabs button { border: 0; background: transparent; color: var(--muted); font-weight: 600; padding: .55rem .9rem; border-radius: 8px 8px 0 0; }
 .modal-tabs button.active { color: var(--teal-dark); background: var(--surface-2); }
