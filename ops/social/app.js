@@ -68,6 +68,57 @@
     setTimeout(() => el.remove(), 3600);
   };
 
+  // Floating progress card for long operations (searches, generation,
+  // scraping): lives outside renderShell so re-renders don't kill it.
+  // Steps can be advanced by hand (step) or on a timer (auto) while a
+  // single long await resolves; done()/fail() close it out.
+  function createProgress(title) {
+    document.querySelector(".progress-pop")?.remove();
+    const card = document.createElement("div");
+    card.className = "progress-pop";
+    const head = document.createElement("div");
+    head.className = "progress-pop-head";
+    const spin = document.createElement("span");
+    spin.className = "spinner-mini";
+    const strong = document.createElement("strong");
+    strong.textContent = title;
+    head.append(spin, strong);
+    const ul = document.createElement("ul");
+    card.append(head, ul);
+    document.body.appendChild(card);
+    let timer = null;
+    const addStep = (text, className) => {
+      const li = document.createElement("li");
+      li.className = className;
+      li.textContent = text;
+      ul.appendChild(li);
+      return li;
+    };
+    const finish = (text, className, ttl) => {
+      clearInterval(timer);
+      ul.querySelectorAll("li.active").forEach((li) => { li.className = "done"; });
+      spin.remove();
+      addStep(text, className);
+      setTimeout(() => { card.classList.add("bye"); setTimeout(() => card.remove(), 350); }, ttl);
+    };
+    return {
+      step(text) {
+        ul.querySelectorAll("li.active").forEach((li) => { li.className = "done"; });
+        addStep(text, "active");
+      },
+      auto(steps, ms = 2800) {
+        let i = 0;
+        this.step(steps[i++]);
+        timer = setInterval(() => {
+          if (i < steps.length) this.step(steps[i++]);
+          else clearInterval(timer);
+        }, ms);
+      },
+      done(text) { finish(text, "final", 4200); },
+      fail(text) { finish(text, "failed", 5600); },
+    };
+  }
+
   function accountById(id) { return state.accounts.find((a) => a.id === id); }
   function accountByHandle(handle, platform) {
     const clean = String(handle || "").replace(/^@/, "").toLowerCase();
@@ -502,13 +553,20 @@
     document.querySelector("#summary-refresh-all")?.addEventListener("click", async () => {
       state.summaryBusy = true;
       renderShell();
+      const progress = createProgress("Actualizando las 3 cuentas");
+      progress.auto([
+        "Despertando el scraper de X…",
+        "Leyendo @telluscoop en X (seguidores y último post)…",
+        "Consultando el perfil público de Instagram…",
+        "Intentando con LinkedIn…",
+      ], 7000);
       const account = state.accounts.find((a) => a.platform === "x" && a.category === "tellus-own");
       const { data, error } = await invokeEdge("x-profile", { handle: account?.handle || "telluscoop", refresh: "all" });
       state.summaryBusy = false;
-      if (error || data?.error) { notify(data?.error || "No se pudo actualizar.", true); renderShell(); return; }
+      if (error || data?.error) { progress.fail(data?.error || "No se pudo actualizar."); renderShell(); return; }
       await loadLiveData();
       const done = ["x", "instagram", "linkedin"].filter((p) => data[p] != null).map((p) => platformLabels[p]);
-      notify(done.length ? `Actualizado: ${done.join(", ")}.` : "Actualizado (algunas cuentas no respondieron — cargalas a mano).");
+      progress.done(done.length ? `Actualizado: ${done.join(", ")}` : "Sin datos nuevos — cargá a mano lo que falte");
       renderShell();
     });
   }
@@ -699,15 +757,21 @@
     if (!candidates.length) return notify("Todavía no hay posts capturados. Buscá un tema o traé recientes de tus cuentas primero.", true);
     state.dailyReplies = { busy: true, items: state.dailyReplies?.items || [] };
     renderShell();
+    const progress = createProgress("Comentarios del día");
+    progress.auto([
+      `Eligiendo los ${candidates.length} posts más vistos del feed…`,
+      "Detectando el idioma de cada post…",
+      "Escribiendo comentario y cita para cada uno…",
+    ], 7000);
     const tweets = candidates.map((p) => ({ handle: p.author_handle, content: p.content, url: p.url }));
     const { data, error } = await invokeEdge("generate-article", { format: "tweet_reply_batch", tweets });
     state.dailyReplies.busy = false;
     if (error || data?.error) {
-      notify(data?.error || "No se pudieron generar los comentarios.", true);
+      progress.fail(data?.error || "No se pudieron generar los comentarios.");
       return renderShell();
     }
     state.dailyReplies.items = data.replies;
-    notify(`${data.replies.length} comentarios listos para publicar.`);
+    progress.done(`${data.replies.length} comentarios listos para publicar`);
     renderShell();
   }
 
@@ -769,15 +833,22 @@
     if (!query) return;
     state.topicBusy = true;
     renderShell();
+    const progress = createProgress(`Buscando «${query}» en X`);
+    progress.auto([
+      "Despertando el scraper…",
+      "Abriendo la búsqueda en X…",
+      "Capturando posts con sus métricas…",
+      "Filtrando los que ya tenías…",
+    ], 8000);
     const { data, error } = await invokeEdge("x-search", { query, count: 20, qid });
     state.topicBusy = false;
-    if (error || data?.error) { notify(data?.error || error?.message || "No se pudo buscar.", true); renderShell(); return; }
+    if (error || data?.error) { progress.fail(data?.error || error?.message || "No se pudo buscar."); renderShell(); return; }
     if (saveAsTopic) {
       const label = query.length > 40 ? query.slice(0, 40) + "…" : query;
       const { error: topicError } = await supabase.from("social_topics").insert({ organization_id: state.org.id, label, query, active: true });
       if (topicError) notify("Post guardados, pero no se pudo crear el tema: " + topicError.message, true);
     }
-    notify(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts capturados de "${query}"`);
+    progress.done(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts nuevos capturados`);
     await loadLiveData();
     renderShell();
     generateTopicPosts(query, data.posts || []);
@@ -789,22 +860,26 @@
   async function generateTopicPosts(query, capturedPosts) {
     state.topicPosts = { query, posts: null, images: [], busy: true };
     renderShell();
+    const progress = createProgress(`Posts nuestros sobre «${query}»`);
+    progress.step("Leyendo los posts capturados…");
     const samples = capturedPosts.map((p) => p.content).filter(Boolean).slice(0, 10);
+    progress.step("Escribiendo 3 posts con la voz de Tellus…");
     const gen = await invokeEdge("generate-article", { format: "topic_posts", query, posts: samples });
     if (gen.error || gen.data?.error) {
       state.topicPosts = null;
-      notify(gen.data?.error || "No se pudieron generar posts del tema.", true);
+      progress.fail(gen.data?.error || "No se pudieron generar posts del tema.");
       return renderShell();
     }
     // Image search needs short English terms, not the long Spanish topic —
     // the model suggests them; fall back to the topic's first words.
+    progress.step("Buscando imagen o GIF para acompañar…");
     const gifQuery = gen.data.gifQuery || query.split(/\s+/).slice(0, 3).join(" ");
     let media = await invokeEdge("reddit-search", { query: gifQuery, mode: "memes", count: 6 });
     if (!media.data?.items?.length && gifQuery !== query) {
       media = await invokeEdge("reddit-search", { query: query.split(/\s+/).slice(0, 3).join(" "), mode: "memes", count: 6 });
     }
-    if (!media.data?.items?.length) notify("Posts listos; no encontré imagen para este tema.", true);
     state.topicPosts = { query, posts: gen.data.posts, images: media.data?.items || [], busy: false };
+    progress.done(media.data?.items?.length ? "3 posts + imagen listos" : "3 posts listos (sin imagen para este tema)");
     renderShell();
   }
 
@@ -1009,12 +1084,19 @@
     if (state.preview) return notify("La vista previa es de solo lectura.", true);
     state.followView = { mode, handle, busy: true, tab: "mutuals" };
     renderShell();
+    const progress = createProgress(mode === "followback" ? `Follow-back de @${handle}` : `Seguidores de @${handle}`);
+    progress.auto(mode === "followback"
+      ? [`Abriendo la lista de seguidores de @${handle}…`, "Scrolleando la lista (paciencia, es X de verdad)…", `Ahora la lista de seguidos…`, "Cruzando las dos listas…"]
+      : [`Abriendo x.com/${handle}/followers…`, "Scrolleando y capturando cuentas…"], 20000);
     const { data, error } = await invokeEdge("x-followers", { mode, handle });
     if (error || data?.error) {
       state.followView = null;
-      notify(data?.error || "No se pudo leer la lista de X.", true);
+      progress.fail(data?.error || "No se pudo leer la lista de X.");
       return renderShell();
     }
+    progress.done(mode === "followback"
+      ? `${data.counts.followers} seguidores vs ${data.counts.following} seguidos cruzados`
+      : `${(data.users || []).length} cuentas capturadas`);
     state.followView = mode === "followback"
       ? { mode, handle, busy: false, tab: "mutuals", counts: data.counts, mutuals: data.mutuals || [], not_back: data.not_back || [], fans: data.fans || [] }
       : { mode, handle, busy: false, users: data.users || [] };
@@ -1184,7 +1266,9 @@
     const queries = deep ? query : [query];
     state.repoBusy = true;
     state.repoQuery = deep ? queries[0] : query;
+    const progress = createProgress(deep ? "Super búsqueda de repos" : "Buscando repositorios");
     try {
+      progress.step(deep ? `Consultando GitHub (${queries.length} búsquedas en paralelo)…` : "Consultando GitHub…");
       const responses = await Promise.all(queries.map((q) => githubSearch(q, deep ? 30 : 20)));
       const anyOk = responses.some((r) => r.ok);
       const known = new Set();
@@ -1196,12 +1280,14 @@
       }
       ghItems.sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0));
 
+      progress.step(`GitHub: ${ghItems.length} repos · revisando Hacker News…`);
       const hnNames = (await searchHN(deep ? "stellar soroban" : query)).filter((n) => !known.has(n));
       const hnItems = (await Promise.all(hnNames.map(fetchRepoMeta))).filter(Boolean);
       hnItems.forEach((r) => known.add(r.full_name));
 
       let webItems = [];
       if ((deep || known.size < 6) && !state.preview) {
+        progress.step("Rastreando la web con IA (blogs, X, foros)…");
         const { data, error } = await invokeEdge("repo-search", { query: deep ? "repositorios open source del ecosistema Stellar y Soroban" : query });
         if (!error && Array.isArray(data?.repos)) {
           webItems = data.repos.filter((r) => !known.has(r.full_name)).map((r) => ({ ...r, _source: "web" }));
@@ -1210,12 +1296,12 @@
 
       state.repoResults = [...ghItems.slice(0, deep ? 60 : 20), ...hnItems, ...webItems];
       if (!state.repoResults.length) {
-        notify(!anyOk ? "GitHub no respondió (límite de 60 búsquedas/hora sin token) y no encontramos nada más." : "Sin resultados para esa búsqueda.");
-      } else if (deep) {
-        notify(`${state.repoResults.length} repos encontrados (GitHub multi-búsqueda + HN + web).`);
+        progress.fail(!anyOk ? "GitHub no respondió (límite de 60 búsquedas/hora)" : "Sin resultados para esa búsqueda");
+      } else {
+        progress.done(`${state.repoResults.length} repos encontrados${hnItems.length || webItems.length ? ` (${hnItems.length} vía HN, ${webItems.length} vía web)` : ""}`);
       }
     } catch (error) {
-      notify("La búsqueda de repos falló. Probá de nuevo en un momento.", true);
+      progress.fail("La búsqueda falló. Probá de nuevo en un momento.");
     } finally {
       state.repoBusy = false;
       renderShell();
@@ -1293,14 +1379,21 @@
     if (state.preview) return notify("La vista previa es de solo lectura.", true);
     state.repoPostBusy = true;
     renderShell();
+    const progress = createProgress(`Posts para ${repo.full_name}`);
+    progress.auto([
+      "Leyendo el repositorio…",
+      "Investigando el proyecto con Google…",
+      "Escribiendo el hilo para X…",
+      "Adaptando a WhatsApp, Discord, LinkedIn e Instagram…",
+    ], 6000);
     const { data, error } = await invokeEdge("generate-article", { format: "repo_social_posts", repo });
     state.repoPostBusy = false;
     if (error || data?.error) {
-      notify(data?.error || "No se pudo generar el post. Revisá que Gemini esté configurado.", true);
+      progress.fail(data?.error || "No se pudo generar. Revisá que Gemini esté configurado.");
       return renderShell();
     }
     state.repoPostDraft = { repoName: repo.full_name, repoUrl: repo.url, posts: data.posts, sources: data.sources || [], model: data.model, tab: "x" };
-    notify("Posts generados. Revisalos por canal antes de publicar.");
+    progress.done("5 posts listos — revisalos por pestaña");
     renderShell();
   }
 
@@ -1604,6 +1697,13 @@
     if (!topic) return;
     state.guideBusy = true;
     renderShell();
+    const progress = createProgress(`Guía de ${chain.label}`);
+    progress.auto([
+      `Leyendo la documentación oficial de ${chain.label}…`,
+      "Verificando el tema con Google…",
+      "Escribiendo la guía técnica con código…",
+      "Armando SEO, TL;DR y fuentes…",
+    ], 9000);
     const { data, error } = await invokeEdge("generate-article", {
       format: "guide",
       chain: chain.id,
@@ -1614,15 +1714,15 @@
     });
     state.guideBusy = false;
     if (error || data?.error) {
-      notify(data?.error || "No se pudo generar la guía.", true);
+      progress.fail(data?.error || "No se pudo generar la guía.");
       return renderShell();
     }
     const draft = data.drafts[0];
     draft.chain = chain.id;
     draft.images = [];
     state.guideDrafts = [draft, ...state.guideDrafts];
-    if (draft.sources.length < 2) notify("Guía generada, pero con menos de 2 fuentes — revisala antes de publicar.", true);
-    else notify(state.guideForm.useImages ? "Guía generada. Buscando una imagen del tema…" : "Guía generada.");
+    if (draft.sources.length < 2) progress.fail("Guía generada, pero con menos de 2 fuentes — revisala antes de publicar");
+    else progress.done(state.guideForm.useImages ? "Guía lista — buscando una imagen del tema…" : "Guía lista");
     renderShell();
     if (!state.guideForm.useImages) return;
     // Illustrative stock image matched to the actual topic (not a generic
@@ -1887,11 +1987,14 @@
     if (state.preview) return notify("La vista previa es de solo lectura.", true);
     state.memes.topBusy = true;
     renderShell();
+    const progress = createProgress("Top memes de hoy");
+    progress.auto(["Recorriendo los subreddits de memes…", "Ordenando por votos del día…"], 3500);
     const { data, error } = await invokeEdge("reddit-search", { mode: "top", query: subs || "", count: 12 });
     state.memes.topBusy = false;
     state.memes.top = data?.items || [];
-    if (error || data?.error) notify(data?.error || "No se pudieron traer los memes.", true);
-    else if (!state.memes.top.length) notify(data?.message || "Reddit no devolvió memes ahora.");
+    if (error || data?.error) progress.fail(data?.error || "No se pudieron traer los memes.");
+    else if (!state.memes.top.length) progress.fail(data?.message || "Reddit no devolvió memes ahora.");
+    else progress.done(`${state.memes.top.length} memes del día — guardá los buenos`);
     renderShell();
   }
 
@@ -2164,6 +2267,14 @@
     if (state.preview) return notify("La vista previa es de solo lectura.", true);
     state.articleBusy = true;
     renderShell();
+    const progress = createProgress(state.articleForm.count > 1 ? `Generando ${state.articleForm.count} artículos` : "Generando artículo");
+    progress.auto([
+      "Leyendo tu plantilla editorial…",
+      "Buscando las noticias de ayer con Google…",
+      "Verificando fuentes reales…",
+      "Escribiendo con la voz de Tellus…",
+      "Enlazando cada proyecto mencionado…",
+    ], 6500);
     const { data, error } = await invokeEdge("generate-article", {
       prompt_key: state.articleForm.prompt_key,
       prompt_md: state.articleForm.prompt_md || undefined,
@@ -2171,7 +2282,7 @@
     });
     state.articleBusy = false;
     if (error || data?.error) {
-      notify(data?.error || "No se pudo generar. Revisá que Gemini esté configurado.", true);
+      progress.fail(data?.error || "No se pudo generar. Revisá que Gemini esté configurado.");
       return renderShell();
     }
     // Tag each draft with the template that produced it at creation time, not
@@ -2179,7 +2290,7 @@
     const promptKey = state.articleForm.prompt_key;
     state.drafts = (data.drafts || []).map((d) => ({ ...d, prompt_key: promptKey }));
     const failed = (data.errors || []).length;
-    notify(`Generados ${data.generated} de ${data.requested}${failed ? ` (${failed} fallaron)` : ""}.`);
+    progress.done(`${data.generated} de ${data.requested} listos${failed ? ` (${failed} fallaron)` : ""} — revisalos abajo`);
     renderShell();
   }
 

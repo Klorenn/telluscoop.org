@@ -454,6 +454,16 @@ test("x-followers edge requires a session and crosses followers/following server
   assert.doesNotMatch(app, /X_SEARCH_SERVER_URL/);
 });
 
+test("long operations show a floating progress card with staged steps", () => {
+  assert.match(app, /function createProgress/);
+  assert.match(app, /progress-pop/);
+  const uses = app.match(/createProgress\(/g) || [];
+  assert.ok(uses.length >= 9, `expected createProgress wired into >=9 flows, found ${uses.length - 1} uses`);
+  assert.match(app, /progress\.done\(/);
+  assert.match(app, /progress\.fail\(/);
+  assert.match(app, /progress\.auto\(/);
+});
+
 test("rewrite_article mode reuses the user's template on pasted source text, any language, no fresh search", () => {
   assert.match(edge, /body\.format === "rewrite_article"/);
   assert.match(edge, /async function rewriteArticle/);
