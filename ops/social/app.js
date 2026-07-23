@@ -92,6 +92,8 @@
       li.className = className;
       li.textContent = text;
       ul.appendChild(li);
+      // Keep it minimal: only the current step and the last couple done.
+      while (ul.children.length > 3) ul.removeChild(ul.firstChild);
       return li;
     };
     const finish = (text, className, ttl) => {
