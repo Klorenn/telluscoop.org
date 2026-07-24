@@ -34,11 +34,11 @@ async function wakeServer(serverUrl: string): Promise<boolean> {
 }
 
 async function fetchList(serverUrl: string, handle: string, list: "followers" | "following", budgetMs: number): Promise<XUser[] | { error: string }> {
-  // Light sample: ask for ~50 so the server doesn't deep-scroll and OOM.
+  // Tuned for the 2GB Render plan — a real page of results.
   const response = await fetch(`${serverUrl}/follow-list`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ handle, list, count: 50, budget_ms: budgetMs }),
+    body: JSON.stringify({ handle, list, count: 300, budget_ms: budgetMs }),
     signal: AbortSignal.timeout(budgetMs + 25000),
   }).catch(() => null);
   if (!response) return { error: "El servidor de X no respondió a tiempo. Reintentá en 1-2 min." };
@@ -86,10 +86,10 @@ Deno.serve(async (request) => {
     const awake = await wakeServer(serverUrl);
     if (!awake) return json({ error: "El servidor de X no despertó a tiempo. Reintentá en 1 minuto." }, 502);
 
-    // Single-list mode: a light sample of an account's followers or following.
+    // Single-list mode: an account's followers or following.
     if (body.mode !== "followback") {
       const which = body.list === "following" ? "following" : "followers";
-      const users = await fetchList(serverUrl, handle, which, 45000);
+      const users = await fetchList(serverUrl, handle, which, 80000);
       if ("error" in users) return json(users, 502);
       return json({
         mode: "prospects",
@@ -101,10 +101,10 @@ Deno.serve(async (request) => {
     }
 
     // Follow-back mode: cross our own followers and following lists. Two
-    // light sequential scrapes.
-    const followers = await fetchList(serverUrl, handle, "followers", 40000);
+    // sequential scrapes.
+    const followers = await fetchList(serverUrl, handle, "followers", 70000);
     if ("error" in followers) return json(followers, 502);
-    const following = await fetchList(serverUrl, handle, "following", 40000);
+    const following = await fetchList(serverUrl, handle, "following", 70000);
     if ("error" in following) return json(following, 502);
 
     const followerSet = new Set(followers.map((u) => u.handle.toLowerCase()));

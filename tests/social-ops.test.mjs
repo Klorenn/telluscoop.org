@@ -437,9 +437,9 @@ test("repo X post follows the viral thread style: caps hook, → bullets, cómo 
   assert.match(app, /x_reply/);
 });
 
-test("follower scraping runs in light sample mode and wakes the server first", () => {
+test("follower scraping wakes the server and pulls a real page (tuned for 2GB)", () => {
   assert.match(xFollowersEdge, /function wakeServer/);
-  assert.match(xFollowersEdge, /count: 50/);
+  assert.match(xFollowersEdge, /count: 300/);
   assert.doesNotMatch(xFollowersEdge, /SCRAPE_DISABLED/);
   assert.match(app, /function scrapeToList/);
   assert.match(app, /data-scrape-handle/);
