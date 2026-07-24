@@ -24,7 +24,7 @@
     session: null, preview: PREVIEW, view: "summary",
     org: null, accounts: [], posts: [], repos: [],
     filters: { platform: "", category: "", search: "" },
-    repoResults: [], repoQuery: "", repoBusy: false,
+    repoResults: [], repoQuery: "", repoBusy: false, repoSort: "stars",
     repoPostDraft: null, repoPostBusy: false,
     prompts: [], articles: [], drafts: [], articleBusy: false, articleView: null,
     articleForm: { prompt_key: "crypto", count: 1, prompt_md: "" },
@@ -1254,21 +1254,32 @@
   // open-source repos that actually exist.
   const REPO_CATEGORIES = [
     ["Trending semana", () => `created:>${daysAgo(7)} stars:>50`],
+    ["Más forkeados", () => ({ q: `stars:>1000 pushed:>${daysAgo(180)}`, sort: "forks" })],
+    ["Top del año", () => `created:>${daysAgo(365)} stars:>500`],
     ["Claude", () => `claude in:name,description stars:>30 pushed:>${daysAgo(60)}`],
-    ["Claude skills", () => `claude skill in:name,description pushed:>${daysAgo(90)}`],
     ["Agentes IA", () => `ai agent in:name,description stars:>200 pushed:>${daysAgo(30)}`],
     ["MCP", () => `mcp server in:name,description stars:>50 pushed:>${daysAgo(60)}`],
     ["UI/UX", () => `topic:ui topic:design-system stars:>300 pushed:>${daysAgo(90)}`],
-    ["Componentes", () => `topic:components stars:>300 pushed:>${daysAgo(90)}`],
     ["Librerías nuevas", () => `topic:library created:>${daysAgo(120)} stars:>100`],
-    ["Cripto/Stellar", () => [
+    // Stellar = the BLOCKCHAIN only. Anchored on the official org, curated
+    // topics, and terms unique to the Stellar network (Soroban smart
+    // contracts, Horizon API, stellar-sdk, XLM/Lumens) so astronomy/game
+    // repos named "stellar" don't leak in.
+    ["Stellar (blockchain)", () => [
+      "org:stellar",
+      "org:stellar-deprecated",
       "topic:stellar",
       "topic:soroban",
-      `soroban in:name,description pushed:>${daysAgo(365)}`,
-      `stellar in:name,description pushed:>${daysAgo(180)}`,
-      "org:stellar",
+      "topic:stellar-blockchain",
+      "soroban smart contract in:name,description",
+      "stellar-sdk in:name,description",
+      "stellar horizon in:name,description",
+      '"stellar network" in:name,description',
     ]],
   ];
+
+  // GitHub sort keys → label for the dropdown.
+  const REPO_SORTS = [["stars", "Más estrellas"], ["forks", "Más forkeados"], ["updated", "Más recientes"]];
 
   function daysAgo(n) {
     return new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
@@ -1279,8 +1290,10 @@
       <div class="toolbar"><div><span class="eyebrow">GitHub</span><h2>Buscador de repositorios</h2></div></div>
       <section class="card" style="margin-bottom:1.2rem">
         <form id="repo-form" class="form-grid">
-          <div class="field span-all"><label for="repo-q">Búsqueda</label>
+          <div class="field"><label for="repo-q">Búsqueda</label>
             <input id="repo-q" name="q" value="${esc(state.repoQuery)}" placeholder="ej: scraping language:python stars:>500" /></div>
+          <div class="field"><label for="repo-sort">Ordenar por</label>
+            <select id="repo-sort" name="sort">${REPO_SORTS.map(([v, l]) => `<option value="${v}" ${state.repoSort === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
           <div class="form-foot span-all">
             <button class="button button-secondary" type="button" id="repo-trending">Trending del mes</button>
             <button class="button button-primary" type="submit" ${state.repoBusy ? "disabled" : ""}>Buscar</button>
@@ -1317,7 +1330,7 @@
     return `<article class="card">
       <h3><a class="table-link" href="${esc(repo.html_url)}" target="_blank" rel="noopener">${esc(repo.full_name)}</a>${repo._source ? ` <span class="chip" style="margin-left:.4rem">${repo._source === "hn" ? "vía HN" : "vía web"}</span>` : ""}</h3>
       <p style="color:var(--muted);margin:.2rem 0 .7rem;line-height:1.5">${esc(repo.description || "Sin descripción")}</p>
-      <div class="post-stats"><span>★ ${fmtNum(repo.stargazers_count)}</span><span>${esc(repo.language || "—")}</span><span>${fmtDate(repo.pushed_at)}</span></div>
+      <div class="post-stats"><span title="Estrellas">★ ${fmtNum(repo.stargazers_count)}</span><span title="Forks">⑂ ${fmtNum(repo.forks_count)}</span><span>${esc(repo.language || "—")}</span><span>${fmtDate(repo.pushed_at)}</span></div>
       <div class="form-foot" style="justify-content:start">
         ${saved ? `<span class="chip">Ya guardado</span>` : state.preview ? "" : `<button class="button button-secondary" data-save-repo="${esc(repo.full_name)}" style="min-height:38px">Guardar</button>`}
         ${state.preview ? "" : `<button class="button button-primary" data-post-repo-result="${esc(repo.full_name)}" style="min-height:38px" ${state.repoPostBusy ? "disabled" : ""}>${icon("sparkles")} ${state.repoPostBusy ? "Generando…" : "Crear posts"}</button>`}
@@ -1393,26 +1406,34 @@
     } catch { return null; }
   }
 
-  async function githubSearch(query, perPage) {
-    const res = await fetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(query)}&sort=stars&order=desc&per_page=${perPage}`, {
+  async function githubSearch(query, perPage, sort) {
+    const sortParam = sort === "best" ? "" : `&sort=${sort || "stars"}&order=desc`;
+    const res = await fetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(query)}${sortParam}&per_page=${perPage}`, {
       headers: { Accept: "application/vnd.github+json" },
     }).catch(() => null);
     if (!res?.ok) return { ok: false, items: [] };
     return { ok: true, items: (await res.json()).items || [] };
   }
 
+  const repoSortKey = (r) => state.repoSort === "forks" ? (r.forks_count || 0)
+    : state.repoSort === "updated" ? new Date(r.pushed_at || 0).getTime()
+    : (r.stargazers_count || 0);
+
   // A string runs one GitHub query; an array runs a "super search": every
   // query in parallel, merged and deduped, plus HN mentions and the Gemini
   // web pass — so ecosystem-wide searches surface far more than 12 repos.
+  // A {q, sort} object forces a sort (e.g. the "Más forkeados" chip).
   async function searchRepos(query) {
+    const forced = query && typeof query === "object" && !Array.isArray(query) ? query : null;
+    if (forced) { state.repoSort = forced.sort; query = forced.q; }
     const deep = Array.isArray(query);
     const queries = deep ? query : [query];
     state.repoBusy = true;
-    state.repoQuery = deep ? queries[0] : query;
+    state.repoQuery = deep ? "" : query;
     const progress = createProgress(deep ? "Super búsqueda de repos" : "Buscando repositorios");
     try {
       progress.step(deep ? `Consultando GitHub (${queries.length} búsquedas en paralelo)…` : "Consultando GitHub…");
-      const responses = await Promise.all(queries.map((q) => githubSearch(q, deep ? 30 : 20)));
+      const responses = await Promise.all(queries.map((q) => githubSearch(q, deep ? 30 : 20, state.repoSort)));
       const anyOk = responses.some((r) => r.ok);
       const known = new Set();
       const ghItems = [];
@@ -1421,7 +1442,7 @@
         known.add(item.full_name);
         ghItems.push(item);
       }
-      ghItems.sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0));
+      ghItems.sort((a, b) => repoSortKey(b) - repoSortKey(a));
 
       progress.step(`GitHub: ${ghItems.length} repos · revisando Hacker News…`);
       const hnNames = (await searchHN(deep ? "stellar soroban" : query)).filter((n) => !known.has(n));
@@ -1452,8 +1473,14 @@
   }
 
   function wireRepos() {
+    document.querySelector("#repo-sort")?.addEventListener("change", (e) => {
+      state.repoSort = e.target.value;
+      // Re-run the current query with the new order if there's one active.
+      if (state.repoQuery) searchRepos(state.repoQuery);
+    });
     document.querySelector("#repo-form")?.addEventListener("submit", (event) => {
       event.preventDefault();
+      state.repoSort = String(new FormData(event.target).get("sort")) || state.repoSort;
       const query = String(new FormData(event.target).get("q")).trim();
       if (query) searchRepos(query);
     });

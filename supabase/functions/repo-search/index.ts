@@ -17,6 +17,7 @@ interface RepoMeta {
   html_url: string;
   description: string | null;
   stargazers_count: number;
+  forks_count: number;
   language: string | null;
   pushed_at: string | null;
   topics: string[];
@@ -78,7 +79,9 @@ function extractText(data: Record<string, unknown>): string {
 
 async function findRepoCandidates(query: string, apiKey: string): Promise<string[]> {
   try {
-    const input = `Busca en Google qué repositorios de GitHub se mencionan o discuten en relación a "${query}" (blogs, X/Twitter, Reddit, Hacker News, foros técnicos). Solo repos reales y que existan hoy en github.com, sin inventar.
+    // Stellar is ambiguous (astronomy, games); force the blockchain meaning.
+    const isStellar = /stellar|soroban/i.test(query);
+    const input = `Busca en Google qué repositorios de GitHub se mencionan o discuten en relación a "${query}" (blogs, X/Twitter, Reddit, Hacker News, foros técnicos). Prioriza los más conocidos, forkeados y usados. Solo repos reales y que existan hoy en github.com, sin inventar.${isStellar ? " IMPORTANTE: 'Stellar' acá es la BLOCKCHAIN Stellar (stellar.org, red de pagos, XLM/Lumens, Soroban smart contracts, Horizon API, stellar-sdk). NO incluyas repos de astronomía, juegos, ni proyectos que solo se llamen 'stellar' sin relación con la blockchain." : ""}
 
 Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
 {"repos": [{"full_name": "owner/repo"}]}`;
@@ -115,6 +118,7 @@ async function fetchRepoMeta(fullName: string): Promise<RepoMeta | null> {
       html_url: repo.html_url,
       description: repo.description ?? null,
       stargazers_count: Number(repo.stargazers_count) || 0,
+      forks_count: Number(repo.forks_count) || 0,
       language: repo.language ?? null,
       pushed_at: repo.pushed_at ?? null,
       topics: Array.isArray(repo.topics) ? repo.topics : [],

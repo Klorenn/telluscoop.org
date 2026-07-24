@@ -416,13 +416,26 @@ test("articles hyperlink every mentioned entity to its official site, in both ge
   assert.match(rewriteFn, /inlineLinkRules\(lang\)/);
 });
 
-test("Stellar chip runs a super search: parallel GitHub queries plus HN and the web pass", () => {
+test("Stellar chip runs a blockchain-only super search plus HN and the web pass", () => {
   assert.match(app, /function githubSearch/);
   assert.match(app, /"topic:stellar"/);
   assert.match(app, /"topic:soroban"/);
   assert.match(app, /"org:stellar"/);
+  // Blockchain-specific anchors so astronomy/game "stellar" repos don't leak.
+  assert.match(app, /stellar-sdk in:name,description/);
+  assert.match(app, /stellar horizon in:name,description/);
   assert.match(app, /const deep = Array\.isArray\(query\)/);
   assert.match(app, /\(deep \|\| known\.size < 6\)/);
+  assert.match(repoSearchEdge, /BLOCKCHAIN Stellar/);
+});
+
+test("repo search can sort by stars, forks, or recency", () => {
+  assert.match(app, /repoSort/);
+  assert.match(app, /REPO_SORTS/);
+  assert.match(app, /Más forkeados/);
+  assert.match(app, /repoSortKey/);
+  assert.match(app, /forks_count/);
+  assert.match(app, /id="repo-sort"/);
 });
 
 test("repo X post follows the viral thread style: caps hook, → bullets, cómo lo logra, repo link in tweet 2", () => {
