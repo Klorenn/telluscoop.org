@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tellus Dev — Recurso</title>
+
+  <!-- SEO — this template is client-rendered (one file serves every /dev/tools/:slug via
+       vercel.json rewrite), so per-tool title/description are set client-side in render()
+       below for the browser tab + share preview once JS runs; these tags stay as the static
+       fallback non-JS crawlers see. og:url intentionally points at /dev (not a real per-slug
+       canonical) since the actual slug can't be known statically without a build step. -->
+  <meta name="description" content="Ficha de recurso del catálogo Tellus Dev: plan gratuito, casos de uso y alternativas." />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://telluscoop.org/dev" />
+  <meta property="og:site_name" content="Tellus Cooperative" />
+  <meta property="og:title" content="Tellus Dev — Ficha de recurso" />
+  <meta property="og:description" content="Ficha de recurso del catálogo Tellus Dev: plan gratuito, casos de uso y alternativas." />
+  <meta property="og:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
+  <meta property="og:image:width" content="1774" />
+  <meta property="og:image:height" content="887" />
+  <meta property="og:locale" content="es_LA" />
+  <meta property="og:locale:alternate" content="en_US" />
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@TellusCoop" />
+  <meta name="twitter:creator" content="@TellusCoop" />
+  <meta name="twitter:title" content="Tellus Dev — Ficha de recurso" />
+  <meta name="twitter:description" content="Ficha de recurso del catálogo Tellus Dev: plan gratuito, casos de uso y alternativas." />
+  <meta name="twitter:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
+
+  <link rel="icon" type="image/png" href="/uploads/TellusCooperative%20ICON.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --sand: #ECE0CC;
+      --sand-soft: #F5EDDD;
+      --sand-muted: #D4C8B5;
+      --teal: #3F8487;
+      --teal-deep: #2A5A5C;
+      --teal-ink: #1F3536;
+      --clay: #C75A2A;
+      --clay-deep: #9E441F;
+      --cream-90: rgba(236,224,204,0.90);
+      --cream-70: rgba(236,224,204,0.70);
+      --serif: 'Fraunces', 'Instrument Serif', Georgia, serif;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { background: var(--sand); color: var(--teal-ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+    body { line-height: 1.55; }
+    img { display: block; max-width: 100%; }
+    button { font-family: inherit; cursor: pointer; }
+    a { color: inherit; }
+
+    .eyebrow {
+      font-family: var(--sans); font-size: 11px; font-weight: 500;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal-deep); opacity: 0.75;
+    }
+
+    /* Nav (same as dev/index.html) */
+    .dv-nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(236,224,204,0.9); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--sand-muted);
+    }
+    .dv-nav-inner {
+      max-width: 1320px; margin: 0 auto; padding: 14px 48px;
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    }
+    .dv-nav-home { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+    .dv-nav-home img { height: 34px; width: auto; }
+    .dv-nav-home span { font-family: var(--serif); font-size: 16px; letter-spacing: -0.02em; color: var(--teal-deep); }
+    .dv-nav-right { display: flex; align-items: center; gap: 16px; }
+    .dv-nav-meta { font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; color: var(--teal-deep); opacity: 0.75; }
+    .dv-nav-meta a { text-decoration: none; color: var(--teal); }
+    .dv-nav-meta a:hover { color: var(--clay); }
+
+    .dv-lang-switcher { position: relative; }
+    .dv-lang-trigger {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 999px; border: 1px solid var(--sand-muted);
+      background: var(--sand-soft); font-family: var(--mono); font-size: 11px; font-weight: 600;
+      letter-spacing: 0.06em; color: var(--teal-deep); transition: border-color 180ms ease;
+    }
+    .dv-lang-trigger:hover { border-color: var(--teal); }
+    .dv-lang-trigger svg { width: 13px; height: 13px; }
+    .dv-lang-dropdown {
+      position: absolute; right: 0; top: calc(100% + 6px); z-index: 60;
+      background: var(--sand-soft); border: 1px solid var(--sand-muted); border-radius: 10px;
+      padding: 4px; display: flex; flex-direction: column; gap: 2px; min-width: 130px;
+      box-shadow: 0 12px 28px -12px rgba(31,53,54,0.3);
+    }
+    .dv-lang-option {
+      display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 7px;
+      font-size: 13px; color: var(--teal-ink); text-align: left; background: none; border: none; width: 100%;
+    }
+    .dv-lang-option:hover { background: color-mix(in srgb, var(--teal-ink) 6%, transparent); }
+    .dv-lang-option.is-on { background: color-mix(in srgb, var(--teal) 12%, transparent); }
+    .dv-lang-code { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--teal); letter-spacing: 0.06em; min-width: 22px; }
+
+    /* Breadcrumb */
+    .td-breadcrumb {
+      max-width: 1180px; margin: 0 auto; padding: 22px 48px 0;
+      font-family: var(--mono); font-size: 12px; letter-spacing: 0.03em; color: var(--teal-deep);
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; opacity: 0.85;
+    }
+    .td-breadcrumb a { text-decoration: none; color: var(--teal); }
+    .td-breadcrumb a:hover { color: var(--clay); }
+    .td-breadcrumb strong { color: var(--teal-ink); font-weight: 600; }
+    .td-breadcrumb .sep { opacity: 0.5; }
+
+    /* Hero: profile + live preview */
+    .td-hero {
+      max-width: 1180px; margin: 0 auto; padding: 28px 48px 40px;
+      display: grid; grid-template-columns: 430px minmax(0, 1fr); gap: 40px; align-items: start;
+    }
+    .td-profile-eyebrow { margin-bottom: 18px; }
+    .td-name-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+    .td-favicon {
+      width: 66px; height: 66px; border-radius: 16px; flex-shrink: 0;
+      background: var(--sand-soft); display: grid; place-items: center; overflow: hidden;
+      border: 1px solid var(--sand-muted);
+    }
+    .td-favicon img { width: 36px; height: 36px; object-fit: contain; }
+    .td-h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(32px, 4vw, 42px); letter-spacing: -0.02em; line-height: 1.05; }
+    .td-category-label {
+      font-family: var(--mono); font-size: 12px; letter-spacing: 0.05em; color: var(--teal-deep);
+      opacity: 0.7; margin-bottom: 18px; text-transform: uppercase;
+    }
+    .td-desc { font-size: 16.5px; color: var(--teal-ink); opacity: 0.82; line-height: 1.6; margin-bottom: 26px; max-width: 46ch; }
+    .td-cta-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .td-cta-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 22px; border-radius: 999px; background: var(--clay); color: var(--sand);
+      font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.03em;
+      text-decoration: none; transition: background 180ms ease, transform 180ms ease;
+    }
+    .td-cta-primary:hover { background: var(--clay-deep); transform: translateY(-1px); }
+    .td-cta-secondary {
+      font-family: var(--mono); font-size: 13px; letter-spacing: 0.03em; color: var(--teal);
+      text-decoration: none;
+    }
+    .td-cta-secondary:hover { color: var(--clay); }
+
+    /* Live preview */
+    .td-preview-head { margin-bottom: 14px; }
+    .td-preview-head h2 { font-family: var(--serif); font-weight: 400; font-size: 22px; letter-spacing: -0.01em; margin-top: 6px; }
+    .td-browser-frame {
+      border-radius: 14px; overflow: hidden; border: 1px solid var(--sand-muted);
+      background: var(--sand-soft); box-shadow: 0 20px 44px -24px rgba(31,53,54,0.35);
+    }
+    .td-browser-bar {
+      display: flex; align-items: center; gap: 8px; padding: 10px 14px; min-height: 38px;
+      background: var(--cream-90); border-bottom: 1px solid var(--sand-muted);
+    }
+    .td-browser-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sand-muted); }
+    .td-browser-dot:nth-child(1) { background: #E0A9A0; }
+    .td-browser-dot:nth-child(2) { background: #E3C98F; }
+    .td-browser-dot:nth-child(3) { background: #9FC1A6; }
+    .td-browser-url {
+      margin-left: 8px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-family: var(--mono); font-size: 11.5px; color: var(--teal-deep); opacity: 0.75;
+      background: var(--sand); border: 1px solid var(--sand-muted); border-radius: 999px; padding: 4px 12px;
+    }
+    .td-preview-wrap { position: relative; aspect-ratio: 4 / 2.5; background: var(--sand); overflow: hidden; }
+    .td-preview-img { width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; transition: opacity 320ms ease; }
+    .td-preview-img.is-loaded { opacity: 1; }
+    .td-preview-loading {
+      position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 6px; text-align: center; padding: 20px;
+    }
+    .td-preview-loading strong { font-family: var(--serif); font-size: 16px; color: var(--teal-deep); }
+    .td-preview-loading span { font-family: var(--mono); font-size: 11.5px; color: var(--teal-deep); opacity: 0.65; }
+    .td-preview-loading.is-hidden { display: none; }
+    .td-preview-caption {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px 14px; font-family: var(--mono); font-size: 11.5px; color: var(--teal-deep); opacity: 0.75;
+    }
+    .td-preview-caption a { text-decoration: none; color: var(--teal); }
+    .td-preview-caption a:hover { color: var(--clay); }
+
+    /* Body: article + aside */
+    .td-body {
+      max-width: 1180px; margin: 0 auto; padding: 8px 48px 56px;
+      display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 44px; align-items: start;
+      border-top: 1px solid var(--sand-muted);
+    }
+    .td-article { display: flex; flex-direction: column; gap: 48px; padding-top: 44px; min-width: 0; }
+    .td-section .eyebrow { display: block; margin-bottom: 16px; }
+    .td-section h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(22px, 2.4vw, 30px); letter-spacing: -0.015em; margin: 0 0 16px; }
+    .td-section p { font-size: 15px; line-height: 1.65; color: var(--teal-ink); opacity: 0.82; margin-bottom: 12px; }
+    .td-section p:last-child { margin-bottom: 0; }
+    .td-quote {
+      border-left: 3px solid var(--clay); padding: 4px 0 4px 16px; font-style: italic;
+      opacity: 0.9 !important;
+    }
+    .td-numbered-list { display: flex; flex-direction: column; gap: 16px; margin-top: 6px; }
+    .td-numbered-item { display: flex; gap: 14px; align-items: flex-start; }
+    .td-numbered-item .num {
+      font-family: var(--mono); font-size: 11.5px; font-weight: 700; color: var(--clay-deep);
+      flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--cream-90); border: 1px solid var(--sand-muted);
+    }
+    .td-numbered-item p { margin: 0; font-size: 15px; line-height: 1.6; opacity: 0.85; padding-top: 2px; }
+
+    /* Try-this-first: a connected step flow (tutorial feel), distinct from the
+       scannable index chips above — solid circles linked by a rail so it reads
+       as "do this, then this" rather than a flat list of options. */
+    .td-steps { display: flex; flex-direction: column; margin-top: 6px; }
+    .td-step { display: flex; gap: 16px; }
+    .td-step-rail { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .td-step-num {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      background: var(--teal); color: var(--sand-soft);
+      font-family: var(--mono); font-size: 12.5px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 0 4px var(--sand);
+    }
+    .td-step-connector { width: 2px; flex: 1; min-height: 16px; background: var(--sand-muted); margin: 3px 0; }
+    .td-step-body { padding: 2px 0 26px; min-width: 0; }
+    .td-step:last-child .td-step-body { padding-bottom: 0; }
+    .td-step-body p { margin: 0; font-size: 15px; line-height: 1.6; opacity: 0.85; }
+    .td-caveats { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+    .td-caveat { display: flex; gap: 10px; align-items: baseline; }
+    .td-caveat .mark { color: var(--clay); flex-shrink: 0; }
+    .td-caveat p { margin: 0; }
+
+    .td-aside {
+      position: sticky; top: 90px; background: var(--sand-soft); border: 1px solid var(--sand-muted);
+      border-radius: 16px; padding: 22px; margin-top: 40px;
+    }
+    .td-aside .eyebrow { display: block; margin-bottom: 14px; }
+    .td-aside-badge {
+      display: inline-block; font-family: var(--mono); font-size: 10px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px;
+      background: var(--teal-ink); color: var(--sand); margin-bottom: 14px;
+    }
+    .td-aside-badge.limited { background: var(--clay); }
+    .td-aside-cost-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--teal-deep); opacity: 0.7; margin-bottom: 6px; }
+    .td-aside-cost-detail { font-size: 13.5px; line-height: 1.55; color: var(--teal-ink); opacity: 0.85; margin-bottom: 18px; }
+    .td-aside-dl { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+    .td-aside-dl div { display: flex; flex-direction: column; gap: 2px; }
+    .td-aside-dl dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--teal-deep); opacity: 0.65; }
+    .td-aside-dl dd { font-size: 13.5px; color: var(--teal-ink); }
+    .td-aside-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+    .td-aside-tags span {
+      font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.03em; padding: 3px 9px;
+      border-radius: 999px; background: var(--cream-90); color: var(--teal-deep); border: 1px solid var(--sand-muted);
+    }
+    .td-aside-link {
+      display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12.5px;
+      font-weight: 600; color: var(--teal); text-decoration: none;
+    }
+    .td-aside-link:hover { color: var(--clay); }
+
+    /* Keep exploring */
+    .td-alternatives { max-width: 1180px; margin: 0 auto; padding: 0 48px 64px; }
+    .td-alt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+    .td-alt-head h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(22px, 2.4vw, 30px); letter-spacing: -0.015em; margin-top: 6px; }
+    .td-alt-head-link { font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--teal); text-decoration: none; }
+    .td-alt-head-link:hover { color: var(--clay); }
+    .td-alt-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+    .td-alt-card {
+      background: var(--sand-soft); border: 1px solid var(--sand-muted); border-radius: 14px; padding: 18px;
+      display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: inherit;
+      transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+      opacity: 0; transform: translateY(10px);
+      animation: td-alt-in 480ms ease forwards;
+      animation-delay: var(--td-alt-delay, 0ms);
+    }
+    .td-alt-card:hover {
+      border-color: var(--teal-deep);
+      box-shadow: 0 14px 32px -18px rgba(31,53,54,0.28);
+      transform: translateY(-3px);
+    }
+    .td-alt-topline { display: flex; align-items: center; gap: 10px; }
+    .td-alt-favicon {
+      width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+      background: var(--sand); display: grid; place-items: center; overflow: hidden;
+      border: 1px solid var(--sand-muted);
+    }
+    .td-alt-favicon img { width: 16px; height: 16px; object-fit: contain; }
+    .td-alt-card h3 { font-family: var(--serif); font-size: 16px; letter-spacing: -0.01em; min-width: 0; }
+    .td-alt-card p { font-size: 12.5px; opacity: 0.75; line-height: 1.5; }
+    .td-alt-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+    .td-alt-tags span {
+      font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 999px;
+      background: var(--cream-90); color: var(--teal-deep); border: 1px solid var(--sand-muted);
+    }
+    .td-alt-card-link { font-family: var(--mono); font-size: 11.5px; font-weight: 600; color: var(--teal); margin-top: auto; }
+
+    @keyframes td-alt-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .td-alt-card {
+        opacity: 1; transform: none; animation: none; transition: border-color 200ms ease, box-shadow 200ms ease;
+      }
+      .td-alt-card:hover { transform: none; }
+    }
+
+    /* Footer — ported from foundation.jsx's <footer className="fs-footer"> / foundation.css .fs-footer* */
+    .dv-footer {
+      border-top: 1px solid var(--sand-muted);
+      background: var(--sand-soft);
+      padding: 64px 48px 32px;
+    }
+    .dv-footer-grid {
+      max-width: 1320px; margin: 0 auto 48px;
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 64px;
+    }
+    .dv-footer-mark { display: inline-block; text-decoration: none; line-height: 0; }
+    .dv-footer-mark-img { display: block; height: 44px; width: auto; transition: opacity 200ms ease; }
+    .dv-footer-mark:hover .dv-footer-mark-img { opacity: 0.82; }
+    .dv-footer-brand p {
+      margin: 16px 0; font-size: 14px; line-height: 1.55; color: var(--teal-ink); opacity: 0.7; max-width: 320px;
+    }
+    .dv-footer-grid ul { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 10px; }
+    .dv-footer-grid ul a {
+      font-size: 14px; color: var(--teal-ink); opacity: 0.75; text-decoration: none;
+      transition: opacity 200ms ease, color 200ms ease;
+    }
+    .dv-footer-grid ul a:hover { opacity: 1; color: var(--teal-deep); }
+    .dv-footer-icon-link { display: inline-flex; align-items: center; gap: 7px; }
+    .dv-footer-base {
+      max-width: 1320px; margin: 0 auto; padding-top: 24px; border-top: 1px solid var(--sand-muted);
+      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+      font-family: var(--mono); font-size: 11px; color: var(--teal-deep); letter-spacing: 0.05em;
+    }
+    .dv-footer-brandguide {
+      font-size: 11px; opacity: 0.55; font-family: var(--mono); letter-spacing: 0.05em;
+      text-decoration: none; color: var(--teal-deep);
+    }
+    .dv-footer-backlink {
+      display: inline-block; margin-top: 12px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em;
+      color: var(--teal); text-decoration: none; transition: color 180ms ease;
+    }
+    .dv-footer-backlink:hover { color: var(--clay); }
+    @media (max-width: 960px) {
+      .dv-footer-grid { grid-template-columns: 1fr 1fr; gap: 40px; }
+      .dv-footer-brand { grid-column: span 2; }
+      .dv-footer-base { flex-direction: column; gap: 8px; text-align: center; }
+    }
+    @media (max-width: 640px) {
+      .dv-footer-grid { grid-template-columns: 1fr; gap: 32px; }
+      .dv-footer-brand { grid-column: span 1; }
+    }
+
+    .td-notfound { max-width: 720px; margin: 0 auto; padding: 96px 48px; text-align: center; }
+    .td-notfound h1 { font-family: var(--serif); font-size: 32px; margin-bottom: 14px; }
+    .td-notfound p { opacity: 0.75; margin-bottom: 20px; }
+    .td-notfound a { font-family: var(--mono); font-size: 13px; color: var(--teal); text-decoration: none; }
+    .td-notfound a:hover { color: var(--clay); }
+
+    @media (max-width: 1020px) {
+      .td-hero { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+      .td-body { grid-template-columns: minmax(0, 1fr); }
+      .td-aside { position: static; }
+      .td-alt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 720px) {
+      .dv-nav-inner { padding: 12px 22px; }
+      .dv-nav-meta { display: none; }
+      .td-breadcrumb { padding: 18px 22px 0; }
+      .td-hero { padding: 22px 22px 32px; }
+      .td-body { padding: 8px 22px 40px; }
+      .td-alternatives { padding: 0 22px 48px; }
+      .dv-footer { padding: 32px 22px; }
+      .td-alt-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="dv-nav">
+  <div class="dv-nav-inner">
+    <a class="dv-nav-home" href="/">
+      <img src="/uploads/TellusCooperative%20ICON.png" alt="Tellus Cooperative" />
+      <span>Tellus Dev</span>
+    </a>
+    <div class="dv-nav-right">
+      <div class="dv-nav-meta"><a href="/" id="dv-back-link">← telluscoop.org</a></div>
+      <div class="dv-lang-switcher" id="dv-lang-switcher">
+        <button class="dv-lang-trigger" id="dv-lang-trigger" aria-label="Select language">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          <span id="dv-lang-code">ES</span>
+        </button>
+        <div class="dv-lang-dropdown" id="dv-lang-dropdown" style="display:none;">
+          <button class="dv-lang-option" data-lang="es"><span class="dv-lang-code">ES</span><span>Español</span></button>
+          <button class="dv-lang-option" data-lang="en"><span class="dv-lang-code">EN</span><span>English</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div id="td-root">
+  <!-- Rendered by JS once tools.json + slug resolve -->
+</div>
+
+<footer class="dv-footer">
+  <div class="dv-footer-grid">
+    <div class="dv-footer-brand">
+      <a class="dv-footer-mark" href="/">
+        <img src="/uploads/tellus.svg" alt="Tellus Cooperative" class="dv-footer-mark-img" />
+      </a>
+      <p id="dv-footer-brand-text"></p>
+      <a class="dv-footer-backlink" href="/dev" id="dv-footer-back"></a>
+    </div>
+    <div>
+      <div class="eyebrow" id="dv-footer-programs-label"></div>
+      <ul>
+        <li><a href="/#programs" id="dv-footer-edu"></a></li>
+        <li><a href="/#programs" id="dv-footer-inc"></a></li>
+        <li><a href="/#programs" id="dv-footer-pub"></a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="eyebrow" id="dv-footer-community-label"></div>
+      <ul>
+        <li><a href="https://chat.whatsapp.com/FsNIUPsmNCl2YJkQi5r4p4" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg><span id="dv-footer-wa-label"></span></a></li>
+        <li><a href="https://telluscoop.beehiiv.com" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg><span id="dv-footer-newsletter-label"></span></a></li>
+        <li><a href="https://www.youtube.com/@telluscoop" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg><span id="dv-footer-yt-label"></span></a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="eyebrow" id="dv-footer-follow-label"></div>
+      <ul>
+        <li><a href="https://x.com/TellusCoop" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>X / Twitter</a></li>
+        <li><a href="https://www.instagram.com/telluscoop/" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>Instagram</a></li>
+        <li><a href="https://www.linkedin.com/company/tellus-cooperative/" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>LinkedIn</a></li>
+        <li><a href="https://github.com/Tellus-Cooperative/" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>GitHub</a></li>
+        <li><a href="https://discord.gg/Fy2SgR3XRu" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028 14.09 14.09 0 001.226-1.994.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>Discord</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="dv-footer-base">
+    <span id="dv-footer-copyright"></span>
+    <a href="/brand" rel="noopener noreferrer" class="dv-footer-brandguide">Brand Guide</a>
+  </div>
+</footer>
+
+<script src="/dev/category-content.js"></script>
+<script>
+(function () {
+  var UI = {
+    es: {
+      title: function (name) { return (name ? name + " — " : "") + "Tellus Dev"; },
+      breadcrumbHome: "Directorio",
+      liveEyebrow: "Vista previa",
+      liveHeading: "Web oficial",
+      previewLoadingLabel: "Recuperando vista previa…",
+      previewCaption: "Vista previa de la web",
+      profileEyebrow: "Ficha del recurso",
+      visitPrefix: "Visitar",
+      backToDirectory: "Volver al directorio",
+      shortVersionEyebrow: "En resumen",
+      whatIsPrefix: "¿Qué es",
+      usefulFor: function (name, tags) { return name + " resulta especialmente útil para " + tags + "."; },
+      freeFlowQuote: function (detail) { return "Su oferta gratuita actual permite probar un flujo real: " + detail; },
+      useCasesEyebrow: "Cuándo usarlo",
+      useCasesHeading: "Casos de uso prácticos",
+      tryEyebrow: "Por dónde empezar",
+      caveatsEyebrow: "Antes de elegirlo",
+      caveatsHeading: "Qué revisar antes de elegirlo",
+      caveatNoCard: "Puedes empezar sin añadir tarjeta, reduciendo el riesgo de cargos accidentales por exceso.",
+      caveatCard: "Hace falta tarjeta para desbloquear toda la cuota gratuita. Configura límites de gasto antes de enviar tráfico real.",
+      asideEyebrow: "Plan gratuito de un vistazo",
+      includedFree: "Incluido sin coste",
+      idealForLabel: "Ideal para",
+      categoryLabel: "Categoría",
+      lastReviewedLabel: "Última revisión",
+      checkPricing: "Comprobar precios actuales ↗",
+      keepExploringEyebrow: "Seguí explorando",
+      alternativesTo: function (name) { return "Alternativas a " + name; },
+      seeCategory: "Ver toda la categoría →",
+      readAbout: function (name) { return "Leer sobre " + name; },
+      exploreAll: "Explorar todos los recursos →",
+      notFoundTitle: "No encontramos ese recurso",
+      notFoundBody: "El recurso que buscás no está en el catálogo o el enlace es incorrecto.",
+      notFoundLink: "← Volver al directorio",
+      noCardBadge: "Sin tarjeta",
+      cardBadge: "Tarjeta para la cuota completa",
+      navBack: "← telluscoop.org",
+      footerBrand: "Una cooperativa blockchain latinoamericana para la educación, la incubación y el conocimiento abierto.",
+      footerPrograms: "Programas", footerCommunity: "Comunidad", footerFollow: "Seguir",
+      footerEdu: "Educación cooperativa", footerInc: "Incubación de proyectos", footerPub: "Recursos públicos",
+      footerNewsletter: "Newsletter", footerYt: "Cursos en YouTube",
+      footerWa: "WhatsApp · 300+ miembros",
+      footerCopyright: "© 2026 Tellus Cooperative Foundation · New York, NY",
+    },
+    en: {
+      title: function (name) { return (name ? name + " — " : "") + "Tellus Dev"; },
+      breadcrumbHome: "Directory",
+      liveEyebrow: "Live preview",
+      liveHeading: "Official site",
+      previewLoadingLabel: "Fetching preview…",
+      previewCaption: "Website preview",
+      profileEyebrow: "Resource profile",
+      visitPrefix: "Visit",
+      backToDirectory: "Back to directory",
+      shortVersionEyebrow: "The short version",
+      whatIsPrefix: "What is",
+      usefulFor: function (name, tags) { return name + " is especially relevant for " + tags + "."; },
+      freeFlowQuote: function (detail) { return "Its current free offer is concrete enough to test a real workflow: " + detail; },
+      useCasesEyebrow: "When it fits",
+      useCasesHeading: "Practical use cases",
+      tryEyebrow: "Try this first",
+      caveatsEyebrow: "Before you choose it",
+      caveatsHeading: "What to check before committing",
+      caveatNoCard: "You can start without adding a card, reducing the risk of accidental overage charges.",
+      caveatCard: "A card is required to unlock the full free quota. Set spending limits before sending real traffic.",
+      asideEyebrow: "Free plan at a glance",
+      includedFree: "Included at no cost",
+      idealForLabel: "Best for",
+      categoryLabel: "Category",
+      lastReviewedLabel: "Last reviewed",
+      checkPricing: "Check current pricing ↗",
+      keepExploringEyebrow: "Keep exploring",
+      alternativesTo: function (name) { return "Alternatives to " + name; },
+      seeCategory: "See the whole category →",
+      readAbout: function (name) { return "Read about " + name; },
+      exploreAll: "Explore all resources →",
+      notFoundTitle: "We couldn't find that resource",
+      notFoundBody: "The resource you're looking for isn't in the catalog, or the link is wrong.",
+      notFoundLink: "← Back to directory",
+      noCardBadge: "No card required",
+      cardBadge: "Card for full limits",
+      navBack: "← telluscoop.org",
+      footerBrand: "A Latin American blockchain cooperative for education, incubation, and open knowledge.",
+      footerPrograms: "Programs", footerCommunity: "Community", footerFollow: "Follow",
+      footerEdu: "Cooperative education", footerInc: "Project incubation", footerPub: "Public resources",
+      footerNewsletter: "Newsletter", footerYt: "YouTube courses",
+      footerWa: "WhatsApp · 300+ members",
+      footerCopyright: "© 2026 Tellus Cooperative Foundation · New York, NY",
+    },
+  };
+
+  var state = { lang: "es", data: null, tool: null };
+
+  function loadLang() {
+    var stored = null;
+    try { stored = localStorage.getItem("tellus-lang"); } catch (e) {}
+    if (stored === "es" || stored === "en") return stored;
+    return "es";
+  }
+  function saveLang(l) {
+    try { localStorage.setItem("tellus-lang", l); } catch (e) {}
+  }
+  function t(key) { return UI[state.lang][key]; }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
+    });
+  }
+
+  function toolDesc(tool) { return state.lang === "en" ? tool.description_en : tool.description_es; }
+  function toolFreeNote(tool) { return state.lang === "en" ? tool.free_tier_note_en : tool.free_tier_note_es; }
+  function toolFreeDetail(tool) { return state.lang === "en" ? tool.free_tier_detail_en : tool.free_tier_detail_es; }
+  function categoryLabel(cat) { return state.lang === "en" ? cat.label_en : cat.label_es; }
+
+  function faviconUrl(url) {
+    try {
+      var host = new URL(url).hostname;
+      return "https://www.google.com/s2/favicons?sz=64&domain=" + host;
+    } catch (e) { return ""; }
+  }
+  function hostnameOf(url) {
+    try { return new URL(url).hostname; } catch (e) { return url; }
+  }
+  function mshotsUrl(url, bust) {
+    var src = "https://s0.wp.com/mshots/v1/" + encodeURIComponent(url) + "?w=1200&h=750";
+    return bust ? src + "&_r=" + bust : src;
+  }
+
+  function joinTags(tags) {
+    if (!tags || !tags.length) return "";
+    if (tags.length === 1) return tags[0];
+    return tags.slice(0, -1).join(", ") + (state.lang === "en" ? " and " : " y ") + tags[tags.length - 1];
+  }
+
+  function findCategory(catId) {
+    var cats = state.data.categories;
+    for (var i = 0; i < cats.length; i++) if (cats[i].id === catId) return cats[i];
+    return null;
+  }
+
+  function alternativesFor(tool) {
+    return state.data.tools
+      .filter(function (t2) { return t2.category === tool.category && t2.slug !== tool.slug; })
+      .slice(0, 4);
+  }
+
+  // Site-wide Tellus footer static text (brand/programs/community/follow columns + bottom
+  // bar) — shared between the normal render() and the 404-ish renderNotFound() path so both
+  // keep the real footer fully translated instead of duplicating this block twice.
+  function renderFooterStatic() {
+    document.getElementById("dv-footer-brand-text").textContent = t("footerBrand");
+    document.getElementById("dv-footer-programs-label").textContent = t("footerPrograms");
+    document.getElementById("dv-footer-edu").textContent = t("footerEdu");
+    document.getElementById("dv-footer-inc").textContent = t("footerInc");
+    document.getElementById("dv-footer-pub").textContent = t("footerPub");
+    document.getElementById("dv-footer-community-label").textContent = t("footerCommunity");
+    document.getElementById("dv-footer-wa-label").textContent = t("footerWa");
+    document.getElementById("dv-footer-newsletter-label").textContent = t("footerNewsletter");
+    document.getElementById("dv-footer-yt-label").textContent = t("footerYt");
+    document.getElementById("dv-footer-follow-label").textContent = t("footerFollow");
+    document.getElementById("dv-footer-copyright").textContent = t("footerCopyright");
+    document.getElementById("dv-footer-back").textContent = t("exploreAll");
+    document.getElementById("dv-footer-back").setAttribute("href", "/dev");
+  }
+
+  // Updates the browser-tab title/description + OG/Twitter meta tags client-side once a tool
+  // resolves, for a nicer tab/share preview when JS runs. Crawlers that don't execute JS still
+  // see the static fallback tags baked into <head> (this is a client-rendered template serving
+  // every /dev/tools/:slug from one file, so real per-tool OG would need a build step or a
+  // serverless function this repo doesn't have — out of scope here).
+  function updateMetaTags(title, description) {
+    document.title = title;
+    [
+      ['meta[name="description"]', description],
+      ['meta[property="og:title"]', title],
+      ['meta[property="og:description"]', description],
+      ['meta[name="twitter:title"]', title],
+      ['meta[name="twitter:description"]', description],
+    ].forEach(function (pair) {
+      var el = document.querySelector(pair[0]);
+      if (el) el.setAttribute("content", pair[1]);
+    });
+  }
+
+  function renderNotFound() {
+    updateMetaTags(t("notFoundTitle"), t("notFoundBody"));
+    document.getElementById("td-root").innerHTML =
+      '<div class="td-notfound">' +
+        '<h1>' + escapeHtml(t("notFoundTitle")) + '</h1>' +
+        '<p>' + escapeHtml(t("notFoundBody")) + '</p>' +
+        '<a href="/dev">' + escapeHtml(t("notFoundLink")) + '</a>' +
+      '</div>';
+    document.getElementById("dv-back-link").textContent = t("navBack");
+    renderFooterStatic();
+  }
+
+  function render() {
+    document.documentElement.lang = state.lang;
+    document.getElementById("dv-lang-code").textContent = state.lang.toUpperCase();
+    document.getElementById("dv-back-link").textContent = t("navBack");
+    Array.prototype.forEach.call(document.querySelectorAll(".dv-lang-option"), function (btn) {
+      btn.classList.toggle("is-on", btn.getAttribute("data-lang") === state.lang);
+    });
+
+    if (!state.tool) { renderNotFound(); return; }
+
+    var tool = state.tool;
+    var category = findCategory(tool.category) || { label_es: tool.category, label_en: tool.category };
+    var catContent = (window.TELLUS_DEV_CATEGORY_CONTENT || {})[tool.category] || {};
+    var name = tool.name;
+    var desc = toolDesc(tool);
+    var freeDetail = toolFreeDetail(tool);
+    var tagsList = tool.tags || [];
+    var tagsStr = joinTags(tagsList);
+    var host = hostnameOf(tool.url);
+    var lastReviewed = state.lang === "en" ? "July 28, 2026" : "28 de julio de 2026";
+
+    updateMetaTags(t("title")(name), desc);
+
+    var useCases = (catContent.useCases && catContent.useCases[state.lang]) || [];
+    var trySteps = (catContent.trySteps && catContent.trySteps[state.lang]) || [];
+    var tryTitle = (catContent.tryTitle && catContent.tryTitle[state.lang]) || "";
+    var caveat2 = (catContent.caveat2 && catContent.caveat2[state.lang]) || "";
+    var idealFor = (catContent.idealFor && catContent.idealFor[state.lang]) || categoryLabel(category);
+    var shortExtra = (catContent.shortVersionExtra && catContent.shortVersionExtra[state.lang]) || "";
+
+    var breadcrumbHtml =
+      '<a href="/dev">' + escapeHtml(t("breadcrumbHome")) + '</a>' +
+      '<span class="sep">/</span>' +
+      '<a href="/dev?category=' + encodeURIComponent(tool.category) + '">' + escapeHtml(categoryLabel(category)) + '</a>' +
+      '<span class="sep">/</span>' +
+      '<strong>' + escapeHtml(name) + '</strong>';
+
+    var heroHtml =
+      '<div class="td-profile">' +
+        '<div class="eyebrow td-profile-eyebrow">' + escapeHtml(t("profileEyebrow")) + '</div>' +
+        '<div class="td-name-row">' +
+          '<span class="td-favicon"><img src="' + faviconUrl(tool.url) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'" /></span>' +
+          '<h1 class="td-h1">' + escapeHtml(name) + '</h1>' +
+        '</div>' +
+        '<div class="td-category-label">' + escapeHtml(categoryLabel(category)) + '</div>' +
+        '<p class="td-desc">' + escapeHtml(desc) + '</p>' +
+        '<div class="td-cta-row">' +
+          '<a class="td-cta-primary" href="' + escapeHtml(tool.url) + '" target="_blank" rel="noopener">' + escapeHtml(t("visitPrefix") + " " + name) + ' ↗</a>' +
+          '<a class="td-cta-secondary" href="/dev">' + escapeHtml(t("backToDirectory")) + '</a>' +
+        '</div>' +
+      '</div>' +
+      '<div class="td-preview">' +
+        '<div class="td-preview-head">' +
+          '<div class="eyebrow">' + escapeHtml(t("liveEyebrow")) + '</div>' +
+          '<h2>' + escapeHtml(t("liveHeading")) + '</h2>' +
+        '</div>' +
+        '<figure class="td-browser-frame">' +
+          '<div class="td-browser-bar">' +
+            '<span class="td-browser-dot"></span><span class="td-browser-dot"></span><span class="td-browser-dot"></span>' +
+            '<span class="td-browser-url">' + escapeHtml(host) + '</span>' +
+          '</div>' +
+          '<div class="td-preview-wrap">' +
+            '<div class="td-preview-loading" id="td-preview-loading">' +
+              '<strong>' + escapeHtml(name) + '</strong>' +
+              '<span>' + escapeHtml(t("previewLoadingLabel")) + '</span>' +
+            '</div>' +
+            '<img class="td-preview-img" id="td-preview-img" alt="Screenshot of the ' + escapeHtml(name) + ' website" />' +
+          '</div>' +
+        '</figure>' +
+        '<div class="td-preview-caption">' +
+          '<span>' + escapeHtml(t("previewCaption")) + '</span>' +
+          '<a href="' + escapeHtml(tool.url) + '" target="_blank" rel="noopener">' + escapeHtml(host) + ' ↗</a>' +
+        '</div>' +
+      '</div>';
+
+    var useCasesHtml = useCases.map(function (uc, i) {
+      var n = String(i + 1).padStart(2, "0");
+      return '<div class="td-numbered-item"><span class="num">' + n + '</span><p>' + escapeHtml(uc) + '</p></div>';
+    }).join("");
+
+    var tryStepsHtml = trySteps.map(function (step, i) {
+      var isLast = i === trySteps.length - 1;
+      return (
+        '<div class="td-step">' +
+          '<div class="td-step-rail">' +
+            '<span class="td-step-num">' + (i + 1) + '</span>' +
+            (isLast ? '' : '<span class="td-step-connector"></span>') +
+          '</div>' +
+          '<div class="td-step-body"><p>' + escapeHtml(step) + '</p></div>' +
+        '</div>'
+      );
+    }).join("");
+
+    var caveat1 = tool.no_card ? t("caveatNoCard") : t("caveatCard");
+
+    var articleHtml =
+      '<article class="td-article">' +
+        '<div class="td-section">' +
+          '<div class="eyebrow">' + escapeHtml(t("shortVersionEyebrow")) + '</div>' +
+          '<h2>' + escapeHtml(t("whatIsPrefix") + " " + name + "?") + '</h2>' +
+          '<p>' + escapeHtml(desc) + '</p>' +
+          '<p>' + escapeHtml(t("usefulFor")(name, tagsStr)) + ' ' + escapeHtml(shortExtra) + '</p>' +
+          '<p class="td-quote">' + escapeHtml(t("freeFlowQuote")(freeDetail)) + '</p>' +
+        '</div>' +
+        '<div class="td-section">' +
+          '<div class="eyebrow">' + escapeHtml(t("useCasesEyebrow")) + '</div>' +
+          '<h2>' + escapeHtml(t("useCasesHeading")) + '</h2>' +
+          '<div class="td-numbered-list">' + useCasesHtml + '</div>' +
+        '</div>' +
+        '<div class="td-section">' +
+          '<div class="eyebrow">' + escapeHtml(t("tryEyebrow")) + '</div>' +
+          '<h2>' + escapeHtml(tryTitle) + '</h2>' +
+          '<div class="td-steps">' + tryStepsHtml + '</div>' +
+        '</div>' +
+        '<div class="td-section">' +
+          '<div class="eyebrow">' + escapeHtml(t("caveatsEyebrow")) + '</div>' +
+          '<h2>' + escapeHtml(t("caveatsHeading")) + '</h2>' +
+          '<div class="td-caveats">' +
+            '<div class="td-caveat"><span class="mark">—</span><p>' + escapeHtml(caveat1) + '</p></div>' +
+            '<div class="td-caveat"><span class="mark">—</span><p>' + escapeHtml(caveat2) + '</p></div>' +
+          '</div>' +
+        '</div>' +
+      '</article>';
+
+    var badgeClass = tool.no_card ? "" : "limited";
+    var badgeText = tool.no_card ? t("noCardBadge") : t("cardBadge");
+    var tagsHtml = tagsList.map(function (tag) { return '<span>' + escapeHtml(tag) + '</span>'; }).join("");
+
+    var asideHtml =
+      '<aside class="td-aside">' +
+        '<span class="eyebrow">' + escapeHtml(t("asideEyebrow")) + '</span>' +
+        '<span class="td-aside-badge ' + badgeClass + '">' + escapeHtml(badgeText) + '</span>' +
+        '<div class="td-aside-cost-label">' + escapeHtml(t("includedFree")) + '</div>' +
+        '<p class="td-aside-cost-detail">' + escapeHtml(freeDetail) + '</p>' +
+        '<div class="td-aside-dl">' +
+          '<div><dt>' + escapeHtml(t("idealForLabel")) + '</dt><dd>' + escapeHtml(idealFor) + '</dd></div>' +
+          '<div><dt>' + escapeHtml(t("categoryLabel")) + '</dt><dd>' + escapeHtml(categoryLabel(category)) + '</dd></div>' +
+          '<div><dt>' + escapeHtml(t("lastReviewedLabel")) + '</dt><dd>' + escapeHtml(lastReviewed) + '</dd></div>' +
+        '</div>' +
+        '<div class="td-aside-tags">' + tagsHtml + '</div>' +
+        '<a class="td-aside-link" href="' + escapeHtml(tool.url) + '" target="_blank" rel="noopener">' + escapeHtml(t("checkPricing")) + '</a>' +
+      '</aside>';
+
+    var alternatives = alternativesFor(tool);
+    var altCardsHtml = alternatives.map(function (alt, i) {
+      var altTags = (alt.tags || []).map(function (tag) { return '<span>' + escapeHtml(tag) + '</span>'; }).join("");
+      return (
+        '<a class="td-alt-card" style="--td-alt-delay:' + (i * 60) + 'ms" href="/dev/tools/' + encodeURIComponent(alt.slug) + '">' +
+          '<div class="td-alt-topline">' +
+            '<span class="td-alt-favicon"><img src="' + faviconUrl(alt.url) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'" /></span>' +
+            '<h3>' + escapeHtml(alt.name) + '</h3>' +
+          '</div>' +
+          '<p>' + escapeHtml(toolDesc(alt)) + '</p>' +
+          '<div class="td-alt-tags">' + altTags + '</div>' +
+          '<span class="td-alt-card-link">' + escapeHtml(t("readAbout")(alt.name)) + '</span>' +
+        '</a>'
+      );
+    }).join("");
+
+    var alternativesHtml = alternatives.length ? (
+      '<section class="td-alternatives">' +
+        '<div class="td-alt-head">' +
+          '<div>' +
+            '<div class="eyebrow">' + escapeHtml(t("keepExploringEyebrow")) + '</div>' +
+            '<h2>' + escapeHtml(t("alternativesTo")(name)) + '</h2>' +
+          '</div>' +
+          '<a class="td-alt-head-link" href="/dev?category=' + encodeURIComponent(tool.category) + '">' + escapeHtml(t("seeCategory")) + '</a>' +
+        '</div>' +
+        '<div class="td-alt-grid">' + altCardsHtml + '</div>' +
+      '</section>'
+    ) : "";
+
+    document.getElementById("td-root").innerHTML =
+      '<div class="td-breadcrumb">' + breadcrumbHtml + '</div>' +
+      '<div class="td-hero">' + heroHtml + '</div>' +
+      '<div class="td-body">' + articleHtml + asideHtml + '</div>' +
+      alternativesHtml;
+
+    renderFooterStatic();
+
+    setupPreviewImage(tool.url);
+  }
+
+  function setupPreviewImage(url) {
+    var img = document.getElementById("td-preview-img");
+    var loading = document.getElementById("td-preview-loading");
+    if (!img) return;
+    var retried = false;
+
+    function onLoaded() {
+      img.classList.add("is-loaded");
+      if (loading) loading.classList.add("is-hidden");
+      // mshots often serves a generic placeholder on the very first request;
+      // silently refresh once so the real screenshot can replace it.
+      if (!retried) {
+        retried = true;
+        setTimeout(function () {
+          var refreshed = new Image();
+          refreshed.onload = function () { img.src = refreshed.src; };
+          refreshed.src = mshotsUrl(url, Date.now());
+        }, 2500);
+      }
+    }
+
+    img.addEventListener("load", onLoaded);
+    img.addEventListener("error", function () {
+      if (loading) {
+        loading.classList.remove("is-hidden");
+      }
+    });
+    img.src = mshotsUrl(url);
+  }
+
+  function slugFromPath() {
+    // Rewrites (vercel.json / serve.json) are transparent: the browser's
+    // visible URL stays "/dev/tools/<slug>" with no query string ever
+    // reaching this page, so the slug must come from the pathname.
+    var match = location.pathname.match(/\/dev\/tools\/([^/]+)\/?$/);
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  function resolveTool() {
+    var slug = slugFromPath() || new URLSearchParams(location.search).get("slug");
+    if (!slug || !state.data) { state.tool = null; return; }
+    state.tool = state.data.tools.find(function (tl) { return tl.slug === slug; }) || null;
+  }
+
+  state.lang = loadLang();
+
+  fetch("/dev/tools.json")
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      state.data = data;
+      resolveTool();
+      render();
+    })
+    .catch(function (err) {
+      document.getElementById("td-root").innerHTML =
+        '<div class="td-notfound"><h1>Error</h1><p>Could not load the catalog. Please reload.</p></div>';
+      console.error("Failed to load tools.json", err);
+    });
+
+  var langTrigger = document.getElementById("dv-lang-trigger");
+  var langDropdown = document.getElementById("dv-lang-dropdown");
+  langTrigger.addEventListener("click", function (e) {
+    e.stopPropagation();
+    langDropdown.style.display = langDropdown.style.display === "none" ? "flex" : "none";
+  });
+  document.addEventListener("click", function (e) {
+    if (!document.getElementById("dv-lang-switcher").contains(e.target)) {
+      langDropdown.style.display = "none";
+    }
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".dv-lang-option"), function (btn) {
+    btn.addEventListener("click", function () {
+      state.lang = btn.getAttribute("data-lang");
+      saveLang(state.lang);
+      langDropdown.style.display = "none";
+      render();
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

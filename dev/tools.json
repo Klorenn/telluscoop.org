@@ -1,0 +1,2063 @@
+{
+  "meta": {
+    "source": "https://itsfree.dev/es and https://itsfree.dev (en)",
+    "total_tools": 110,
+    "total_categories": 14,
+    "recommended_count": 23,
+    "last_reviewed": "2026-07-28"
+  },
+  "categories": [
+    {
+      "id": "hosting",
+      "label_es": "Hosting y deploy",
+      "label_en": "Hosting & deploy"
+    },
+    {
+      "id": "data",
+      "label_es": "Datos y backend",
+      "label_en": "Data & backend"
+    },
+    {
+      "id": "ai",
+      "label_es": "IA y machine learning",
+      "label_en": "AI & machine learning"
+    },
+    {
+      "id": "auth",
+      "label_es": "Auth y usuarios",
+      "label_en": "Auth & users"
+    },
+    {
+      "id": "email",
+      "label_es": "Email y formularios",
+      "label_en": "Email & forms"
+    },
+    {
+      "id": "observability",
+      "label_es": "Monitorización",
+      "label_en": "Monitoring"
+    },
+    {
+      "id": "ci",
+      "label_es": "CI/CD y código",
+      "label_en": "CI/CD & code"
+    },
+    {
+      "id": "analytics",
+      "label_es": "Analítica",
+      "label_en": "Analytics"
+    },
+    {
+      "id": "api",
+      "label_es": "APIs y automatización",
+      "label_en": "APIs & automation"
+    },
+    {
+      "id": "design",
+      "label_es": "Diseño y UI",
+      "label_en": "Design & UI"
+    },
+    {
+      "id": "security",
+      "label_es": "Seguridad",
+      "label_en": "Security"
+    },
+    {
+      "id": "collaboration",
+      "label_es": "Equipo y productividad",
+      "label_en": "Team & productivity"
+    },
+    {
+      "id": "cms",
+      "label_es": "Contenido y CMS",
+      "label_en": "Content & CMS"
+    },
+    {
+      "id": "media",
+      "label_es": "Storage y multimedia",
+      "label_en": "Storage & media"
+    }
+  ],
+  "tools": [
+    {
+      "name": "InsForge",
+      "description_es": "Backend nativo para agentes con base de datos, auth, storage, funciones y acceso a modelos.",
+      "description_en": "An agent-native backend with database, auth, storage, functions and model access.",
+      "url": "https://insforge.dev",
+      "category": "data",
+      "tags": [
+        "backend",
+        "ai agents"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Plan developer gratis con Postgres, auth, storage, funciones y créditos de modelos limitados para prototipos.",
+      "free_tier_detail_en": "Free developer plan with a Postgres database, auth, storage, functions and limited model credits for prototypes.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "insforge"
+    },
+    {
+      "name": "CodeRabbit",
+      "description_es": "Revisiones de código con IA para pull requests, IDE y terminal, con acceso gratis para proyectos open source.",
+      "description_en": "AI code reviews for pull requests, IDEs and the command line, with free access for open-source projects.",
+      "url": "https://www.coderabbit.ai",
+      "category": "ci",
+      "tags": [
+        "code review",
+        "ai"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "repos públicos y privados ilimitados, resúmenes de PR y revisiones limitadas en IDE/CLI; open source recibe funciones Pro+.",
+      "free_tier_detail_en": "unlimited public and private repositories, PR summaries and limited reviews in IDE/CLI; open source gets Pro+ features.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "coderabbit"
+    },
+    {
+      "name": "Cloudflare",
+      "description_es": "Plataforma global para DNS, CDN, funciones edge, almacenamiento y seguridad web.",
+      "description_en": "A global developer platform for DNS, CDN, edge functions, storage and web security.",
+      "url": "https://www.cloudflare.com",
+      "category": "hosting",
+      "tags": [
+        "cdn",
+        "workers"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Workers Free: 100.000 peticiones/día; Pages incluye 500 builds/mes, sitios y ancho de banda estático ilimitados.",
+      "free_tier_detail_en": "Workers Free: 100k requests/day; Pages includes 500 builds/month, unlimited sites and static bandwidth.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "cloudflare"
+    },
+    {
+      "name": "Vercel",
+      "description_es": "Despliega aplicaciones web con CDN global, SSL y previews en cada push.",
+      "description_en": "Deploy web apps with a global CDN, SSL and preview URLs on every push.",
+      "url": "https://vercel.com",
+      "category": "hosting",
+      "tags": [
+        "hosting",
+        "edge"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Hobby: 1 M de peticiones edge, 1 M de invocaciones y 100 deploys/día para proyectos personales no comerciales.",
+      "free_tier_detail_en": "Hobby: 1M edge requests, 1M function calls and 100 deployments/day for personal, non-commercial projects.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "vercel"
+    },
+    {
+      "name": "Supabase",
+      "description_es": "Backend Postgres con base de datos, auth, storage, realtime y funciones edge.",
+      "description_en": "A Postgres backend with database, auth, storage, realtime and edge functions.",
+      "url": "https://supabase.com",
+      "category": "data",
+      "tags": [
+        "postgres",
+        "realtime"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "2 proyectos, 500 MB de base de datos, 1 GB de storage, 5 GB de salida y 50.000 usuarios activos/mes.",
+      "free_tier_detail_en": "2 projects, 500 MB database, 1 GB storage, 5 GB egress and 50k monthly active users.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "supabase"
+    },
+    {
+      "name": "Neon",
+      "description_es": "Postgres serverless con ramas instantáneas y cómputo que escala a cero.",
+      "description_en": "Serverless Postgres with instant database branches and scale-to-zero compute.",
+      "url": "https://neon.tech",
+      "category": "data",
+      "tags": [
+        "postgres",
+        "serverless"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "100 proyectos, 100 horas de cómputo y 0,5 GB por proyecto, con scale-to-zero tras 5 min inactivo.",
+      "free_tier_detail_en": "100 projects, 100 CU-hours and 0.5 GB storage per project, with scale-to-zero after 5 idle minutes.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "neon"
+    },
+    {
+      "name": "Turso",
+      "description_es": "Bases SQLite en el edge con réplicas cerca de tus usuarios.",
+      "description_en": "Edge-hosted SQLite databases with replicas close to your users.",
+      "url": "https://turso.tech",
+      "category": "data",
+      "tags": [
+        "sqlite",
+        "edge"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "100 bases de datos, 5 GB totales, 500 M de lecturas y 10 M de escrituras de filas/mes.",
+      "free_tier_detail_en": "100 databases, 5 GB total storage, 500M row reads and 10M row writes/month.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "turso"
+    },
+    {
+      "name": "Upstash",
+      "description_es": "Redis, Kafka y workflows serverless con capas gratuitas por uso.",
+      "description_en": "Serverless Redis, Kafka and workflow tools with usage-based free tiers.",
+      "url": "https://upstash.com",
+      "category": "data",
+      "tags": [
+        "redis",
+        "kafka"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Redis Free: 256 MB y 500.000 comandos/mes; QStash incluye 1.000 mensajes/día.",
+      "free_tier_detail_en": "Redis Free: 256 MB and 500k commands/month; QStash includes 1,000 messages/day.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "upstash"
+    },
+    {
+      "name": "Hugging Face",
+      "description_es": "Descubre modelos y datasets, ejecuta demos y publica aplicaciones de ML.",
+      "description_en": "Discover models and datasets, run demos, and publish ML applications.",
+      "url": "https://huggingface.co",
+      "category": "ai",
+      "tags": [
+        "models",
+        "datasets"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Cuenta gratis para modelos, datasets y Spaces públicos; incluye CPU compartida y créditos de inferencia limitados.",
+      "free_tier_detail_en": "Free account for public models, datasets and Spaces; includes limited shared CPU and monthly inference credits.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "hugging-face"
+    },
+    {
+      "name": "Google AI Studio",
+      "description_es": "Prueba modelos Gemini en un playground web y genera claves API para desarrollo.",
+      "description_en": "Prototype with Gemini models in a browser playground and generate API keys for development.",
+      "url": "https://aistudio.google.com",
+      "category": "ai",
+      "tags": [
+        "gemini",
+        "api"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "AI Studio es gratis; algunos modelos de la API de Gemini incluyen una cuota gratuita con límites específicos.",
+      "free_tier_detail_en": "AI Studio is free to use; selected Gemini API models include a free tier with model-specific rate limits.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "google-ai-studio"
+    },
+    {
+      "name": "NVIDIA NIM",
+      "description_es": "Prueba mediante API un catálogo cambiante de modelos de IA y microservicios NVIDIA NIM.",
+      "description_en": "Prototype with hosted APIs for a rotating catalog of leading AI models and NVIDIA NIM microservices.",
+      "url": "https://build.nvidia.com/models",
+      "category": "ai",
+      "tags": [
+        "models",
+        "api"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Endpoints NIM alojados gratis para prototipado mediante NVIDIA Developer Program; los modelos y límites pueden cambiar.",
+      "free_tier_detail_en": "Free hosted NIM API endpoints for prototyping through the NVIDIA Developer Program; available models and limits can change.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "nvidia-nim"
+    },
+    {
+      "name": "Groq",
+      "description_es": "Desarrolla con inferencia rápida de modelos abiertos mediante una API compatible con OpenAI.",
+      "description_en": "Build with fast hosted inference for open models through an OpenAI-compatible API.",
+      "url": "https://console.groq.com",
+      "category": "ai",
+      "tags": [
+        "inference",
+        "api"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Plan API gratis con límites de peticiones y tokens según el modelo; las cuotas se publican en la documentación de Groq.",
+      "free_tier_detail_en": "Free API plan with model-specific request and token limits; exact quotas are published in the Groq console docs.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "groq"
+    },
+    {
+      "name": "Freebuff",
+      "description_es": "Agente de programación gratuito financiado con anuncios, disponible en terminal, navegador y workspaces cloud.",
+      "description_en": "A free, ad-supported coding agent available in the terminal, browser and cloud workspaces.",
+      "url": "https://freebuff.com/",
+      "category": "ai",
+      "tags": [
+        "coding agent",
+        "cli"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "CLI, creador web, workspace cloud y chat de IA gratis, sin suscripción, API key ni tarjeta; financiado con anuncios de texto.",
+      "free_tier_detail_en": "Free CLI, web app builder, cloud workspace and AI chat with no subscription, API key or credit card; supported by text ads.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "freebuff"
+    },
+    {
+      "name": "Clerk",
+      "description_es": "Autenticación y gestión de usuarios con componentes listos y cuidados.",
+      "description_en": "Authentication and user management with polished prebuilt components.",
+      "url": "https://clerk.com",
+      "category": "auth",
+      "tags": [
+        "auth",
+        "components"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Hobby: 50.000 usuarios retenidos al mes por app, hasta 5 miembros y 100 organizaciones.",
+      "free_tier_detail_en": "Hobby: 50k monthly retained users per app, up to 5 dashboard seats and 100 organizations.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "clerk"
+    },
+    {
+      "name": "Resend",
+      "description_es": "API moderna de email transaccional con gran integración con React.",
+      "description_en": "A modern transactional email API with excellent React and developer tooling.",
+      "url": "https://resend.com",
+      "category": "email",
+      "tags": [
+        "transactional",
+        "email"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "3.000 emails/mes y 100/día, un dominio, un webhook y logs durante un día.",
+      "free_tier_detail_en": "3,000 emails/month and 100/day, one domain, one webhook endpoint and one-day log retention.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "resend"
+    },
+    {
+      "name": "Sentry",
+      "description_es": "Monitoriza errores, trazas de rendimiento y sesiones en todo tu stack.",
+      "description_en": "Track errors, performance traces and user sessions across your stack.",
+      "url": "https://sentry.io",
+      "category": "observability",
+      "tags": [
+        "errors",
+        "tracing"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Developer: 5.000 errores, 5 M de spans, 50 replays y 5 GB de logs/mes para un usuario.",
+      "free_tier_detail_en": "Developer: 5k errors, 5M spans, 50 replays and 5 GB logs/month for one user.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "sentry"
+    },
+    {
+      "name": "UptimeRobot",
+      "description_es": "Monitorización sencilla de uptime con alertas y páginas de estado.",
+      "description_en": "Simple uptime monitoring with alerting and public status pages.",
+      "url": "https://uptimerobot.com",
+      "category": "observability",
+      "tags": [
+        "uptime",
+        "alerts"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "50 monitores con checks cada 5 min, logs durante 3 meses y una página de estado básica.",
+      "free_tier_detail_en": "50 monitors with 5-minute checks, 3-month log retention and one basic status page.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "uptimerobot"
+    },
+    {
+      "name": "GitHub Actions",
+      "description_es": "Automatiza builds, tests, releases y workflows junto a tu código.",
+      "description_en": "Automate builds, tests, releases and workflows next to your code.",
+      "url": "https://github.com/features/actions",
+      "category": "ci",
+      "tags": [
+        "ci",
+        "automation"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Gratis en repos públicos; los privados incluyen 2.000 min y 500 MB de artefactos/mes.",
+      "free_tier_detail_en": "Free for public repositories; private repositories include 2,000 minutes and 500 MB artifact storage/month.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "github-actions"
+    },
+    {
+      "name": "Umami",
+      "description_es": "Analítica web limpia y centrada en privacidad con informes sencillos.",
+      "description_en": "Clean, privacy-minded website analytics with straightforward reports.",
+      "url": "https://umami.is",
+      "category": "analytics",
+      "tags": [
+        "privacy",
+        "web"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Cloud gratis: hasta 3 webs, 100.000 eventos/mes y 6 meses de retención; self-hosted es ilimitado.",
+      "free_tier_detail_en": "Free cloud plan: up to 3 websites, 100k events/month and 6-month retention; self-hosting is unlimited.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "umami"
+    },
+    {
+      "name": "Ahrefs Web Analytics",
+      "description_es": "Analítica web simple y sin cookies, con tráfico de IA, funnels y contexto SEO de Ahrefs.",
+      "description_en": "Simple, cookie-free website analytics with AI traffic, funnels and SEO context from Ahrefs.",
+      "url": "https://ahrefs.com/web-analytics",
+      "category": "analytics",
+      "tags": [
+        "privacy",
+        "web"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Gratis con Ahrefs Free: hasta 1 M de eventos/mes por proyecto verificado, sitios ilimitados y tracking sin cookies; sin tarjeta.",
+      "free_tier_detail_en": "Free with Ahrefs Free: up to 1M events/month per verified project, unlimited sites, cookie-free tracking; no card required.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "ahrefs-web-analytics"
+    },
+    {
+      "name": "Figma",
+      "description_es": "Diseño de interfaces, prototipado y handoff colaborativo.",
+      "description_en": "Collaborative interface design, prototyping and developer handoff.",
+      "url": "https://www.figma.com",
+      "category": "design",
+      "tags": [
+        "ui",
+        "prototype"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Starter: borradores, kits y colaboradores ilimitados, con 3 archivos de diseño y 3 de FigJam compartidos.",
+      "free_tier_detail_en": "Starter: unlimited drafts, UI kits and collaborators, with 3 collaborative design files and 3 FigJam files.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "figma"
+    },
+    {
+      "name": "Linear",
+      "description_es": "Issues, ciclos y roadmaps rápidos para equipos de software.",
+      "description_en": "Fast issue tracking, cycles and product roadmaps for software teams.",
+      "url": "https://linear.app",
+      "category": "collaboration",
+      "tags": [
+        "issues",
+        "roadmap"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "miembros ilimitados, 2 equipos y 250 issues, con integraciones de Slack/GitHub y API.",
+      "free_tier_detail_en": "unlimited members, 2 teams and 250 issues, with Slack/GitHub integrations and API access.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "linear"
+    },
+    {
+      "name": "Cloudinary",
+      "description_es": "Sube, transforma, optimiza y entrega imágenes y vídeo mediante CDN.",
+      "description_en": "Upload, transform, optimize and deliver images and video through a CDN.",
+      "url": "https://cloudinary.com",
+      "category": "media",
+      "tags": [
+        "images",
+        "video"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "25 créditos mensuales para transformaciones, storage y tráfico de imagen/vídeo, con 3 usuarios.",
+      "free_tier_detail_en": "25 monthly credits for image/video transformations, storage and bandwidth, with 3 users.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "cloudinary"
+    },
+    {
+      "name": "Netlify",
+      "description_es": "Una plataforma completa para desplegar proyectos web modernos y funciones serverless.",
+      "description_en": "A complete platform for deploying modern web projects and serverless functions.",
+      "url": "https://www.netlify.com",
+      "category": "hosting",
+      "tags": [
+        "hosting",
+        "functions"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "300 créditos de uso/mes, un build simultáneo, dominios propios, SSL y previews.",
+      "free_tier_detail_en": "300 usage credits/month, one concurrent build, custom domains, SSL and deploy previews.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "netlify"
+    },
+    {
+      "name": "Cloud 66",
+      "description_es": "Despliega y gestiona aplicaciones en tu cloud sin el trabajo pesado de servidores.",
+      "description_en": "Deploy and manage applications on your own cloud without the server busywork.",
+      "url": "https://www.cloud66.com",
+      "category": "hosting",
+      "tags": [
+        "deploy",
+        "cloud"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "1 servidor, 1 sitio estático, 5 deploys/día y 50 minutos de build; el cloud se paga aparte.",
+      "free_tier_detail_en": "1 deployment server, 1 static site, 5 deploys/day and 50 build minutes; cloud costs are separate.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "cloud-66"
+    },
+    {
+      "name": "deployment.io",
+      "description_es": "Automatiza en AWS sitios estáticos, servicios y entornos de preview.",
+      "description_en": "Automate AWS deployments for static sites, services and preview environments.",
+      "url": "https://deployment.io",
+      "category": "hosting",
+      "tags": [
+        "aws",
+        "deploy"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Plan self-service gratis: 10 tareas de agente/mes para un usuario, ejecutadas en tu propio cloud.",
+      "free_tier_detail_en": "Free self-serve plan: 10 agent jobs/month for one user, running inside your own cloud.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "deployment-io"
+    },
+    {
+      "name": "Render",
+      "description_es": "Ejecuta servicios web, sitios estáticos y tareas programadas desde un panel.",
+      "description_en": "Run web services, static sites and scheduled jobs from one dashboard.",
+      "url": "https://render.com",
+      "category": "hosting",
+      "tags": [
+        "web services",
+        "cron"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "750 horas de instancia/mes para servicios web; sitios estáticos gratis. Se duermen tras 15 min sin tráfico.",
+      "free_tier_detail_en": "750 instance hours/month for free web services; static sites are free. Services sleep after 15 idle minutes.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "render"
+    },
+    {
+      "name": "Appish",
+      "description_es": "Publica contenedores Docker en slots temporales pensados para demos.",
+      "description_en": "Push Docker containers to short-lived public slots made for demos.",
+      "url": "https://appi.sh",
+      "category": "hosting",
+      "tags": [
+        "containers",
+        "demos"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Hosting gratis para demos con contenedores Docker temporales; los slots caducan y no son para producción.",
+      "free_tier_detail_en": "Free demo hosting for temporary Docker containers; slots are short-lived and intended for previews, not production.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "appish"
+    },
+    {
+      "name": "Deno Deploy",
+      "description_es": "Ejecuta JavaScript y TypeScript cerca del usuario en una red edge global.",
+      "description_en": "Run JavaScript and TypeScript close to users on a global edge network.",
+      "url": "https://deno.com/deploy",
+      "category": "hosting",
+      "tags": [
+        "typescript",
+        "edge"
+      ],
+      "free_tier_note_es": "Tarjeta para la cuota completa",
+      "free_tier_note_en": "Card for full limits",
+      "free_tier_detail_es": "Organización gratis con cuotas mensuales de peticiones, tráfico y cómputo; las apps se pausan al agotarlas.",
+      "free_tier_detail_en": "Free organization with monthly request, bandwidth and compute allowances; apps pause when a limit is reached.",
+      "no_card": false,
+      "recommended": false,
+      "slug": "deno-deploy"
+    },
+    {
+      "name": "GitHub",
+      "description_es": "Repositorios, Pages, CI/CD y gestión en una plataforma para developers.",
+      "description_en": "Repositories, static Pages, CI/CD and project tools in one developer platform.",
+      "url": "https://github.com",
+      "category": "hosting",
+      "tags": [
+        "git",
+        "pages"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Repositorios públicos y privados ilimitados; Pages y 2.000 min/mes de Actions para repos privados.",
+      "free_tier_detail_en": "Unlimited public/private repositories; Pages and 2,000 Actions minutes/month for private repositories.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "github"
+    },
+    {
+      "name": "MongoDB Atlas",
+      "description_es": "Clústeres MongoDB gestionados con opción gratuita para proyectos pequeños.",
+      "description_en": "Managed MongoDB clusters with a permanent free option for small projects.",
+      "url": "https://www.mongodb.com/atlas",
+      "category": "data",
+      "tags": [
+        "nosql",
+        "database"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Clúster M0: 512 MB de storage y RAM compartida, gratis para siempre con uno por proyecto.",
+      "free_tier_detail_en": "M0 cluster: 512 MB storage and shared RAM, free forever with one cluster per project.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "mongodb-atlas"
+    },
+    {
+      "name": "CockroachDB",
+      "description_es": "SQL distribuido para aplicaciones resistentes y disponibles globalmente.",
+      "description_en": "Distributed SQL built for resilient, globally available applications.",
+      "url": "https://www.cockroachlabs.com",
+      "category": "data",
+      "tags": [
+        "sql",
+        "distributed"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Basic: hasta 10 GiB y 50 M de request units/mes sin coste dentro de una organización.",
+      "free_tier_detail_en": "Basic: up to 10 GiB storage and 50M request units/month at no cost, across one organization.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "cockroachdb"
+    },
+    {
+      "name": "Aiven",
+      "description_es": "Servicios de datos open source gestionados con planes gratuitos seleccionados.",
+      "description_en": "Managed open-source data services with free plans for selected products.",
+      "url": "https://aiven.io",
+      "category": "data",
+      "tags": [
+        "postgres",
+        "valkey"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Planes gratis para PostgreSQL, MySQL, Valkey y Kafka: un nodo pequeño, storage limitado y sin SLA.",
+      "free_tier_detail_en": "Free plans for PostgreSQL, MySQL, Valkey and Kafka: one small node with limited storage and no SLA.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "aiven"
+    },
+    {
+      "name": "Braintrust",
+      "description_es": "Evalúa aplicaciones de IA, compara prompts y gestiona datasets de prueba.",
+      "description_en": "Evaluate AI applications, compare prompts and manage test datasets.",
+      "url": "https://www.braintrustdata.com",
+      "category": "ai",
+      "tags": [
+        "evals",
+        "prompts"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "1 GB de logs/mes, 10.000 scores y experimentos, playground de prompts y usuarios ilimitados.",
+      "free_tier_detail_en": "1 GB of logs/month, 10k scores and experiments, prompt playground and unlimited users.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "braintrust"
+    },
+    {
+      "name": "Langfuse",
+      "description_es": "Trazas, gestión de prompts y evaluación open source para productos con LLM.",
+      "description_en": "Open-source tracing, prompt management and evaluation for LLM products.",
+      "url": "https://langfuse.com",
+      "category": "ai",
+      "tags": [
+        "observability",
+        "evals"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Hobby: 50.000 unidades de uso/mes y 30 días de retención; la edición open source self-hosted también es gratis.",
+      "free_tier_detail_en": "Hobby: 50k usage units/month with 30-day retention; self-hosting the open-source edition is also free.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "langfuse"
+    },
+    {
+      "name": "Cerebras",
+      "description_es": "Ejecuta modelos abiertos mediante una API compatible con OpenAI optimizada para inferencia muy rápida.",
+      "description_en": "Run open AI models through an OpenAI-compatible API optimized for very fast inference.",
+      "url": "https://cloud.cerebras.ai",
+      "category": "ai",
+      "tags": [
+        "inference",
+        "api"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Capa de inferencia gratis con acceso a todos los modelos servidos por Cerebras, límites reducidos y soporte comunitario.",
+      "free_tier_detail_en": "Free inference tier with access to all Cerebras-powered models, lower rate limits and community support.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "cerebras"
+    },
+    {
+      "name": "Mistral AI",
+      "description_es": "Accede a los modelos de lenguaje, código, embeddings y multimodales de Mistral mediante su API.",
+      "description_en": "Access Mistral's language, code, embedding and multimodal models through its developer API.",
+      "url": "https://console.mistral.ai",
+      "category": "ai",
+      "tags": [
+        "models",
+        "api"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Modo API gratis para experimentación con límites reducidos; las cuotas actuales se muestran en la cuenta.",
+      "free_tier_detail_en": "Free API mode for experimentation with lower usage limits; current quotas are shown in the account usage page.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "mistral-ai"
+    },
+    {
+      "name": "NotebookLM",
+      "description_es": "Investiga y razona sobre documentos, webs, audio y otras fuentes con respuestas de Gemini basadas en tus materiales.",
+      "description_en": "Research and reason across documents, websites, audio and other sources with grounded Gemini answers.",
+      "url": "https://notebooklm.google",
+      "category": "ai",
+      "tags": [
+        "research",
+        "sources"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "100 cuadernos con hasta 50 fuentes cada uno, más 50 consultas de chat y 3 generaciones de audio/día.",
+      "free_tier_detail_en": "100 notebooks with up to 50 sources each, plus 50 chat queries and 3 audio generations/day.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "notebooklm"
+    },
+    {
+      "name": "Cloudflare Workers AI",
+      "description_es": "Ejecuta modelos de IA open source de forma serverless en la red global de GPU de Cloudflare.",
+      "description_en": "Run serverless open-source AI models on Cloudflare's global GPU network.",
+      "url": "https://developers.cloudflare.com/workers-ai/",
+      "category": "ai",
+      "tags": [
+        "serverless",
+        "edge"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "10.000 Neurons diarios de inferencia sin coste para usar el catálogo de modelos disponible.",
+      "free_tier_detail_en": "10,000 Neurons of AI inference per day at no charge across the available model catalog.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "cloudflare-workers-ai"
+    },
+    {
+      "name": "OpenRouter",
+      "description_es": "Una API para muchos LLM, incluida una selección cambiante de modelos gratis.",
+      "description_en": "One API for many language models, including a rotating selection of free models.",
+      "url": "https://openrouter.ai/models?q=free",
+      "category": "ai",
+      "tags": [
+        "llm",
+        "gateway"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Los modelos gratuitos permiten 50 peticiones/día, o 1.000/día tras comprar al menos 10 $ en créditos.",
+      "free_tier_detail_en": "Free models allow up to 50 requests/day, or 1,000/day after purchasing at least $10 in credits.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "openrouter"
+    },
+    {
+      "name": "Keywords AI",
+      "description_es": "Usa y monitoriza muchos modelos de lenguaje desde una interfaz común.",
+      "description_en": "Call and monitor many language models through one consistent interface.",
+      "url": "https://keywordsai.co",
+      "category": "ai",
+      "tags": [
+        "gateway",
+        "monitoring"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Plan developer gratis con logs y evaluaciones mensuales limitados; la inferencia del proveedor se paga aparte.",
+      "free_tier_detail_en": "Free developer plan with limited monthly logs and evaluations; model-provider inference costs remain separate.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "keywords-ai"
+    },
+    {
+      "name": "Pollinations.AI",
+      "description_es": "Genera imágenes con IA mediante una API gratis sin registro ni claves.",
+      "description_en": "Generate AI images through a free API without sign-up or API keys.",
+      "url": "https://pollinations.ai",
+      "category": "ai",
+      "tags": [
+        "images",
+        "api"
+      ],
+      "free_tier_note_es": "Sin registro",
+      "free_tier_note_en": "No sign-up",
+      "free_tier_detail_es": "API gratis de imagen y texto sin registro ni API key; el uso público tiene límites de fair use.",
+      "free_tier_detail_en": "Free image and text generation API with no sign-up or API key; public usage is rate-limited under fair use.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "pollinations-ai"
+    },
+    {
+      "name": "Portkey",
+      "description_es": "Gateway y panel de control de IA con logs, routing y guardrails.",
+      "description_en": "An AI gateway and control plane with logging, routing and guardrails.",
+      "url": "https://portkey.ai",
+      "category": "ai",
+      "tags": [
+        "gateway",
+        "observability"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Plan developer gratis: gateway, caché, fallbacks y una cuota mensual de logs; la inferencia se paga aparte.",
+      "free_tier_detail_en": "Free developer plan: AI gateway, caching, fallbacks and a limited monthly log allowance; inference is separate.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "portkey"
+    },
+    {
+      "name": "Comet Opik",
+      "description_es": "Traza, evalúa y prueba aplicaciones con LLM durante su desarrollo.",
+      "description_en": "Trace, evaluate and test LLM applications throughout development.",
+      "url": "https://www.comet.com/site/products/opik",
+      "category": "ai",
+      "tags": [
+        "evals",
+        "tracing"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Cloud gratis para un developer con trazas mensuales limitadas; la edición open source self-hosted es ilimitada.",
+      "free_tier_detail_en": "Free cloud tier for one developer with limited monthly traces; the open-source self-hosted edition is unlimited.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "comet-opik"
+    },
+    {
+      "name": "Auth0",
+      "description_es": "Identidad alojada con login social, SSO y flujos de auth extensibles.",
+      "description_en": "Hosted identity with social login, SSO and extensible authentication flows.",
+      "url": "https://auth0.com",
+      "category": "auth",
+      "tags": [
+        "sso",
+        "oauth"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "hasta 25.000 usuarios activos/mes, conexiones sociales, passwordless y 5 organizaciones.",
+      "free_tier_detail_en": "up to 25k monthly active users, social connections, passwordless login and 5 organizations.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "auth0"
+    },
+    {
+      "name": "WorkOS",
+      "description_es": "Gestión de usuarios y funciones enterprise como SSO, SCIM y logs de auditoría.",
+      "description_en": "User management plus enterprise features such as SSO, SCIM and audit logs.",
+      "url": "https://workos.com",
+      "category": "auth",
+      "tags": [
+        "auth",
+        "enterprise"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "AuthKit es gratis hasta 1 M de usuarios activos/mes; SSO y Directory Sync son gratis durante el onboarding.",
+      "free_tier_detail_en": "AuthKit is free up to 1M monthly active users; enterprise SSO and Directory Sync are free while onboarding.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "workos"
+    },
+    {
+      "name": "Kinde",
+      "description_es": "Autenticación, organizaciones y acceso a funciones para aplicaciones SaaS.",
+      "description_en": "Straightforward authentication, organizations and feature access for SaaS apps.",
+      "url": "https://kinde.com",
+      "category": "auth",
+      "tags": [
+        "auth",
+        "billing"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "10.500 usuarios activos/mes, 5 organizaciones y autenticación base sin tarjeta.",
+      "free_tier_detail_en": "10,500 monthly active users, 5 organizations and core authentication with no credit card.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "kinde"
+    },
+    {
+      "name": "Stytch",
+      "description_es": "APIs y SDKs para autenticación, identidad B2B y prevención de fraude.",
+      "description_en": "APIs and SDKs for authentication, B2B identity and fraud prevention.",
+      "url": "https://stytch.com",
+      "category": "auth",
+      "tags": [
+        "passwordless",
+        "fraud"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "hasta 10.000 usuarios activos/mes en B2C o 1.000 en B2B, con cuotas según el método.",
+      "free_tier_detail_en": "up to 10k monthly active users for consumer auth or 1,000 for B2B auth, with usage caps by method.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "stytch"
+    },
+    {
+      "name": "Descope",
+      "description_es": "Flujos visuales de autenticación con APIs y SDKs para experiencias propias.",
+      "description_en": "Visual authentication flows backed by APIs and SDKs for custom experiences.",
+      "url": "https://www.descope.com",
+      "category": "auth",
+      "tags": [
+        "no-code",
+        "auth"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "7.500 usuarios activos/mes, aplicaciones ilimitadas y flujos de autenticación base.",
+      "free_tier_detail_en": "7,500 monthly active users, unlimited applications and core authentication flows.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "descope"
+    },
+    {
+      "name": "Logto",
+      "description_es": "Infraestructura de autenticación y autorización para aplicaciones B2C y B2B.",
+      "description_en": "Authentication and authorization infrastructure for consumer and business apps.",
+      "url": "https://logto.io",
+      "category": "auth",
+      "tags": [
+        "identity",
+        "auth"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Cloud gratis: 50.000 usuarios activos/mes y auth base; la edición open source se puede autoalojar gratis.",
+      "free_tier_detail_en": "Free cloud plan: 50k monthly active users and core auth; the open-source edition can be self-hosted free.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "logto"
+    },
+    {
+      "name": "Brevo",
+      "description_es": "Email transaccional, campañas y gestión de contactos en una plataforma.",
+      "description_en": "Transactional email, campaigns and contact management in one platform.",
+      "url": "https://www.brevo.com",
+      "category": "email",
+      "tags": [
+        "email",
+        "marketing"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "300 emails/día, contactos ilimitados, email transaccional y herramientas básicas de campañas.",
+      "free_tier_detail_en": "300 emails/day, unlimited contacts, transactional email and basic campaign tools.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "brevo"
+    },
+    {
+      "name": "Mailjet",
+      "description_es": "Envía email transaccional y marketing con APIs, SMTP y plantillas.",
+      "description_en": "Send transactional and marketing email with APIs, SMTP and templates.",
+      "url": "https://www.mailjet.com",
+      "category": "email",
+      "tags": [
+        "email",
+        "smtp"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "6.000 emails/mes con límite de 200/día, contactos ilimitados, APIs, SMTP y un usuario.",
+      "free_tier_detail_en": "6,000 emails/month with a 200/day limit, unlimited contacts, APIs, SMTP and one user.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "mailjet"
+    },
+    {
+      "name": "Mailtrap",
+      "description_es": "Prueba emails en sandboxes y envía mensajes transaccionales en producción.",
+      "description_en": "Test email safely in sandboxes and send transactional messages in production.",
+      "url": "https://mailtrap.io",
+      "category": "email",
+      "tags": [
+        "testing",
+        "email"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Email API Free: 4.000 emails/mes con límite de 150/día, un dominio y logs durante 3 días.",
+      "free_tier_detail_en": "Email API Free: 4,000 emails/month with a 150/day limit, one domain and 3-day log retention.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "mailtrap"
+    },
+    {
+      "name": "Formspree",
+      "description_es": "Añade un backend fiable para formularios sin escribir código de servidor.",
+      "description_en": "Add a reliable form backend to any site without writing server code.",
+      "url": "https://formspree.io",
+      "category": "email",
+      "tags": [
+        "forms",
+        "static"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "50 envíos de formulario/mes, formularios y proyectos ilimitados, antispam y avisos por email.",
+      "free_tier_detail_en": "50 form submissions/month, unlimited forms and projects, spam filtering and email notifications.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "formspree"
+    },
+    {
+      "name": "Tally",
+      "description_es": "Crea formularios y encuestas flexibles con un plan gratuito generoso.",
+      "description_en": "Create flexible forms and surveys with a generous free plan.",
+      "url": "https://tally.so",
+      "category": "email",
+      "tags": [
+        "forms",
+        "no-code"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "formularios y respuestas ilimitados con casi todos los campos, pagos, lógica e integraciones.",
+      "free_tier_detail_en": "unlimited forms and submissions with most input types, payments, logic and integrations included.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "tally"
+    },
+    {
+      "name": "Web3Forms",
+      "description_es": "Recibe formularios de sitios estáticos en tu email mediante una API.",
+      "description_en": "Receive static-site form submissions directly in your inbox through an API.",
+      "url": "https://web3forms.com",
+      "category": "email",
+      "tags": [
+        "forms",
+        "api"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "250 envíos de formulario/mes, formularios y webs ilimitados, sin backend ni cuenta.",
+      "free_tier_detail_en": "250 form submissions/month, unlimited forms and websites, with no backend or account required.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "web3forms"
+    },
+    {
+      "name": "Better Stack",
+      "description_es": "Uptime, logs, respuesta a incidentes y páginas de estado en un solo lugar.",
+      "description_en": "Uptime checks, logs, incident response and status pages in one place.",
+      "url": "https://betterstack.com",
+      "category": "observability",
+      "tags": [
+        "uptime",
+        "logs"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "10 monitores, checks cada 3 min, 1 página de estado, 1 GB de logs/mes y 3 días de retención.",
+      "free_tier_detail_en": "10 monitors, 3-minute checks, 1 status page, 1 GB logs/month and 3-day retention.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "better-stack"
+    },
+    {
+      "name": "Grafana Cloud",
+      "description_es": "Dashboards, métricas, logs, trazas y observabilidad alojados.",
+      "description_en": "Hosted dashboards, metrics, logs, traces and application observability.",
+      "url": "https://grafana.com/products/cloud",
+      "category": "observability",
+      "tags": [
+        "metrics",
+        "logs"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "10.000 series, 50 GB de logs, 50 GB de trazas y 14 días de retención para 3 usuarios.",
+      "free_tier_detail_en": "10k metric series, 50 GB logs, 50 GB traces and 14-day retention for 3 users.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "grafana-cloud"
+    },
+    {
+      "name": "Uptime.com",
+      "description_es": "Monitorización de webs, APIs y usuarios reales con alertas y gestión de incidentes.",
+      "description_en": "Website, API and real-user monitoring with alerts and incident workflows.",
+      "url": "https://uptime.com",
+      "category": "observability",
+      "tags": [
+        "uptime",
+        "synthetic"
+      ],
+      "free_tier_note_es": "Solo prueba",
+      "free_tier_note_en": "Trial only",
+      "free_tier_detail_es": "Sin capa gratis permanente: actualmente ofrece una prueba temporal de sus planes de monitorización de pago.",
+      "free_tier_detail_en": "No permanent free tier: the platform currently offers a time-limited free trial of its paid monitoring plans.",
+      "no_card": false,
+      "recommended": false,
+      "slug": "uptime-com"
+    },
+    {
+      "name": "Checkly",
+      "description_es": "Monitorización sintética como código para webs y APIs con Playwright.",
+      "description_en": "Code-first synthetic monitoring for web apps and APIs using Playwright.",
+      "url": "https://www.checklyhq.com",
+      "category": "observability",
+      "tags": [
+        "playwright",
+        "synthetic"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "10.000 checks de API y 1.500 de navegador/mes, frecuencia de 1 min y 7 días de retención.",
+      "free_tier_detail_en": "10k API checks and 1,500 browser checks/month, 1-minute frequency and 7-day retention.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "checkly"
+    },
+    {
+      "name": "healthchecks.io",
+      "description_es": "Monitoriza tareas cron y procesos en background con URLs heartbeat.",
+      "description_en": "Monitor cron jobs and background tasks with simple heartbeat URLs.",
+      "url": "https://healthchecks.io",
+      "category": "observability",
+      "tags": [
+        "cron",
+        "alerts"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Plan alojado gratis: 20 checks para un miembro con integraciones de email, webhooks y chat.",
+      "free_tier_detail_en": "Hosted free plan: 20 checks for one team member with email, webhook and chat integrations.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "healthchecks-io"
+    },
+    {
+      "name": "New Relic",
+      "description_es": "Monitorización full-stack del rendimiento e infraestructura.",
+      "description_en": "Full-stack application performance and infrastructure monitoring.",
+      "url": "https://newrelic.com",
+      "category": "observability",
+      "tags": [
+        "apm",
+        "logs"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "100 GB de ingesta/mes, un usuario full-platform y usuarios básicos ilimitados.",
+      "free_tier_detail_en": "100 GB data ingest/month, one full-platform user and unlimited basic users.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "new-relic"
+    },
+    {
+      "name": "Logtail",
+      "description_es": "Centraliza logs estructurados y consúltalos con una sintaxis tipo SQL.",
+      "description_en": "Centralize structured logs and query them quickly with SQL-like syntax.",
+      "url": "https://betterstack.com/logs",
+      "category": "observability",
+      "tags": [
+        "logs",
+        "sql"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Logs gratis de Better Stack: 1 GB/mes y 3 días de retención, live tail, consultas SQL y alertas.",
+      "free_tier_detail_en": "Better Stack free logs: 1 GB/month with 3-day retention, live tail, SQL queries and alerts.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "logtail"
+    },
+    {
+      "name": "GitLab CI/CD",
+      "description_es": "Pipelines, runners y entornos integrados para proyectos de GitLab.",
+      "description_en": "Integrated pipelines, runners and environments for GitLab projects.",
+      "url": "https://docs.gitlab.com/ci",
+      "category": "ci",
+      "tags": [
+        "ci",
+        "gitlab"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "400 minutos de cómputo/mes en runners de GitLab; los runners propios no consumen esa cuota.",
+      "free_tier_detail_en": "400 compute minutes/month on GitLab-hosted runners; self-managed runners do not consume that quota.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "gitlab-ci-cd"
+    },
+    {
+      "name": "CircleCI",
+      "description_es": "Pipelines alojados flexibles con varios ejecutores y trabajos paralelos.",
+      "description_en": "Flexible hosted pipelines with multiple executors and parallel jobs.",
+      "url": "https://circleci.com",
+      "category": "ci",
+      "tags": [
+        "ci",
+        "testing"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "30.000 créditos/mes, hasta 5 usuarios activos y 80 jobs simultáneos en recursos compatibles.",
+      "free_tier_detail_en": "30k credits/month, up to 5 active users and 80 concurrent jobs on supported resource classes.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "circleci"
+    },
+    {
+      "name": "Buildkite",
+      "description_es": "Pipelines flexibles con orquestación alojada y tus propios agentes.",
+      "description_en": "Flexible pipelines with hosted orchestration and your own build agents.",
+      "url": "https://buildkite.com",
+      "category": "ci",
+      "tags": [
+        "ci",
+        "agents"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "hasta 3 usuarios y 5.000 min de jobs/mes; se ejecutan en tus propios agentes e infraestructura.",
+      "free_tier_detail_en": "up to 3 users and 5k job minutes/month; jobs run on your own agents and infrastructure.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "buildkite"
+    },
+    {
+      "name": "Codecov",
+      "description_es": "Convierte la cobertura en checks de pull request e informes visuales.",
+      "description_en": "Turn code coverage uploads into pull-request checks and visual reports.",
+      "url": "https://about.codecov.io",
+      "category": "ci",
+      "tags": [
+        "coverage",
+        "testing"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Gratis para open source; el plan Basic privado cubre 1 usuario con repositorios y subidas ilimitados.",
+      "free_tier_detail_en": "Free for open-source projects; private-code Basic plan covers 1 user with unlimited repositories and uploads.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "codecov"
+    },
+    {
+      "name": "SonarCloud",
+      "description_es": "Análisis estático cloud de calidad, mantenibilidad y seguridad.",
+      "description_en": "Cloud static analysis for code quality, maintainability and security.",
+      "url": "https://sonarcloud.io",
+      "category": "ci",
+      "tags": [
+        "quality",
+        "static analysis"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Gratis para repositorios públicos con líneas de código ilimitadas; los proyectos privados son de pago.",
+      "free_tier_detail_en": "Free for public repositories with unlimited lines of code; private projects require a paid plan.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "sonarcloud"
+    },
+    {
+      "name": "Dependabot",
+      "description_es": "Actualizaciones de dependencias y alertas de vulnerabilidades en GitHub.",
+      "description_en": "Automated dependency updates and vulnerability alerts inside GitHub.",
+      "url": "https://dependabot.com",
+      "category": "ci",
+      "tags": [
+        "dependencies",
+        "automation"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Gratis dentro de GitHub para alertas, parches de seguridad y pull requests de actualización.",
+      "free_tier_detail_en": "Free inside GitHub for dependency alerts, security updates and version-update pull requests.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "dependabot"
+    },
+    {
+      "name": "Jules",
+      "description_es": "Agente de programación asíncrono que resuelve tareas reales en repositorios de GitHub y prepara los cambios para revisarlos.",
+      "description_en": "An asynchronous coding agent that works on real tasks in GitHub repositories and prepares changes for review.",
+      "url": "https://jules.google/",
+      "category": "ci",
+      "tags": [
+        "coding agent",
+        "github"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "15 tareas de programación/día, hasta 3 tareas simultáneas y Gemini 2.5 Pro.",
+      "free_tier_detail_en": "15 coding tasks/day, up to 3 concurrent tasks, powered by Gemini 2.5 Pro.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "jules"
+    },
+    {
+      "name": "PostHog",
+      "description_es": "Analítica de producto, replay, feature flags y experimentos en un sitio.",
+      "description_en": "Product analytics, session replay, feature flags and experiments together.",
+      "url": "https://posthog.com",
+      "category": "analytics",
+      "tags": [
+        "product",
+        "replay"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Gratis al mes: 1 M de eventos, 5.000 grabaciones, 1 M de peticiones de flags y 100.000 excepciones.",
+      "free_tier_detail_en": "Free monthly: 1M analytics events, 5k session recordings, 1M feature-flag requests and 100k exceptions.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "posthog"
+    },
+    {
+      "name": "Mixpanel",
+      "description_es": "Entiende el uso con eventos, funnels, cohortes y retención.",
+      "description_en": "Understand product usage through events, funnels, cohorts and retention.",
+      "url": "https://mixpanel.com",
+      "category": "analytics",
+      "tags": [
+        "product",
+        "funnels"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "hasta 1 M de eventos/mes con informes ilimitados, analítica de producto y replay limitado.",
+      "free_tier_detail_en": "up to 1M monthly events with unlimited reports, core product analytics and limited session replay.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "mixpanel"
+    },
+    {
+      "name": "Amplitude",
+      "description_es": "Analítica digital para journeys, comportamiento y experimentos.",
+      "description_en": "Digital analytics for user journeys, behavior and product experiments.",
+      "url": "https://amplitude.com",
+      "category": "analytics",
+      "tags": [
+        "product",
+        "journeys"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Starter: hasta 50.000 usuarios medidos/mes con analítica base, session replay y feature flags.",
+      "free_tier_detail_en": "Starter: up to 50k monthly tracked users with core analytics, session replay and feature flags.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "amplitude"
+    },
+    {
+      "name": "Google Analytics",
+      "description_es": "Analítica de tráfico web y apps de Google con gran soporte.",
+      "description_en": "Widely supported web and app traffic analytics from Google.",
+      "url": "https://analytics.google.com",
+      "category": "analytics",
+      "tags": [
+        "web",
+        "traffic"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Google Analytics estándar es gratis para la mayoría de webs y apps; Analytics 360 enterprise es de pago.",
+      "free_tier_detail_en": "Standard Google Analytics is free for most sites and apps; enterprise-scale Analytics 360 is paid.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "google-analytics"
+    },
+    {
+      "name": "Cloudflare Web Analytics",
+      "description_es": "Analítica web privacy-first de Cloudflare: sin cookies, sin datos personales y gratis para cualquier web.",
+      "description_en": "Privacy-first web analytics from Cloudflare: no cookies, no personal data, free for any site.",
+      "url": "https://www.cloudflare.com/web-analytics/",
+      "category": "analytics",
+      "tags": [
+        "privacy",
+        "web"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Analítica privacy-first totalmente gratis para cualquier web: sin cookies, sin datos personales y sin tope de tráfico en el producto gratis.",
+      "free_tier_detail_en": "Completely free privacy-first analytics for any site: no cookies, no personal data collection and no traffic cap on the free product.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "cloudflare-web-analytics"
+    },
+    {
+      "name": "Microsoft Clarity",
+      "description_es": "Mapas de calor y grabaciones gratis para entender el comportamiento web.",
+      "description_en": "Free heatmaps and session recordings for understanding website behavior.",
+      "url": "https://clarity.microsoft.com",
+      "category": "analytics",
+      "tags": [
+        "heatmaps",
+        "replay"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Totalmente gratis: proyectos, mapas de calor y grabaciones ilimitados, sin límite de tráfico.",
+      "free_tier_detail_en": "Completely free: unlimited projects, heatmaps and session recordings with no traffic cap.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "microsoft-clarity"
+    },
+    {
+      "name": "Axiom",
+      "description_es": "Almacena y explora eventos y logs con consultas rápidas y dashboards.",
+      "description_en": "Store and explore event data and logs with fast queries and dashboards.",
+      "url": "https://axiom.co",
+      "category": "analytics",
+      "tags": [
+        "events",
+        "logs"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "500 GB-horas de consulta y 25 GB de ingesta/mes, con 30 días de retención.",
+      "free_tier_detail_en": "500 GB-hours of query time and 25 GB ingest/month, with 30-day retention.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "axiom"
+    },
+    {
+      "name": "Pipedream",
+      "description_es": "Conecta APIs y ejecuta workflows por eventos usando código cuando haga falta.",
+      "description_en": "Connect APIs and run event-driven workflows with code when you need it.",
+      "url": "https://pipedream.com",
+      "category": "api",
+      "tags": [
+        "automation",
+        "workflows"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "100 créditos de workflows/mes, 3 workflows activos y pruebas ilimitadas en el editor.",
+      "free_tier_detail_en": "100 workflow credits/month, 3 active workflows and unlimited testing in the builder.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "pipedream"
+    },
+    {
+      "name": "Beeceptor",
+      "description_es": "Crea endpoints mock e inspecciona, transforma o redirige peticiones.",
+      "description_en": "Create instant mock endpoints and inspect, transform or proxy requests.",
+      "url": "https://beeceptor.com",
+      "category": "api",
+      "tags": [
+        "mock",
+        "http"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "50 peticiones/día, 1 endpoint mock y 10 días de historial, sin tarjeta.",
+      "free_tier_detail_en": "50 requests/day, 1 mock endpoint and 10 days of request history, with no credit card.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "beeceptor"
+    },
+    {
+      "name": "MockAPI",
+      "description_es": "Genera endpoints REST y datos realistas para prototipos.",
+      "description_en": "Generate REST endpoints and realistic sample data for prototypes.",
+      "url": "https://mockapi.io",
+      "category": "api",
+      "tags": [
+        "mock",
+        "rest"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "un proyecto con hasta 2 recursos y endpoints REST falsos básicos para prototipos.",
+      "free_tier_detail_en": "one project with up to 2 resources and basic fake REST endpoints for prototyping.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "mockapi"
+    },
+    {
+      "name": "Abstract API",
+      "description_es": "Suite de APIs para IP, email, teléfono y otras validaciones habituales.",
+      "description_en": "A practical API suite for IP, email, phone and other validation tasks.",
+      "url": "https://www.abstractapi.com",
+      "category": "api",
+      "tags": [
+        "validation",
+        "geolocation"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "API keys gratis con cuotas mensuales según el producto; las APIs comunes incluyen peticiones limitadas para pruebas.",
+      "free_tier_detail_en": "Free API keys with product-specific monthly quotas; common APIs include limited requests for testing.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "abstract-api"
+    },
+    {
+      "name": "IPinfo",
+      "description_es": "Datos de IP para geolocalización, redes, privacidad y seguridad.",
+      "description_en": "IP address data for geolocation, networks, privacy and security use cases.",
+      "url": "https://ipinfo.io",
+      "category": "api",
+      "tags": [
+        "ip",
+        "geolocation"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "API Lite gratis: peticiones de geolocalización IP ilimitadas para país, continente y ASN.",
+      "free_tier_detail_en": "Free Lite API: unlimited IP geolocation requests for country, continent and ASN data.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "ipinfo"
+    },
+    {
+      "name": "JSONPlaceholder",
+      "description_es": "Una API REST falsa y fiable para ejemplos, pruebas y prototipos.",
+      "description_en": "A dependable fake REST API for examples, tests and quick prototypes.",
+      "url": "https://jsonplaceholder.typicode.com",
+      "category": "api",
+      "tags": [
+        "fake api",
+        "rest"
+      ],
+      "free_tier_note_es": "Sin registro",
+      "free_tier_note_en": "No sign-up",
+      "free_tier_detail_es": "API REST falsa pública y gratis: 6 recursos habituales; las escrituras se simulan y no se guardan.",
+      "free_tier_detail_en": "Completely free public fake REST API: 6 common resources; writes are simulated and not persisted.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "jsonplaceholder"
+    },
+    {
+      "name": "Open-Meteo",
+      "description_es": "Pronósticos globales e históricos del tiempo mediante una API JSON gratis sin API key.",
+      "description_en": "Global weather forecasts and historical data through a free JSON API with no API key.",
+      "url": "https://open-meteo.com",
+      "category": "api",
+      "tags": [
+        "weather",
+        "forecast"
+      ],
+      "free_tier_note_es": "Sin registro",
+      "free_tier_note_en": "No sign-up",
+      "free_tier_detail_es": "API Open-Access gratis sin registro ni clave para uso no comercial: 600 llamadas/min, 5.000/hora, 10.000/día y 300.000/mes.",
+      "free_tier_detail_en": "Open-Access free API with no sign-up or key for non-commercial use: 600 calls/min, 5,000/hour, 10,000/day and 300,000/month.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "open-meteo"
+    },
+    {
+      "name": "OpenGraph.to",
+      "description_es": "Extrae tags Open Graph, Twitter Card y SEO de cualquier URL pública: título, descripción, imagen, puntuación, problemas y meta tags sugeridos en JSON.",
+      "description_en": "Scrape Open Graph, Twitter Card and SEO tags for any public URL: title, description, image, score, issues and suggested meta tags as JSON.",
+      "url": "https://www.opengraph.to",
+      "category": "api",
+      "tags": [
+        "open graph",
+        "seo"
+      ],
+      "free_tier_note_es": "Sin registro",
+      "free_tier_note_en": "No sign-up",
+      "free_tier_detail_es": "API pública gratis sin registro ni clave: 10 peticiones/hora por IP, respuestas JSON con caché de 5 minutos.",
+      "free_tier_detail_en": "Free public API with no sign-up or key: 10 requests/hour per IP, JSON responses with a 5-minute cache.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "opengraph-to"
+    },
+    {
+      "name": "Hoppscotch",
+      "description_es": "Cliente web rápido para APIs REST, GraphQL y protocolos realtime.",
+      "description_en": "A fast web API client for REST, GraphQL and realtime protocols.",
+      "url": "https://hoppscotch.io",
+      "category": "api",
+      "tags": [
+        "api client",
+        "graphql"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "El cliente web y Community self-hosted son gratis; el cloud incluye un workspace personal gratuito.",
+      "free_tier_detail_en": "The web client and self-hosted Community Edition are free; cloud collaboration has a free personal workspace.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "hoppscotch"
+    },
+    {
+      "name": "Canva",
+      "description_es": "Crea recursos visuales rápidamente con plantillas y edición en el navegador.",
+      "description_en": "Create visual assets quickly with templates and browser-based editing.",
+      "url": "https://canva.com",
+      "category": "design",
+      "tags": [
+        "graphics",
+        "templates"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "más de 250.000 plantillas, 1 M de recursos, 5 GB de storage y herramientas de diseño estándar.",
+      "free_tier_detail_en": "250k+ templates, 1M+ stock assets, 5 GB cloud storage and standard design tools.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "canva"
+    },
+    {
+      "name": "Excalidraw",
+      "description_es": "Un lienzo estilo boceto para diagramas y trabajo colaborativo.",
+      "description_en": "A delightful hand-drawn canvas for diagrams and collaborative sketches.",
+      "url": "https://excalidraw.com",
+      "category": "design",
+      "tags": [
+        "whiteboard",
+        "diagrams"
+      ],
+      "free_tier_note_es": "Sin registro",
+      "free_tier_note_en": "No sign-up",
+      "free_tier_detail_es": "La pizarra base es gratis y open source con dibujos locales ilimitados; Plus añade colaboración cloud.",
+      "free_tier_detail_en": "The core whiteboard is free and open source with unlimited local drawings; paid Plus adds cloud collaboration.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "excalidraw"
+    },
+    {
+      "name": "Penpot",
+      "description_es": "Diseño de interfaces y prototipado open source con colaboración en tiempo real y handoff para desarrollo.",
+      "description_en": "Open-source interface design and prototyping with real-time collaboration and developer handoff.",
+      "url": "https://penpot.app",
+      "category": "design",
+      "tags": [
+        "ui",
+        "prototype"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Professional: 0 $ con hasta 8 miembros, viewers y archivos ilimitados, 10 GB y 7 días de historial.",
+      "free_tier_detail_en": "Professional: $0 with up to 8 team members, unlimited viewers and files, 10 GB storage and 7-day version history.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "penpot"
+    },
+    {
+      "name": "tldraw",
+      "description_es": "Un lienzo infinito colaborativo y rápido, más un SDK de React para crear experiencias de canvas.",
+      "description_en": "A fast collaborative infinite canvas plus a React SDK for building custom canvas experiences.",
+      "url": "https://www.tldraw.com",
+      "category": "design",
+      "tags": [
+        "whiteboard",
+        "infinite canvas"
+      ],
+      "free_tier_note_es": "Sin registro",
+      "free_tier_note_en": "No sign-up",
+      "free_tier_detail_es": "La pizarra web multijugador es gratis; el SDK es gratuito en desarrollo y ofrece 100 días de prueba en producción o licencia hobby.",
+      "free_tier_detail_en": "The multiplayer web whiteboard is free; the SDK is free in development and offers a 100-day production trial or hobby license.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "tldraw"
+    },
+    {
+      "name": "Fontshare",
+      "description_es": "Colección de fuentes profesionales gratis para uso personal y comercial.",
+      "description_en": "A growing collection of professional fonts free for personal and commercial use.",
+      "url": "https://www.fontshare.com",
+      "category": "design",
+      "tags": [
+        "fonts",
+        "typography"
+      ],
+      "free_tier_note_es": "Sin registro",
+      "free_tier_note_en": "No sign-up",
+      "free_tier_detail_es": "Todas las fuentes son gratis para uso personal y comercial bajo su licencia; no hace falta cuenta.",
+      "free_tier_detail_en": "All fonts are free for personal and commercial use under Fontshare's license; no account is required.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "fontshare"
+    },
+    {
+      "name": "Stitch",
+      "description_es": "Convierte prompts, imágenes y wireframes en diseños UI, código frontend y trabajo editable en Figma.",
+      "description_en": "Turn text prompts, images and wireframes into UI designs, frontend code and editable Figma work.",
+      "url": "https://stitch.withgoogle.com/",
+      "category": "design",
+      "tags": [
+        "ai",
+        "ui"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Acceso gratuito de Google Labs para generar UI desde texto o imágenes, iterar por chat y exportar a Figma o código frontend; pueden aplicarse límites de uso.",
+      "free_tier_detail_en": "Free Google Labs access for generating UI from text or images, iterating in chat and exporting to Figma or frontend code; usage limits may apply.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "stitch"
+    },
+    {
+      "name": "GitGuardian",
+      "description_es": "Detecta secretos expuestos en el código y guía su corrección.",
+      "description_en": "Detect exposed secrets in source code and guide their remediation.",
+      "url": "https://www.gitguardian.com",
+      "category": "security",
+      "tags": [
+        "secrets",
+        "git"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "escaneo de secretos para developers individuales, hasta 25 developers y 100 incidentes/mes.",
+      "free_tier_detail_en": "secret scanning for individual developers, up to 25 developers and 100 incidents/month.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "gitguardian"
+    },
+    {
+      "name": "Socket",
+      "description_es": "Protege la cadena de suministro JavaScript analizando dependencias.",
+      "description_en": "Protect JavaScript supply chains by analyzing dependency behavior.",
+      "url": "https://socket.dev",
+      "category": "security",
+      "tags": [
+        "supply chain",
+        "npm"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Gratis para open source; la protección personal de GitHub y el análisis de dependencias no tienen coste.",
+      "free_tier_detail_en": "Free for open-source projects; personal GitHub protection and dependency analysis are available at no cost.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "socket"
+    },
+    {
+      "name": "Mozilla Observatory",
+      "description_es": "Escanea headers y prácticas habituales de protección web.",
+      "description_en": "Scan a website for security headers and common web hardening practices.",
+      "url": "https://observatory.mozilla.org",
+      "category": "security",
+      "tags": [
+        "headers",
+        "audit"
+      ],
+      "free_tier_note_es": "Sin registro",
+      "free_tier_note_en": "No sign-up",
+      "free_tier_detail_es": "Escáner público de seguridad web totalmente gratis, con análisis bajo demanda y sin necesidad de cuenta.",
+      "free_tier_detail_en": "Completely free public web-security scanner with unlimited on-demand scans and no account required.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "mozilla-observatory"
+    },
+    {
+      "name": "Have I Been Pwned",
+      "description_es": "Comprueba cuentas y dominios frente a filtraciones conocidas mediante API.",
+      "description_en": "Check accounts and domains against known data breaches through an API.",
+      "url": "https://haveibeenpwned.com/API/v3",
+      "category": "security",
+      "tags": [
+        "breaches",
+        "api"
+      ],
+      "free_tier_note_es": "Sin registro",
+      "free_tier_note_en": "No sign-up",
+      "free_tier_detail_es": "Pwned Passwords y las búsquedas básicas son gratis; la API autenticada de cuentas y dominios es de pago.",
+      "free_tier_detail_en": "Pwned Passwords and basic breach lookups are free; authenticated account and domain API access is paid.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "have-i-been-pwned"
+    },
+    {
+      "name": "Notion",
+      "description_es": "Documentos, wikis, bases de datos y gestión ligera de proyectos.",
+      "description_en": "Connected docs, wikis, databases and lightweight project management.",
+      "url": "https://www.notion.so",
+      "category": "collaboration",
+      "tags": [
+        "docs",
+        "wiki"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Gratis para uso individual con páginas ilimitadas; los equipos tienen bloques limitados y subidas de 5 MB.",
+      "free_tier_detail_en": "Free for individuals with unlimited pages; teams get a limited collaborative block trial and 5 MB uploads.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "notion"
+    },
+    {
+      "name": "Trello",
+      "description_es": "Tableros Kanban visuales para organizar proyectos y workflows.",
+      "description_en": "Visual Kanban boards for organizing projects and team workflows.",
+      "url": "https://trello.com",
+      "category": "collaboration",
+      "tags": [
+        "kanban",
+        "tasks"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "hasta 10 tableros por workspace, tarjetas ilimitadas, 10 colaboradores y 250 automatizaciones/mes.",
+      "free_tier_detail_en": "up to 10 boards per workspace, unlimited cards, 10 collaborators and 250 automation runs/month.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "trello"
+    },
+    {
+      "name": "Miro",
+      "description_es": "Pizarra colaborativa para workshops, diagramas y planificación remota.",
+      "description_en": "A collaborative whiteboard for workshops, diagrams and remote planning.",
+      "url": "https://miro.com",
+      "category": "collaboration",
+      "tags": [
+        "whiteboard",
+        "workshops"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "miembros ilimitados, 3 tableros editables, plantillas e integraciones básicas.",
+      "free_tier_detail_en": "unlimited team members, 3 editable boards, templates and core integrations.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "miro"
+    },
+    {
+      "name": "ClickUp",
+      "description_es": "Tareas, documentos, objetivos y proyectos en un espacio configurable.",
+      "description_en": "Tasks, docs, goals and project views in a highly configurable workspace.",
+      "url": "https://clickup.com",
+      "category": "collaboration",
+      "tags": [
+        "tasks",
+        "docs"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "tareas y miembros ilimitados, 100 MB, documentos colaborativos y tableros Kanban.",
+      "free_tier_detail_en": "unlimited tasks and members, 100 MB storage, collaborative docs and Kanban boards.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "clickup"
+    },
+    {
+      "name": "Discord",
+      "description_es": "Espacios persistentes de texto, voz y vídeo para comunidades.",
+      "description_en": "Persistent text, voice and video spaces for developer communities.",
+      "url": "https://discord.com",
+      "category": "collaboration",
+      "tags": [
+        "community",
+        "chat"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Texto, voz, vídeo, comunidades y bots son gratis; las subidas, calidad y personalización tienen límites.",
+      "free_tier_detail_en": "Core text, voice, video, communities and bots are free; upload quality and customization have limits.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "discord"
+    },
+    {
+      "name": "Slack",
+      "description_es": "Mensajería de equipo con canales, huddles y muchas integraciones.",
+      "description_en": "Team messaging with channels, huddles and a large integration ecosystem.",
+      "url": "https://slack.com",
+      "category": "collaboration",
+      "tags": [
+        "chat",
+        "integrations"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "90 días de historial, 10 integraciones y huddles uno a uno para equipos pequeños.",
+      "free_tier_detail_en": "90 days of message history, 10 app integrations and one-to-one huddles for small teams.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "slack"
+    },
+    {
+      "name": "Sanity",
+      "description_es": "Workspace de contenido personalizable sobre una plataforma realtime.",
+      "description_en": "A customizable content workspace backed by a real-time content platform.",
+      "url": "https://www.sanity.io",
+      "category": "cms",
+      "tags": [
+        "headless",
+        "content lake"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "20 usuarios, 2 datasets, 10.000 documentos, 100.000 peticiones y 100 GB de CDN/mes.",
+      "free_tier_detail_en": "20 user seats, 2 datasets, 10k documents, 100k API requests and 100 GB CDN bandwidth/month.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "sanity"
+    },
+    {
+      "name": "Contentful",
+      "description_es": "Infraestructura de contenido API-first con editor y ecosistema maduros.",
+      "description_en": "API-first content infrastructure with a mature editor and ecosystem.",
+      "url": "https://www.contentful.com",
+      "category": "cms",
+      "tags": [
+        "headless",
+        "api"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "10 usuarios, 2 roles, 2 idiomas, 1 M de llamadas API y 50 GB de CDN/mes.",
+      "free_tier_detail_en": "10 users, 2 roles, 2 locales, 1M API calls and 50 GB CDN bandwidth/month.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "contentful"
+    },
+    {
+      "name": "Storyblok",
+      "description_es": "CMS headless con editor visual y contenido basado en componentes.",
+      "description_en": "Headless CMS with a visual editor and component-based content model.",
+      "url": "https://www.storyblok.com",
+      "category": "cms",
+      "tags": [
+        "headless",
+        "visual editor"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "un espacio, un usuario, 100.000 peticiones API/mes y edición visual para proyectos pequeños.",
+      "free_tier_detail_en": "one space, one user, 100k API requests/month and visual editing for small projects.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "storyblok"
+    },
+    {
+      "name": "Hygraph",
+      "description_es": "Plataforma de contenido GraphQL para datos estructurados y múltiples fuentes.",
+      "description_en": "GraphQL-native content platform for structured, multi-source content.",
+      "url": "https://hygraph.com",
+      "category": "cms",
+      "tags": [
+        "graphql",
+        "headless"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Hobby: 3 usuarios, 2 idiomas, 100.000 llamadas API/mes, 1 GB de assets y 100 GB de tráfico.",
+      "free_tier_detail_en": "Hobby: 3 seats, 2 locales, 100k API calls/month, 1 GB assets and 100 GB asset traffic.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "hygraph"
+    },
+    {
+      "name": "DatoCMS",
+      "description_es": "CMS headless con entrega GraphQL y pipeline de imágenes integrado.",
+      "description_en": "Headless CMS with GraphQL delivery and a built-in image pipeline.",
+      "url": "https://www.datocms.com",
+      "category": "cms",
+      "tags": [
+        "graphql",
+        "headless"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "3 miembros, 2 entornos, 300 registros, 10 GB de tráfico y 100.000 llamadas API/mes.",
+      "free_tier_detail_en": "3 team members, 2 environments, 300 records, 10 GB bandwidth and 100k API calls/month.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "datocms"
+    },
+    {
+      "name": "Prismic",
+      "description_es": "CMS para construir páginas con slices reutilizables y previews visuales.",
+      "description_en": "Page-building CMS with reusable slices and visual previews for editors.",
+      "url": "https://prismic.io",
+      "category": "cms",
+      "tags": [
+        "headless",
+        "slices"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "hasta 4 usuarios, documentos e idiomas ilimitados, 100 GB de CDN y 4 M de llamadas API/mes.",
+      "free_tier_detail_en": "up to 4 users, unlimited documents and locales, 100 GB CDN and 4M API calls/month.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "prismic"
+    },
+    {
+      "name": "Uploadcare",
+      "description_es": "Subida de archivos, procesado de imágenes y entrega adaptativa.",
+      "description_en": "File uploads, image processing and adaptive delivery for web apps.",
+      "url": "https://uploadcare.com",
+      "category": "media",
+      "tags": [
+        "uploads",
+        "images"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Gratis para uso personal: 1.000 operaciones/mes, archivos de hasta 500 MB, widget y API de subida, transformaciones básicas de imagen, streaming adaptativo, entrega por CDN, subidas firmadas y webhooks.",
+      "free_tier_detail_en": "Free for personal use: 1,000 operations/month, files up to 500 MB, upload widget and API, basic image transformations, adaptive bitrate streaming, CDN delivery, signed uploads and webhooks.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "uploadcare"
+    },
+    {
+      "name": "ImageKit",
+      "description_es": "Optimización, transformación y entrega de imagen y vídeo en tiempo real.",
+      "description_en": "Real-time image and video optimization, transformation and delivery.",
+      "url": "https://imagekit.io",
+      "category": "media",
+      "tags": [
+        "images",
+        "optimization"
+      ],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "20 GB de tráfico y 3 GB de media/mes, con transformaciones y procesado de vídeo.",
+      "free_tier_detail_en": "20 GB bandwidth and 3 GB media storage/month, with transformations and video processing.",
+      "no_card": true,
+      "recommended": false,
+      "slug": "imagekit"
+    }
+  ]
+}
