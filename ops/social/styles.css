@@ -39,7 +39,7 @@ a { color: inherit; }
 .auth-card h2 { font: 600 2rem/1.1 Fraunces, serif; margin: .75rem 0 .55rem; }
 .auth-card > p { color: var(--muted); line-height: 1.6; margin-bottom: 1.6rem; }
 
-.field { display: grid; gap: .45rem; margin-bottom: 1rem; }
+.field { display: grid; align-content: start; gap: .45rem; margin-bottom: 1rem; }
 .field label { font-weight: 600; font-size: .86rem; }
 .field input, .field select, .field textarea { width: 100%; min-height: 46px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 11px; padding: .72rem .85rem; }
 .field textarea { min-height: 110px; resize: vertical; }

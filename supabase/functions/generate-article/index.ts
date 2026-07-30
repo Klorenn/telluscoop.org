@@ -234,6 +234,37 @@ async function verifyGithubRepo(fullName: string): Promise<VerifiedRepo | null> 
   }
 }
 
+// Repo grounding for guides: before writing, find real GitHub repos related
+// to the topic (Gemini + Google Search, same approach as the Repos finder in
+// Stellar Ops) and verify each one against the real GitHub API (GITHUB_TOKEN
+// secret) so the guide cites real projects with real star counts instead of
+// inventing names or numbers.
+async function findGuideRepoCandidates(topic: string, chainLabel: string, apiKey: string): Promise<string[]> {
+  try {
+    const input = `Busca en Google qué repositorios de GitHub son relevantes o se mencionan en relación a "${topic}" (contexto: ${chainLabel}). Prioriza los más conocidos, mantenidos y con más estrellas. Solo repos reales que existan hoy en github.com, sin inventar.
+
+Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
+{"repos": [{"full_name": "owner/repo"}]}`;
+    const { data } = await callGemini(apiKey, input);
+    const text = extractText(data).replace(/```json|```/g, "").trim();
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start === -1 || end <= start) return [];
+    const parsed = JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>;
+    const repos = Array.isArray(parsed.repos) ? parsed.repos as Record<string, unknown>[] : [];
+    const names = repos.map((r) => String(r.full_name ?? "").trim()).filter((n) => /^[\w.-]+\/[\w.-]+$/.test(n));
+    return [...new Set(names)].slice(0, 8);
+  } catch {
+    return [];
+  }
+}
+
+function reposContextBlock(repos: VerifiedRepo[]): string {
+  if (!repos.length) return "";
+  const lines = repos.map((r) => `- ${r.full_name} (${r.stargazers_count}★${r.archived ? ", ARCHIVADO" : ""}${r.license ? `, licencia ${r.license}` : ""}): ${r.description ?? "sin descripción"} — ${r.html_url}`).join("\n");
+  return `\nRepos reales verificados en GitHub sobre este tema (datos exactos vía GitHub API, no los cambies): \n${lines}\nSi mencionas alguno, usa su link y su cifra de estrellas TAL CUAL aparece arriba. No inventes otros repos ni cifras; si necesitas uno que no está en la lista, verifícalo con Google Search primero.\n`;
+}
+
 function collectSources(data: Record<string, unknown>): { url: string; title: string }[] {
   const sources = new Map<string, string>();
   for (const step of (data.steps as Record<string, unknown>[]) ?? []) {
@@ -615,6 +646,9 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
         : "No uses ningún emoji en toda la guía.";
       const brief = readBrief(body.brief);
 
+      const candidateRepos = await findGuideRepoCandidates(topic, chainLabel, apiKey);
+      const verifiedRepos = (await Promise.all(candidateRepos.map(verifyGithubRepo))).filter((r): r is VerifiedRepo => r !== null);
+
       const input = `Eres el equipo técnico editorial de Tellus Cooperative. Escribe una guía técnica profesional en Markdown sobre: "${topic}" para ${chainLabel}.
 ${editorialBriefRules(brief)}
 
@@ -623,7 +657,7 @@ Usa Google Search y revisa la documentación oficial (${docsUrl}) para verificar
 Cita AL MENOS 2 fuentes reales y distintas (idealmente 2 a 4): la documentación oficial y al menos una fuente técnica adicional (blog oficial, changelog, repo de ejemplos, paper). Si no encontrás una segunda fuente confiable, seguí buscando antes de responder; no publiques con una sola fuente.
 
 Cuando menciones una herramienta, librería o dato externo dentro del texto, agregá el hipervínculo real en el momento (formato [texto](url)), no solo al final en fuentes.
-
+${reposContextBlock(verifiedRepos)}
 ${emojiRule}
 
 Formato obligatorio en Markdown:
