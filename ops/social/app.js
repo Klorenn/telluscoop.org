@@ -34,6 +34,7 @@
     memes: { query: "", busy: false, info: null, gifs: [], top: null, topBusy: false },
     memePicks: [],
     lang: localStorage.getItem("gen_lang") === "en" ? "en" : "es",
+    langPrompt: null,
     tweetReply: null,
     rewrite: { source: "", busy: false },
     dailyReplies: null,
@@ -364,18 +365,41 @@
             ${navButton("guides", "book-open", "Guías")}
           </nav>
           <div class="sidebar-foot">
-            <div class="lang-toggle" role="group" aria-label="Idioma de generación">
-              <button data-lang="es" class="${state.lang === "es" ? "active" : ""}" title="Generar en español">ES</button>
-              <button data-lang="en" class="${state.lang === "en" ? "active" : ""}" title="Generate in English">EN</button>
-            </div>
             <span>${esc(state.preview ? "Vista previa" : state.session?.user?.email || "")}</span>
             ${state.preview ? "" : `<button class="button button-ghost button-block" id="signout">${icon("log-out")} Salir</button>`}
           </div>
         </aside>
         <main class="main" id="main">${renderView()}</main>
-      </div>`;
+      </div>
+      ${state.langPrompt ? langPromptModal() : ""}`;
     hydrateIcons();
     wireShell();
+  }
+
+  // Every content-generation action asks which language to write in instead
+  // of relying on one global toggle — resolves to "es"/"en", or null if the
+  // user backs out (backdrop click / Escape), which callers treat as cancel.
+  function askLang() {
+    return new Promise((resolve) => {
+      state.langPrompt = (lang) => {
+        state.langPrompt = null;
+        if (lang) { state.lang = lang; localStorage.setItem("gen_lang", lang); }
+        renderShell();
+        resolve(lang);
+      };
+      renderShell();
+    });
+  }
+
+  function langPromptModal() {
+    return modalShell(
+      `<h3>¿En qué idioma?</h3>`,
+      `<p style="color:var(--muted);margin:0 0 1rem">Elegí el idioma de este contenido.</p>
+      <div style="display:flex;gap:.6rem">
+        <button class="button button-primary" data-lang-choice="es" style="flex:1">Español</button>
+        <button class="button button-secondary" data-lang-choice="en" style="flex:1">English</button>
+      </div>`,
+    );
   }
 
   function renderView() {
@@ -394,16 +418,15 @@
       renderShell();
     }));
     document.querySelector("#signout")?.addEventListener("click", async () => { await supabase.auth.signOut(); location.reload(); });
-    document.querySelectorAll("[data-lang]").forEach((button) => button.addEventListener("click", () => {
-      state.lang = button.dataset.lang;
-      localStorage.setItem("gen_lang", state.lang);
-      renderShell();
+    document.querySelectorAll("[data-lang-choice]").forEach((button) => button.addEventListener("click", () => {
+      state.langPrompt?.(button.dataset.langChoice);
     }));
     // Popups used by Articles/Guides/Repos: click the code-block copy button,
     // or click the dimmed backdrop itself (not the panel) to close.
     document.querySelectorAll("[data-copy-code]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyCode)));
     document.querySelectorAll("[data-modal-overlay]").forEach((overlay) => overlay.addEventListener("click", (e) => {
       if (e.target !== overlay) return;
+      if (state.langPrompt) return state.langPrompt(null);
       state.articleView = null;
       state.guideView = null;
       state.repoPostDraft = null;
@@ -898,13 +921,15 @@
   // tweets as context, each paired with an image/GIF. Runs after render so the
   // feed shows up immediately.
   async function generateTopicPosts(query, capturedPosts) {
+    const lang = await askLang();
+    if (!lang) return;
     state.topicPosts = { query, posts: null, images: [], busy: true };
     renderShell();
     const progress = createProgress(`Posts nuestros sobre «${query}»`);
     progress.step("Leyendo los posts capturados…");
     const samples = capturedPosts.map((p) => p.content).filter(Boolean).slice(0, 10);
     progress.step("Escribiendo 3 posts con la voz de Tellus…");
-    const gen = await invokeEdge("generate-article", { format: "topic_posts", query, posts: samples });
+    const gen = await invokeEdge("generate-article", { format: "topic_posts", query, posts: samples, lang });
     if (gen.error || gen.data?.error) {
       state.topicPosts = null;
       progress.fail(gen.data?.error || "No se pudieron generar posts del tema.");
@@ -1584,6 +1609,8 @@
 
   async function generatePostForRepo(repo) {
     if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const lang = await askLang();
+    if (!lang) return;
     state.repoPostBusy = true;
     renderShell();
     const progress = createProgress(`Posts para ${repo.full_name}`);
@@ -1593,7 +1620,7 @@
       "Escribiendo el hilo para X…",
       "Adaptando a WhatsApp, Discord, LinkedIn e Instagram…",
     ], 6000);
-    const { data, error } = await invokeEdge("generate-article", { format: "repo_social_posts", repo });
+    const { data, error } = await invokeEdge("generate-article", { format: "repo_social_posts", repo, lang });
     state.repoPostBusy = false;
     if (error || data?.error) {
       progress.fail(data?.error || "No se pudo generar. Revisá que Gemini esté configurado.");
@@ -1960,6 +1987,8 @@
     const chain = guideItems().find((c) => c.id === state.guideForm.chain) || guideItems()[0];
     const topic = state.guideForm.topic.trim();
     if (!topic) return;
+    const lang = await askLang();
+    if (!lang) return;
     state.guideBusy = true;
     renderShell();
     const progress = createProgress(`Guía de ${chain.label}`);
@@ -1974,6 +2003,7 @@
       category: state.guideForm.category,
       chain: chain.id,
       chain_label: chain.label,
+      lang,
       docs_url: chain.docsUrl,
       topic,
       use_emojis: state.guideForm.useEmojis,
@@ -2030,12 +2060,15 @@
     const answer = window.prompt("Link público de la guía (opcional — deja vacío y dale OK para seguir sin link):", guide.social_link || state.guideSocialPosts?.link || "");
     if (answer === null) return;
     const link = answer.trim();
+    const lang = await askLang();
+    if (!lang) return;
     state.guideSocialPosts = { guideId, title: guide.title, link, posts: null, busy: true };
     renderShell();
     const { data, error } = await invokeEdge("generate-article", {
       format: "guide_posts",
       link,
       guide: { title: guide.title, subtitle: guide.subtitle },
+      lang,
     });
     if (error || data?.error) {
       state.guideSocialPosts = null;
@@ -2348,6 +2381,8 @@
 
   async function memePostFor(gif) {
     if (!gif) return;
+    const lang = await askLang();
+    if (!lang) return;
     state.memes.memePost = { title: gif.title, url: gif.url, posts: null, busy: true };
     renderShell();
     const { data, error } = await invokeEdge("generate-article", {
@@ -2355,6 +2390,7 @@
       tema: state.memes.query,
       meme_title: gif.title,
       caption: gif.caption || "",
+      lang,
     });
     if (error || data?.error) {
       state.memes.memePost = null;
@@ -2540,6 +2576,8 @@
 
   async function generateArticles() {
     if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const lang = await askLang();
+    if (!lang) return;
     state.articleBusy = true;
     renderShell();
     const progress = createProgress(state.articleForm.count > 1 ? `Generando ${state.articleForm.count} artículos` : "Generando artículo");
@@ -2555,6 +2593,7 @@
       prompt_md: state.articleForm.prompt_md || undefined,
       count: state.articleForm.count,
       brief: briefPayload(),
+      lang,
     });
     state.articleBusy = false;
     if (error || data?.error) {
@@ -2575,6 +2614,8 @@
     if (state.preview) return notify("La vista previa es de solo lectura.", true);
     const source = String(new FormData(event.target).get("source") || "").trim();
     if (!source) return;
+    const lang = await askLang();
+    if (!lang) return;
     state.rewrite = { source, busy: true };
     renderShell();
     const { data, error } = await invokeEdge("generate-article", {
@@ -2583,6 +2624,7 @@
       prompt_key: state.articleForm.prompt_key,
       prompt_md: state.articleForm.prompt_md || undefined,
       brief: briefPayload(),
+      lang,
     });
     state.rewrite.busy = false;
     if (error || data?.error) {
@@ -2603,12 +2645,15 @@
     const answer = window.prompt("Link de Beehiiv (opcional — deja vacío y dale OK para seguir sin link):", article.social_link || state.socialPosts?.link || "");
     if (answer === null) return;
     const link = answer.trim();
+    const lang = await askLang();
+    if (!lang) return;
     state.socialPosts = { articleId, title: article.title, link, posts: null, busy: true };
     renderShell();
     const { data, error } = await invokeEdge("generate-article", {
       format: "social_posts",
       link,
       article: { title: article.title, subtitle: article.subtitle, summary: article.summary || [] },
+      lang,
     });
     if (error || data?.error) {
       state.socialPosts = null;
@@ -2637,12 +2682,15 @@
     const answer = window.prompt("Link de Beehiiv (opcional — deja vacío y dale OK para seguir sin link):", state.socialPosts?.link || "");
     if (answer === null) return;
     const link = answer.trim();
+    const lang = await askLang();
+    if (!lang) return;
     state.socialPosts = { articleId: null, title: draft.title, link, posts: null, busy: true };
     renderShell();
     const { data, error } = await invokeEdge("generate-article", {
       format: "social_posts",
       link,
       article: { title: draft.title, subtitle: draft.subtitle, summary: draft.summary || [] },
+      lang,
     });
     if (error || data?.error) {
       state.socialPosts = null;
@@ -2710,7 +2758,9 @@
   // Escape closes whichever article/guide/repo-post popup is open. Bound
   // once, not on every render, since it never needs to change.
   document.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape" || (!state.articleView && !state.guideView && !state.repoPostDraft && !state.followView && !state.listView)) return;
+    if (e.key !== "Escape") return;
+    if (state.langPrompt) return state.langPrompt(null);
+    if (!state.articleView && !state.guideView && !state.repoPostDraft && !state.followView && !state.listView) return;
     state.articleView = null;
     state.guideView = null;
     state.repoPostDraft = null;

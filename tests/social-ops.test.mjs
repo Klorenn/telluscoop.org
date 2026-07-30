@@ -194,9 +194,21 @@ test("style rules enforce Stellar spelling and ban dash punctuation, threaded wi
     assert.match(source, /readLang/);
   }
   assert.match(app, /state\.lang/);
-  assert.match(app, /data-lang="es"/);
-  assert.match(app, /data-lang="en"/);
+  assert.match(app, /data-lang-choice="es"/);
+  assert.match(app, /data-lang-choice="en"/);
   assert.match(app, /localStorage\.setItem\("gen_lang"/);
+});
+
+test("every content-generation action asks es/en instead of a fixed toggle", () => {
+  assert.match(app, /function askLang/);
+  assert.match(app, /function langPromptModal/);
+  for (const fn of [
+    "generateTopicPosts", "generatePostForRepo", "generateGuide", "generateGuidePosts",
+    "memePostFor", "generateArticles", "rewriteArticleFromSource", "generateSocialPosts", "generateDraftPosts",
+  ]) {
+    const body = app.slice(app.indexOf(`function ${fn}(`), app.indexOf(`function ${fn}(`) + 700);
+    assert.match(body, /await askLang\(\)/, `${fn} should ask for a language before generating`);
+  }
 });
 
 test("guides section generates a docs-grounded guide, posts, and images for every chain", () => {
