@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tellus Dev — La parte gratis de internet</title>
+  <title>Tellus Dev — The Free Part of the Internet</title>
 
   <!-- SEO -->
-  <meta name="description" content="Catálogo curado de más de 100 herramientas para developers con planes gratuitos realmente útiles: hosting, backend, IA, auth, email, monitorización, CI/CD, analítica, APIs, diseño, seguridad, productividad, CMS y storage." />
+  <meta name="description" content="A curated catalog of 100+ developer tools with genuinely useful free tiers: hosting, backend, AI, auth, email, monitoring, CI/CD, analytics, APIs, design, security, productivity, CMS, and storage." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://telluscoop.org/dev" />
 
@@ -14,20 +14,20 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://telluscoop.org/dev" />
   <meta property="og:site_name" content="Tellus Cooperative" />
-  <meta property="og:title" content="Tellus Dev — La parte gratis de internet" />
-  <meta property="og:description" content="Catálogo curado por Tellus Cooperative de 100+ herramientas para developers con planes gratuitos realmente útiles: hosting, IA, auth, bases de datos y más." />
+  <meta property="og:title" content="Tellus Dev — The Free Part of the Internet" />
+  <meta property="og:description" content="A catalog curated by Tellus Cooperative of 100+ developer tools with genuinely useful free tiers: hosting, AI, auth, databases, and more." />
   <meta property="og:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
   <meta property="og:image:width" content="1774" />
   <meta property="og:image:height" content="887" />
-  <meta property="og:locale" content="es_LA" />
-  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="es_LA" />
 
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@TellusCoop" />
   <meta name="twitter:creator" content="@TellusCoop" />
-  <meta name="twitter:title" content="Tellus Dev — La parte gratis de internet" />
-  <meta name="twitter:description" content="Catálogo curado por Tellus Cooperative de 100+ herramientas para developers con planes gratuitos realmente útiles." />
+  <meta name="twitter:title" content="Tellus Dev — The Free Part of the Internet" />
+  <meta name="twitter:description" content="A catalog curated by Tellus Cooperative of 100+ developer tools with genuinely useful free tiers." />
   <meta name="twitter:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
 
   <link rel="icon" type="image/png" href="../uploads/TellusCooperative%20ICON.png" />
@@ -630,7 +630,7 @@
     },
   };
 
-  var state = { query: "", category: "all", onlyRecommended: false, data: null, lang: "es", faqOpen: {} };
+  var state = { query: "", category: "all", onlyRecommended: false, data: null, lang: "en", faqOpen: {} };
 
   /* Scroll-reveal + count-up — ports foundation.jsx's useReveal/useCountUp to vanilla JS,
      same threshold/rootMargin/easing so it feels identical to the main site. */
@@ -727,7 +727,7 @@
     var stored = null;
     try { stored = localStorage.getItem("tellus-lang"); } catch (e) {}
     if (stored === "es" || stored === "en") return stored;
-    return "es";
+    return "en";
   }
 
   function saveLang(l) {

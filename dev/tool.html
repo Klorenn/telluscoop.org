@@ -1,36 +1,36 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tellus Dev — Recurso</title>
+  <title>Tellus Dev — Resource</title>
 
   <!-- SEO — this template is client-rendered (one file serves every /dev/tools/:slug via
        vercel.json rewrite), so per-tool title/description are set client-side in render()
        below for the browser tab + share preview once JS runs; these tags stay as the static
        fallback non-JS crawlers see. og:url intentionally points at /dev (not a real per-slug
        canonical) since the actual slug can't be known statically without a build step. -->
-  <meta name="description" content="Ficha de recurso del catálogo Tellus Dev: plan gratuito, casos de uso y alternativas." />
+  <meta name="description" content="Resource profile from the Tellus Dev catalog: free plan, use cases, and alternatives." />
   <meta name="robots" content="index, follow" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://telluscoop.org/dev" />
   <meta property="og:site_name" content="Tellus Cooperative" />
-  <meta property="og:title" content="Tellus Dev — Ficha de recurso" />
-  <meta property="og:description" content="Ficha de recurso del catálogo Tellus Dev: plan gratuito, casos de uso y alternativas." />
+  <meta property="og:title" content="Tellus Dev — Resource" />
+  <meta property="og:description" content="Resource profile from the Tellus Dev catalog: free plan, use cases, and alternatives." />
   <meta property="og:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
   <meta property="og:image:width" content="1774" />
   <meta property="og:image:height" content="887" />
-  <meta property="og:locale" content="es_LA" />
-  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="es_LA" />
 
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@TellusCoop" />
   <meta name="twitter:creator" content="@TellusCoop" />
-  <meta name="twitter:title" content="Tellus Dev — Ficha de recurso" />
-  <meta name="twitter:description" content="Ficha de recurso del catálogo Tellus Dev: plan gratuito, casos de uso y alternativas." />
+  <meta name="twitter:title" content="Tellus Dev — Resource" />
+  <meta name="twitter:description" content="Resource profile from the Tellus Dev catalog: free plan, use cases, and alternatives." />
   <meta name="twitter:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
 
   <link rel="icon" type="image/png" href="/uploads/TellusCooperative%20ICON.png" />
@@ -548,13 +548,13 @@
     },
   };
 
-  var state = { lang: "es", data: null, tool: null };
+  var state = { lang: "en", data: null, tool: null };
 
   function loadLang() {
     var stored = null;
     try { stored = localStorage.getItem("tellus-lang"); } catch (e) {}
     if (stored === "es" || stored === "en") return stored;
-    return "es";
+    return "en";
   }
   function saveLang(l) {
     try { localStorage.setItem("tellus-lang", l); } catch (e) {}
