@@ -97,6 +97,43 @@ function inlineLinkRules(lang: Lang): string {
   return `Hipervínculos en el texto (obligatorio): la PRIMERA vez que menciones cualquier proyecto, empresa, protocolo, token, producto o herramienta (ej: Stellar, Circle, USDC, Ethereum, Bitcoin, OpenAI, un exchange, una wallet), convierte esa mención en un hipervínculo Markdown real a su sitio OFICIAL — ej: [Stellar](https://stellar.org), [Circle](https://www.circle.com). Verifica la URL con Google Search; nunca inventes dominios. Para afirmaciones noticiosas (un lanzamiento, una licencia, un hackeo, un movimiento de precio), enlaza la afirmación a su fuente real en el mismo párrafo. Cada entidad se enlaza solo en su primera mención; las siguientes van en texto plano.`;
 }
 
+// Stage 1 of the pipeline: fix editorial intent BEFORE research/writing
+// happens, instead of letting the model improvise audience/scope. All
+// fields are optional — an empty brief renders to "".
+interface EditorialBrief {
+  audience?: string;
+  level?: string;
+  platform?: string;
+  maxWords?: number;
+  objective?: string;
+  readerOutcome?: string;
+}
+
+function readBrief(value: unknown): EditorialBrief {
+  if (!value || typeof value !== "object") return {};
+  const b = value as Record<string, unknown>;
+  return {
+    audience: typeof b.audience === "string" ? b.audience.trim() : undefined,
+    level: typeof b.level === "string" ? b.level.trim() : undefined,
+    platform: typeof b.platform === "string" ? b.platform.trim() : undefined,
+    maxWords: Number(b.maxWords) > 0 ? Number(b.maxWords) : undefined,
+    objective: typeof b.objective === "string" ? b.objective.trim() : undefined,
+    readerOutcome: typeof b.readerOutcome === "string" ? b.readerOutcome.trim() : undefined,
+  };
+}
+
+function editorialBriefRules(brief: EditorialBrief): string {
+  const lines: string[] = [];
+  if (brief.audience) lines.push(`Audiencia exacta: ${brief.audience}.`);
+  if (brief.level) lines.push(`Nivel técnico del lector: ${brief.level}.`);
+  if (brief.platform) lines.push(`Plataforma de destino: ${brief.platform}.`);
+  if (brief.maxWords) lines.push(`Extensión MÁXIMA: ${brief.maxWords} palabras. Si no alcanzás a cubrir todo en ese límite, prioriza profundidad sobre cobertura, no lo excedas.`);
+  if (brief.objective) lines.push(`Objetivo del artículo: ${brief.objective}.`);
+  if (brief.readerOutcome) lines.push(`Después de leerlo, el lector debe poder: ${brief.readerOutcome}.`);
+  if (!lines.length) return "";
+  return `\nDefinición editorial (obligatoria, fijada ANTES de investigar — no te apartes de esto):\n${lines.map((l) => `- ${l}`).join("\n")}\n`;
+}
+
 // Language-agnostic house rules for features that reply to someone ELSE's
 // post: the reply must match THAT post's language, not the app's toggle.
 function houseRules(): string {
@@ -108,14 +145,14 @@ function houseRules(): string {
 function viralStyle(lang: Lang): string {
   if (lang === "en") {
     return `Viral X format (big AI accounts style):
-- First line: hook in ALL CAPS with the strongest concrete fact.
+- First line: hook with the strongest concrete fact, written normally (sentence case, only the first letter and proper nouns capitalized) — NEVER in all caps.
 - Second line: 1 short line of context, lowercase.
 - Then 3-4 bullets starting with "→ " (results, numbers, concrete features).
 - Close with 1 short punchy line.
 - Only real facts from the given context, NOTHING invented. Short sentences. At most 1 emoji or none. At most 1 hashtag.`;
   }
   return `Formato viral para X (estilo cuentas grandes de IA):
-- Primera línea: gancho en MAYÚSCULAS con el dato más fuerte y concreto.
+- Primera línea: gancho con el dato más fuerte y concreto, escrito normal (mayúscula solo al inicio y en nombres propios) — NUNCA todo en mayúsculas.
 - Segunda línea: contexto en 1 frase corta en minúsculas.
 - Luego 3-4 bullets que empiecen con "→ " (resultados, números, features concretas).
 - Cierre de 1 línea corta con impacto o invitación.
@@ -134,6 +171,7 @@ interface Draft {
   body_md: string;
   sources: { url: string; title: string }[];
   model: string;
+  checks?: DraftChecks;
 }
 
 interface RepoContext {
@@ -142,6 +180,58 @@ interface RepoContext {
   url?: string;
   language?: string;
   stars?: number;
+  archived?: boolean;
+}
+
+function archivedNote(repo: RepoContext): string {
+  return repo.archived
+    ? "\nADVERTENCIA: este repositorio está ARCHIVADO en GitHub (ya no recibe cambios). Menciónalo explícitamente en el post (ej: \"proyecto archivado\", \"ya no mantenido\"); no lo presentes como activo."
+    : "";
+}
+
+interface VerifiedRepo {
+  full_name: string;
+  html_url: string;
+  description: string | null;
+  owner_login: string | null;
+  archived: boolean;
+  license: string | null;
+  pushed_at: string | null;
+  stargazers_count: number;
+  verified_at: string;
+}
+
+// Re-checks the repo against the real GitHub API (GITHUB_TOKEN secret, never
+// exposed to the browser) right before writing about it — the frontend's repo
+// object can be stale (from a search done minutes/days earlier). Returns null
+// if the repo doesn't exist anymore (renamed/deleted): callers must refuse to
+// write about a repo they can't verify, never invent the missing fields.
+async function verifyGithubRepo(fullName: string): Promise<VerifiedRepo | null> {
+  try {
+    const token = Deno.env.get("GITHUB_TOKEN");
+    const response = await fetch(`https://api.github.com/repos/${fullName}`, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        "User-Agent": "tellus-social-ops",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!response.ok) return null;
+    const repo = await response.json();
+    return {
+      full_name: String(repo.full_name ?? fullName),
+      html_url: String(repo.html_url ?? `https://github.com/${fullName}`),
+      description: repo.description ?? null,
+      owner_login: repo.owner?.login ?? null,
+      archived: repo.archived === true,
+      license: repo.license?.spdx_id ?? null,
+      pushed_at: repo.pushed_at ?? null,
+      stargazers_count: Number(repo.stargazers_count) || 0,
+      verified_at: new Date().toISOString().slice(0, 10),
+    };
+  } catch {
+    return null;
+  }
 }
 
 function collectSources(data: Record<string, unknown>): { url: string; title: string }[] {
@@ -154,6 +244,93 @@ function collectSources(data: Record<string, unknown>): { url: string; title: st
     }
   }
   return [...sources].map(([url, title]) => ({ url, title }));
+}
+
+// ---------- Stage 4: technical control checklist ----------
+// Deterministic, non-LLM checks run on every finished long-form draft
+// (article/rewrite/guide): every link actually responds, no GitHub repo is
+// archived without a warning already in the text, and no secret-looking
+// string slipped in. Runs AFTER generation and never blocks the response —
+// it attaches a `checks` report so the UI can flag what needs a human look,
+// per rule 12 ("si no se puede comprobar, indícalo, no lo completes por
+// inferencia").
+
+interface LinkCheck { url: string; ok: boolean; status?: number; error?: string }
+
+async function checkLink(url: string): Promise<LinkCheck> {
+  const headers = { "User-Agent": "Mozilla/5.0 (compatible; TellusVerifyBot/1.0; +https://telluscoop.org)" };
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    let response = await fetch(url, { method: "HEAD", redirect: "follow", headers, signal: controller.signal }).catch(() => null);
+    if (!response || (!response.ok && response.status !== 405)) {
+      response = await fetch(url, { method: "GET", redirect: "follow", headers, signal: controller.signal }).catch(() => response);
+    }
+    clearTimeout(timer);
+    if (!response) return { url, ok: false, error: "sin respuesta" };
+    return { url, ok: response.ok, status: response.status };
+  } catch (error) {
+    return { url, ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function extractMarkdownLinks(text: string): string[] {
+  const urls = new Set<string>();
+  for (const match of text.matchAll(/\[[^\]]+\]\((https?:\/\/[^)\s]+)\)/g)) urls.add(match[1]);
+  return [...urls];
+}
+
+const GITHUB_REPO_RE = /github\.com\/([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)\/([a-zA-Z0-9._-]+)/g;
+
+function extractGithubReposFromText(text: string): string[] {
+  const names = new Set<string>();
+  for (const match of text.matchAll(GITHUB_REPO_RE)) {
+    const repo = match[2].replace(/\.git$/i, "").replace(/[.,)]+$/, "");
+    if (repo) names.add(`${match[1]}/${repo}`);
+  }
+  return [...names];
+}
+
+// Not a substitute for a real secret scanner — a last line of defense
+// against the model pasting something that looks like a real credential.
+const SECRET_PATTERNS: { name: string; re: RegExp }[] = [
+  { name: "AWS access key", re: /AKIA[0-9A-Z]{16}/ },
+  { name: "bloque de clave privada", re: /-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----/ },
+  { name: "Stripe secret key", re: /\bsk_(live|test)_[0-9a-zA-Z]{16,}/ },
+  { name: "GitHub token", re: /\bgh[pousr]_[0-9A-Za-z]{20,}/ },
+  { name: "posible frase semilla", re: /\b(?:seed phrase|mnemonic|frase semilla)\b[^.\n]{0,80}/i },
+  { name: "credencial genérica en texto", re: /(api[_-]?key|secret|token|password)\s*[:=]\s*["'][A-Za-z0-9_\-]{16,}["']/i },
+];
+
+interface DraftChecks {
+  linksChecked: number;
+  brokenLinks: LinkCheck[];
+  archivedRepos: string[];
+  secretFindings: string[];
+  allLinksOk: boolean;
+  hasSecrets: boolean;
+  checkedAt: string;
+}
+
+async function verifyDraft(bodyMd: string): Promise<DraftChecks> {
+  const links = extractMarkdownLinks(bodyMd).slice(0, 15);
+  const linkChecks = await Promise.all(links.map(checkLink));
+  const repoNames = extractGithubReposFromText(bodyMd).slice(0, 10);
+  const repoChecks = await Promise.all(repoNames.map(verifyGithubRepo));
+  const archivedRepos = repoChecks
+    .filter((r): r is VerifiedRepo => r !== null && r.archived)
+    .filter((r) => !new RegExp(`archiv`, "i").test(bodyMd.split(r.full_name)[1]?.slice(0, 120) ?? ""))
+    .map((r) => r.full_name);
+  const secretFindings = SECRET_PATTERNS.filter((p) => p.re.test(bodyMd)).map((p) => p.name);
+  return {
+    linksChecked: linkChecks.length,
+    brokenLinks: linkChecks.filter((l) => !l.ok),
+    archivedRepos,
+    secretFindings,
+    allLinksOk: linkChecks.every((l) => l.ok),
+    hasSecrets: secretFindings.length > 0,
+    checkedAt: new Date().toISOString().slice(0, 10),
+  };
 }
 
 function yesterdayISO(): string {
@@ -180,14 +357,19 @@ function finalizeArticle(data: Record<string, unknown>, model: string, rawText: 
     sources = [...seen].map(([url, sourceTitle]) => ({ url, title: sourceTitle }));
   }
 
-  return { title: title || fallbackTitle, subtitle, summary: [], body_md: text, sources, model };
+  // Rule 10 of the technical-control checklist: every technical article
+  // carries a visible verification date instead of pretending it was checked
+  // once and stays true forever.
+  const bodyWithFooter = `${text}\n\n*Verificado el: ${new Date().toISOString().slice(0, 10)}*`;
+
+  return { title: title || fallbackTitle, subtitle, summary: [], body_md: bodyWithFooter, sources, model };
 }
 
-async function generateOne(apiKey: string, promptMd: string, date: string, lang: Lang): Promise<Draft> {
+async function generateOne(apiKey: string, promptMd: string, date: string, lang: Lang, brief: EditorialBrief = {}): Promise<Draft> {
   // The user's prompt template defines the full article format — the model
   // returns the complete Markdown untouched; title/subtitle are read from it.
   const input = `${promptMd}\n\nResume lo ocurrido el día anterior: ${date}. Usa Google Search para verificar cada hecho y cita fuentes reales y recientes. Fecha de publicación: hoy.
-
+${editorialBriefRules(brief)}
 ${styleRules(lang)}
 
 ${inlineLinkRules(lang)}
@@ -195,10 +377,12 @@ ${inlineLinkRules(lang)}
 Responde ÚNICAMENTE con el artículo completo en Markdown, siguiendo exactamente el formato del prompt, sin comentarios extra antes ni después.`;
 
   const { data, model } = await callGemini(apiKey, input);
-  return finalizeArticle(data, model, extractText(data), "Artículo del día");
+  const draft = finalizeArticle(data, model, extractText(data), "Artículo del día");
+  draft.checks = await verifyDraft(draft.body_md);
+  return draft;
 }
 
-async function rewriteArticle(apiKey: string, promptMd: string, sourceText: string, lang: Lang): Promise<Draft> {
+async function rewriteArticle(apiKey: string, promptMd: string, sourceText: string, lang: Lang, brief: EditorialBrief = {}): Promise<Draft> {
   // No fresh search: the source material (any language) already has the facts.
   // The model translates/rewrites into Tellus's voice and the user's template.
   const input = `${promptMd}
@@ -208,7 +392,7 @@ No hagas una búsqueda nueva de noticias. Reescribe el siguiente material fuente
 """
 ${sourceText.slice(0, 12000)}
 """
-
+${editorialBriefRules(brief)}
 ${styleRules(lang)}
 
 ${inlineLinkRules(lang)}
@@ -216,7 +400,9 @@ ${inlineLinkRules(lang)}
 Responde ÚNICAMENTE con el artículo completo en Markdown, siguiendo exactamente el formato del prompt, sin comentarios extra antes ni después.`;
 
   const { data, model } = await callGemini(apiKey, input, false);
-  return finalizeArticle(data, model, extractText(data), "Artículo reescrito");
+  const draft = finalizeArticle(data, model, extractText(data), "Artículo reescrito");
+  draft.checks = await verifyDraft(draft.body_md);
+  return draft;
 }
 
 async function generatePost(apiKey: string, repo: RepoContext, lang: Lang): Promise<Draft> {
@@ -227,7 +413,7 @@ Descripción: ${repo.description ?? ""}
 Lenguaje: ${repo.language ?? ""}
 Estrellas: ${repo.stars ?? ""}
 Enlace: ${repo.url ?? ""}
-
+${archivedNote(repo)}
 Usa Google Search para entender qué hace el proyecto y por qué es interesante.
 
 ${viralStyle(lang)}
@@ -264,14 +450,14 @@ Descripción: ${repo.description ?? ""}
 Lenguaje: ${repo.language ?? ""}
 Estrellas: ${repo.stars ?? ""}
 Enlace: ${repo.url ?? ""}
-
+${archivedNote(repo)}
 Usa Google Search para entender qué hace el proyecto y por qué es interesante antes de escribir.
 
 ${styleRules(lang)}
 
 Canales:
 - x: post principal SIN el link del repo (el link va en el segundo tweet). Formato obligatorio, igual a este ejemplo:
-"¡ENVÍO DE AYUDA HUMANITARIA DIRECTA CON BLOCKCHAIN!
+"Envío de ayuda humanitaria directa con blockchain.
 Soter (27 estrellas) usa @StellarOrg y AI para enviar ayuda directo.
 → Donantes y ONGs crean links de cobro fáciles.
 → La IA verifica necesidades en privado.
@@ -279,7 +465,7 @@ Soter (27 estrellas) usa @StellarOrg y AI para enviar ayuda directo.
 Súmate a construir el futuro
 
 ¿Cómo lo logra? Soter usa Smart Contracts de Soroban para crear \\"claim links\\" simples. Las ONGs y donantes generan estos enlaces, y una IA verifica de forma privada las necesidades, asegurando una distribución justa y eficiente."
-OJO: ese ejemplo es de un repo blockchain, pero es SOLO un ejemplo de FORMATO — el formato aplica a CUALQUIER repo (IA, dev tools, UI, scraping, lo que sea) adaptando el contenido al dominio real del repo. Estructura: 1) gancho en MAYÚSCULAS con ¡...! sobre lo que hace el repo, 2) línea "Nombre (N estrellas) usa/hace X para Y" — menciona la @cuenta de X del proyecto o ecosistema SOLO si existe y la conoces con certeza (ej: @StellarOrg, @OpenAI); si no, omite la mención, 3) 3 bullets "→ " con lo concreto, 4) cierre corto invitando a la acción, 5) párrafo final "¿Cómo lo logra? ..." explicando la técnica en 2-3 frases. Solo datos reales del repo.
+OJO: ese ejemplo es de un repo blockchain, pero es SOLO un ejemplo de FORMATO — el formato aplica a CUALQUIER repo (IA, dev tools, UI, scraping, lo que sea) adaptando el contenido al dominio real del repo. Estructura: 1) gancho normal (mayúscula solo al inicio y en nombres propios, NUNCA todo en mayúsculas) sobre lo que hace el repo, 2) línea "Nombre (N estrellas) usa/hace X para Y" — menciona la @cuenta de X del proyecto o ecosistema SOLO si existe y la conoces con certeza (ej: @StellarOrg, @OpenAI); si no, omite la mención, 3) 3 bullets "→ " con lo concreto, 4) cierre corto invitando a la acción, 5) párrafo final "¿Cómo lo logra? ..." explicando la técnica en 2-3 frases. Solo datos reales del repo.
 - x_reply: el segundo tweet del hilo: SOLO el enlace del repo con 1 línea corta invitando a verlo (ej: "El repo, open source: <enlace>").
 - whatsapp: 2-4 líneas sobrias para compartir en grupos técnicos, sin emojis, termina con el enlace.
 - discord: 2-4 líneas para un canal de comunidad/dev, tono cercano pero sin hype vacío, termina con el enlace.
@@ -419,6 +605,7 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
       const docsUrl = String(body.docs_url ?? "").trim();
       const topic = String(body.topic ?? "").trim();
       const useEmojis = body.use_emojis === true;
+      const category = body.category === "agent" ? "agent" : "blockchain";
       if (!chainLabel || !topic) return json({ error: "Falta la blockchain o el tema de la guía" }, 400);
 
       // The overused LLM emoji palette reads as AI-generated; if emojis are
@@ -426,8 +613,10 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
       const emojiRule = useEmojis
         ? 'Podés usar emojis con criterio, máximo 1 por sección y nunca en el título. Prohibido el set típico de IA (🚀✨🔥💡🙌🎉👇🧵⚡🤖🔮💯🌟). Si usás alguno, que sea simple y funcional (✅ ❌ 💰 🔗 📊).'
         : "No uses ningún emoji en toda la guía.";
+      const brief = readBrief(body.brief);
 
       const input = `Eres el equipo técnico editorial de Tellus Cooperative. Escribe una guía técnica profesional en Markdown sobre: "${topic}" para ${chainLabel}.
+${editorialBriefRules(brief)}
 
 Usa Google Search y revisa la documentación oficial (${docsUrl}) para verificar cada detalle técnico: nombres de funciones, SDKs, parámetros, endpoints, versiones. NO inventes APIs ni parámetros que no existan; si no encuentras algo con certeza, dilo en vez de inventarlo.
 
@@ -462,7 +651,7 @@ Desarrollo con subtítulos ##. CUANDO el paso involucre código, SIEMPRE incluye
 2-4 errores típicos y cómo evitarlos.
 
 ## Cierre Tellus
-1 párrafo breve conectando esto con la misión de Tellus Cooperative (infraestructura abierta, inclusión financiera).
+1 párrafo breve conectando esto con la misión de Tellus Cooperative (${category === "agent" ? "herramientas abiertas para builders, IA aplicada a construir más rápido" : "infraestructura abierta, inclusión financiera"}).
 
 ---
 **SOURCES**
@@ -481,6 +670,7 @@ Responde ÚNICAMENTE con la guía completa en Markdown, siguiendo exactamente es
         if (!draft.sources.some((s) => s.url === docsUrl)) {
           draft.sources = [{ url: docsUrl, title: `Documentación oficial de ${chainLabel}` }, ...draft.sources];
         }
+        draft.checks = await verifyDraft(draft.body_md);
 
         // Best-effort image query in the guide's own language/topic (cheap,
         // no tools): lets the frontend fetch a photo that actually matches
@@ -547,7 +737,7 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
         promptMd = template.prompt_md;
       }
       try {
-        const draft = await rewriteArticle(apiKey, promptMd, sourceText, lang);
+        const draft = await rewriteArticle(apiKey, promptMd, sourceText, lang, readBrief(body.brief));
         return json({ drafts: [draft], requested: 1, generated: 1, errors: [] });
       } catch (error) {
         return json({ error: "No se pudo reescribir el artículo", detail: [String(error)] }, 502);
@@ -575,12 +765,17 @@ ${styleRules(lang)}
 Reglas de estilo (obligatorias): tono profesional y editorial, como un medio serio. NADA de tono de guía, tutorial o vendedor. Máximo 1 emoji en total en todos los posts, e idealmente ninguno. Sin listas con viñetas ni "✅". Frases completas, directas, con datos del artículo.
 
 Canales:
-- x: <=280 caracteres, con gancho informativo, 1-2 hashtags máximo.
+- x: <=280 caracteres, con gancho informativo, 1-2 hashtags máximo, CIERRA con una pregunta abierta al lector (no retórica vacía — una pregunta real sobre el tema del artículo).
 - whatsapp: 2-4 líneas sobrias y profesionales para compartir en grupos; sin emojis, sin mayúsculas de hype; termina con el enlace.
 - linkedin: 3-5 párrafos cortos, tono profesional y cálido, sin emojis, cierre con invitación a leer el artículo.
+- promo: post promocional INDEPENDIENTE de los anteriores (no es un resumen del artículo) — pensado como si fuera un anuncio/teaser standalone, gancho fuerte, <=280 caracteres, mismo enlace.
+
+Además:
+- image_proposal: 3-6 palabras en inglés (sin comillas) que describan visualmente una imagen de portada adecuada para este artículo, para buscar una foto de stock relacionada.
+- quotable_lines: exactamente 3 frases cortas y potentes extraídas o adaptadas del artículo, cada una lista para publicarse SOLA como post (sin contexto adicional necesario).
 
 Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
-{"x": "post para X", "whatsapp": "mensaje para WhatsApp", "linkedin": "post para LinkedIn"}`;
+{"x": "post para X", "whatsapp": "mensaje para WhatsApp", "linkedin": "post para LinkedIn", "promo": "post promocional independiente", "image_proposal": "3-6 palabras en inglés", "quotable_lines": ["frase 1", "frase 2", "frase 3"]}`;
 
       try {
         const { data, model } = await callGemini(apiKey, input, false);
@@ -589,9 +784,12 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
           x: String(parsed.x ?? "").trim(),
           whatsapp: String(parsed.whatsapp ?? "").trim(),
           linkedin: String(parsed.linkedin ?? "").trim(),
+          promo: String(parsed.promo ?? "").trim(),
         };
+        const imageProposal = String(parsed.image_proposal ?? "").trim();
+        const quotableLines = Array.isArray(parsed.quotable_lines) ? parsed.quotable_lines.map((q: unknown) => String(q)).filter(Boolean).slice(0, 3) : [];
         if (!posts.x && !posts.whatsapp && !posts.linkedin) return json({ error: "El modelo devolvió una respuesta vacía", detail: [extractText(data).slice(0, 300)] }, 502);
-        return json({ posts, model });
+        return json({ posts, imageProposal, quotableLines, model });
       } catch (error) {
         return json({ error: "No se pudieron generar los posts", detail: [String(error)] }, 502);
       }
@@ -668,9 +866,13 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
     // Mode: X post about a repo (from the Repos finder).
     if (body.format === "x_post") {
       if (!body.repo || typeof body.repo !== "object") return json({ error: "Falta el repositorio" }, 400);
+      const repo = body.repo as RepoContext;
+      if (!repo.full_name) return json({ error: "Falta el nombre del repositorio (owner/repo)" }, 400);
+      const verified = await verifyGithubRepo(repo.full_name);
+      if (!verified) return json({ error: `No pudimos verificar ${repo.full_name} en GitHub. Puede haber sido renombrado o eliminado — revisalo antes de publicar.` }, 422);
       try {
-        const draft = await generatePost(apiKey, body.repo as RepoContext, lang);
-        return json({ drafts: [draft], requested: 1, generated: 1, errors: [] });
+        const draft = await generatePost(apiKey, { ...repo, description: verified.description ?? repo.description, stars: verified.stargazers_count, archived: verified.archived }, lang);
+        return json({ drafts: [draft], requested: 1, generated: 1, errors: [], verified });
       } catch (error) {
         return json({ error: "No se pudo generar el post", detail: [String(error)] }, 502);
       }
@@ -679,9 +881,13 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
     // Mode: one post per channel about a repo — X, WhatsApp, Discord, LinkedIn, Instagram.
     if (body.format === "repo_social_posts") {
       if (!body.repo || typeof body.repo !== "object") return json({ error: "Falta el repositorio" }, 400);
+      const repo = body.repo as RepoContext;
+      if (!repo.full_name) return json({ error: "Falta el nombre del repositorio (owner/repo)" }, 400);
+      const verified = await verifyGithubRepo(repo.full_name);
+      if (!verified) return json({ error: `No pudimos verificar ${repo.full_name} en GitHub. Puede haber sido renombrado o eliminado — revisalo antes de publicar.` }, 422);
       try {
-        const result = await generateRepoSocialPosts(apiKey, body.repo as RepoContext, lang);
-        return json(result);
+        const result = await generateRepoSocialPosts(apiKey, { ...repo, description: verified.description ?? repo.description, stars: verified.stargazers_count, archived: verified.archived }, lang);
+        return json({ ...result, verified });
       } catch (error) {
         return json({ error: "No se pudieron generar los posts", detail: [String(error)] }, 502);
       }
@@ -689,6 +895,7 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
 
     const count = Math.max(1, Math.min(5, Number(body.count) || 1));
     const date = typeof body.date === "string" && body.date ? body.date : yesterdayISO();
+    const brief = readBrief(body.brief);
 
     // Prompt: explicit text wins; otherwise load the template by key (RLS-scoped).
     let promptMd = typeof body.prompt_md === "string" ? body.prompt_md.trim() : "";
@@ -709,7 +916,7 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
     const errors: string[] = [];
     for (let i = 0; i < count; i += 1) {
       try {
-        drafts.push(await generateOne(apiKey, promptMd, date, lang));
+        drafts.push(await generateOne(apiKey, promptMd, date, lang, brief));
       } catch (error) {
         errors.push(error instanceof Error ? error.message : String(error));
       }

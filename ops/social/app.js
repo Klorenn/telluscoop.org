@@ -28,6 +28,7 @@
     repoPostDraft: null, repoPostBusy: false,
     prompts: [], articles: [], drafts: [], articleBusy: false, articleView: null,
     articleForm: { prompt_key: "crypto", count: 1, prompt_md: "" },
+    brief: { audience: "", level: "", platform: "", maxWords: "", objective: "", readerOutcome: "" },
     articleFilters: { status: "", template: "", search: "" }, articlePage: 0,
     topics: [], topicBusy: false, topicPosts: null, feedPage: 0,
     memes: { query: "", busy: false, info: null, gifs: [], top: null, topBusy: false },
@@ -36,7 +37,7 @@
     tweetReply: null,
     rewrite: { source: "", busy: false },
     dailyReplies: null,
-    guides: [], guideForm: { chain: "stellar", topic: "", useImages: true, useEmojis: false }, guideDrafts: [], guideBusy: false,
+    guides: [], guideForm: { category: "blockchain", chain: "stellar", topic: "", useImages: true, useEmojis: false }, guideDrafts: [], guideBusy: false,
     guideView: null, guideSocialPosts: null,
     metrics: [], goals: [], summaryBusy: false,
     followView: null, followTargets: [], listView: null,
@@ -51,6 +52,20 @@
     { id: "base", label: "Base", docsUrl: "https://docs.base.org/" },
     { id: "mantle", label: "Mantle", docsUrl: "https://docs.mantle.xyz/" },
   ];
+
+  const AGENTS = [
+    { id: "claude-code", label: "Claude Code", docsUrl: "https://docs.claude.com/en/docs/claude-code/overview" },
+    { id: "codex", label: "Codex (OpenAI)", docsUrl: "https://developers.openai.com/codex" },
+    { id: "kimi-code", label: "Kimi Code (Moonshot)", docsUrl: "https://github.com/MoonshotAI/kimi-cli" },
+    { id: "opencode", label: "OpenCode", docsUrl: "https://opencode.ai/docs" },
+  ];
+
+  const GUIDE_CATEGORIES = [
+    { id: "blockchain", label: "Blockchain", items: CHAINS },
+    { id: "agent", label: "Agente de IA", items: AGENTS },
+  ];
+  const guideItems = () => (GUIDE_CATEGORIES.find((c) => c.id === state.guideForm.category) || GUIDE_CATEGORIES[0]).items;
+  const findGuideItem = (id) => CHAINS.find((c) => c.id === id) || AGENTS.find((c) => c.id === id);
 
   const esc = (value = "") => String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
   const fmtDate = (value) => value ? new Intl.DateTimeFormat("es-CL", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(value)) : "Sin fecha";
@@ -234,6 +249,20 @@
     state.metrics = metrics.data || [];
     state.goals = goals.data || [];
     if (state.prompts[0]) state.articleForm.prompt_key = state.prompts[0].key;
+  }
+
+  // Stage 1 of the editorial pipeline: only send fields the user actually
+  // filled in — an empty brief means "the model decides", not "empty string".
+  function briefPayload() {
+    const b = state.brief;
+    const out = {};
+    if (b.audience.trim()) out.audience = b.audience.trim();
+    if (b.level.trim()) out.level = b.level.trim();
+    if (b.platform.trim()) out.platform = b.platform.trim();
+    if (Number(b.maxWords) > 0) out.maxWords = Number(b.maxWords);
+    if (b.objective.trim()) out.objective = b.objective.trim();
+    if (b.readerOutcome.trim()) out.readerOutcome = b.readerOutcome.trim();
+    return Object.keys(out).length ? out : undefined;
   }
 
   async function invokeEdge(name, body) {
@@ -1345,7 +1374,17 @@
     if (!draft) return "";
     const head = `<h2 style="margin:0">Posts para «${esc(draft.repoName)}»</h2>
       <button class="button button-ghost" type="button" data-close-post>${icon("x")} Cerrar</button>`;
+    const v = draft.verified;
     const body = `
+      ${v ? `<div class="post-meta" style="margin-bottom:.6rem">
+        <span style="color:${v.archived ? "var(--red)" : "var(--muted)"}">
+          ${v.archived ? "⚠️ Repositorio ARCHIVADO en GitHub" : "✓ Verificado en GitHub"}
+          · dueño: ${esc(v.owner_login || "—")}
+          · licencia: ${esc(v.license || "sin licencia")}
+          · última actividad: ${fmtDate(v.pushed_at)}
+          · verificado el ${esc(v.verified_at)}
+        </span>
+      </div>` : ""}
       <div class="modal-tabs" role="tablist" aria-label="Canal">
         ${REPO_POST_CHANNELS.map(([key, label]) => `<button type="button" role="tab" aria-selected="${draft.tab === key}" class="${draft.tab === key ? "active" : ""}" data-repo-tab="${key}">${esc(label)}</button>`).join("")}
       </div>
@@ -1398,21 +1437,19 @@
     return [...names].slice(0, 8);
   }
 
+  // Routed through the github-search edge function so the GITHUB_TOKEN secret
+  // (server-side only) lifts the rate limit from 60/hr to 5000/hr instead of
+  // hitting api.github.com unauthenticated from the browser.
   async function fetchRepoMeta(fullName) {
-    try {
-      const res = await fetch(`https://api.github.com/repos/${fullName}`, { headers: { Accept: "application/vnd.github+json" } });
-      if (!res.ok) return null;
-      return { ...(await res.json()), _source: "hn" };
-    } catch { return null; }
+    const { data, error } = await invokeEdge("github-search", { op: "repo", full_name: fullName });
+    if (error || !data?.repo) return null;
+    return { ...data.repo, _source: "hn" };
   }
 
   async function githubSearch(query, perPage, sort) {
-    const sortParam = sort === "best" ? "" : `&sort=${sort || "stars"}&order=desc`;
-    const res = await fetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(query)}${sortParam}&per_page=${perPage}`, {
-      headers: { Accept: "application/vnd.github+json" },
-    }).catch(() => null);
-    if (!res?.ok) return { ok: false, items: [] };
-    return { ok: true, items: (await res.json()).items || [] };
+    const { data, error } = await invokeEdge("github-search", { op: "search", query, perPage, sort: sort || "stars" });
+    if (error || !data?.ok) return { ok: false, items: [] };
+    return { ok: true, items: data.items || [] };
   }
 
   const repoSortKey = (r) => state.repoSort === "forks" ? (r.forks_count || 0)
@@ -1562,8 +1599,8 @@
       progress.fail(data?.error || "No se pudo generar. Revisá que Gemini esté configurado.");
       return renderShell();
     }
-    state.repoPostDraft = { repoName: repo.full_name, repoUrl: repo.url, posts: data.posts, sources: data.sources || [], model: data.model, tab: "x" };
-    progress.done("5 posts listos — revisalos por pestaña");
+    state.repoPostDraft = { repoName: repo.full_name, repoUrl: repo.url, posts: data.posts, sources: data.sources || [], model: data.model, tab: "x", verified: data.verified || null };
+    progress.done(data.verified?.archived ? "5 posts listos — el repo está ARCHIVADO, revisalo antes de publicar" : "5 posts listos — revisalos por pestaña");
     renderShell();
   }
 
@@ -1626,8 +1663,25 @@
     const draftText = state.articleForm.prompt_md || prompt?.prompt_md || "";
     const articles = filteredArticles();
     const templates = [...new Set(state.articles.map((a) => a.prompt_key || ""))].sort();
+    const b = state.brief;
     return `
       <div class="toolbar"><div><span class="eyebrow">Boletín Beehiiv</span><h2>Generador de artículos</h2></div></div>
+
+      <details class="span-all" style="margin-bottom:1.2rem">
+        <summary style="cursor:pointer;color:var(--teal);font-weight:600">Definición editorial (opcional, fija el rumbo antes de investigar)</summary>
+        <section class="card" style="margin-top:.6rem">
+          <p style="color:var(--muted);margin:0 0 .8rem;line-height:1.5">Completá lo que quieras fijar para esta corrida — audiencia, nivel, extensión, objetivo. Se le pasa al modelo como restricción obligatoria antes de investigar y redactar. Vacío = el modelo decide.</p>
+          <div class="form-grid">
+            <div class="field"><label for="brief-audience">Audiencia exacta</label><input id="brief-audience" value="${esc(b.audience)}" placeholder="ej: developers principiantes con JS básico" /></div>
+            <div class="field"><label for="brief-level">Nivel técnico</label><input id="brief-level" value="${esc(b.level)}" placeholder="ej: principiante" /></div>
+            <div class="field"><label for="brief-platform">Plataforma</label><input id="brief-platform" value="${esc(b.platform)}" placeholder="ej: artículo de X" /></div>
+            <div class="field"><label for="brief-maxwords">Extensión máxima (palabras)</label><input id="brief-maxwords" type="number" min="0" value="${esc(b.maxWords)}" placeholder="ej: 900" /></div>
+            <div class="field span-all"><label for="brief-objective">Objetivo del artículo</label><input id="brief-objective" value="${esc(b.objective)}" placeholder="ej: ayudar a elegir el primer repositorio de Stellar" /></div>
+            <div class="field span-all"><label for="brief-outcome">Qué debe poder hacer el lector después</label><input id="brief-outcome" value="${esc(b.readerOutcome)}" placeholder="ej: escoger, clonar y explorar un repositorio" /></div>
+          </div>
+        </section>
+      </details>
+
       <section class="card" style="margin-bottom:1.2rem">
         <div class="form-grid">
           <div class="field"><label for="art-prompt">Plantilla</label>
@@ -1654,6 +1708,23 @@
             <div class="field span-all"><label for="rewrite-source">Texto fuente</label><textarea id="rewrite-source" name="source" style="min-height:180px" required placeholder="Pegá acá el artículo, en el idioma que sea…">${esc(state.rewrite.source)}</textarea></div>
             <div class="form-foot span-all"><button class="button button-primary" type="submit" ${state.rewrite.busy || state.preview ? "disabled" : ""}>${icon("sparkles")} ${state.rewrite.busy ? "Reescribiendo…" : "Reescribir con la voz de Tellus"}</button></div>
           </form>
+        </section>
+      </details>
+
+      <details class="span-all" style="margin-bottom:1.2rem">
+        <summary style="cursor:pointer;color:var(--teal);font-weight:600">Generador de comentarios manual</summary>
+        <section class="card" style="margin-top:.6rem">
+          <p style="color:var(--muted);margin:0 0 .8rem;line-height:1.5">Pegá el texto de un post ajeno y te armo un comentario para responder y un texto para citarlo.</p>
+          <form id="art-tweet-reply-form" class="form-grid">
+            <div class="field"><label for="art-tr-handle">Handle (@usuario)</label><input id="art-tr-handle" name="handle" placeholder="midudev" /></div>
+            <div class="field span-all"><label for="art-tr-content">Qué dice el post</label><textarea id="art-tr-content" name="content" style="min-height:90px" required placeholder="Pegá acá el texto del post…"></textarea></div>
+            <div class="field span-all"><label for="art-tr-links">Links que menciona (opcional, uno por línea)</label><textarea id="art-tr-links" name="links" style="min-height:50px" placeholder="https://…"></textarea></div>
+            <div class="form-foot span-all"><button class="button button-primary" type="submit" ${state.tweetReply?.busy || state.preview ? "disabled" : ""}>${icon("message-circle")} ${state.tweetReply?.busy ? "Escribiendo…" : "Generar comentario"}</button></div>
+          </form>
+          ${state.tweetReply?.posts ? `<div class="grid grid-2" style="margin-top:1rem">
+            <article class="card"><h3>Comentario</h3><p class="post-content" style="margin:.5rem 0;white-space:pre-wrap">${esc(state.tweetReply.posts.comment)}</p><button class="table-link" data-copy-text="${esc(state.tweetReply.posts.comment)}">Copiar</button></article>
+            <article class="card"><h3>Para citar</h3><p class="post-content" style="margin:.5rem 0;white-space:pre-wrap">${esc(state.tweetReply.posts.quote)}</p><button class="table-link" data-copy-text="${esc(state.tweetReply.posts.quote)}">Copiar</button></article>
+          </div>` : ""}
         </section>
       </details>
 
@@ -1739,8 +1810,28 @@
           <button class="button button-ghost" id="close-social">${icon("x")} Cerrar</button>
         </div></div>
       ${sp.link ? `<p style="color:var(--muted);margin:0 0 .8rem">Link: <a href="${esc(sp.link)}" target="_blank" rel="noopener">${esc(sp.link)}</a></p>` : ""}
-      <div class="grid grid-3">${block("X", "x")}${block("WhatsApp", "whatsapp")}${block("LinkedIn", "linkedin")}</div>
+      <div class="grid grid-3">${block("X", "x")}${block("WhatsApp", "whatsapp")}${block("LinkedIn", "linkedin")}${block("Promo independiente", "promo")}</div>
+      ${sp.imageProposal ? `<p style="color:var(--muted);margin:.8rem 0 0"><strong>Propuesta de imagen de portada:</strong> ${esc(sp.imageProposal)}</p>` : ""}
+      ${sp.quotableLines?.length ? `<div style="margin-top:.6rem"><strong style="display:block;margin-bottom:.3rem">Frases destacables para reutilizar</strong>
+        <ul style="margin:0;padding-left:1.1rem;line-height:1.6">${sp.quotableLines.map((q) => `<li>${esc(q)} <button class="table-link" data-copy-text="${esc(q)}">Copiar</button></li>`).join("")}</ul>
+      </div>` : ""}
     </section>`;
+  }
+
+  // Stage 4 of the pipeline: renders the deterministic technical-control
+  // checklist the edge function ran on the draft (link liveness, archived
+  // repos, secret-looking strings) — red flag if anything failed, quiet
+  // confirmation if it's all clean.
+  function checksBlock(checks) {
+    if (!checks) return "";
+    const problems = [];
+    if (!checks.allLinksOk) problems.push(`${checks.brokenLinks.length} enlace(s) no responden: ${checks.brokenLinks.map((l) => l.url).join(", ")}`);
+    if (checks.archivedRepos?.length) problems.push(`Repo(s) archivados sin advertencia en el texto: ${checks.archivedRepos.join(", ")}`);
+    if (checks.hasSecrets) problems.push(`Posible secreto/credencial detectado: ${checks.secretFindings.join(", ")}`);
+    if (!problems.length) {
+      return `<div class="post-meta"><span style="color:var(--teal)">✓ Control técnico: ${checks.linksChecked} enlace(s) verificados el ${esc(checks.checkedAt)}, sin problemas</span></div>`;
+    }
+    return `<div class="post-meta"><span style="color:var(--red)">⚠️ Control técnico (${esc(checks.checkedAt)}): ${problems.map(esc).join(" · ")}</span></div>`;
   }
 
   function draftCard(draft, index) {
@@ -1751,6 +1842,7 @@
       <details style="margin-bottom:.6rem"><summary style="cursor:pointer;color:var(--teal);font-weight:600">Ver cuerpo</summary>
         <div class="article-md" style="margin-top:.5rem;max-height:50vh;overflow-y:auto">${mdToHtml(stripSourcesSection(draft.body_md || ""))}${sourcesBlock(draft.sources)}</div></details>
       ${draft.sources?.length ? `<div class="post-meta"><span>${draft.sources.length} fuente(s)</span></div>` : `<div class="post-meta"><span style="color:var(--red)">Sin fuentes — revisá antes de publicar</span></div>`}
+      ${checksBlock(draft.checks)}
       <div class="form-foot" style="justify-content:start">
         <button class="button button-secondary" data-save-draft="${index}" style="min-height:38px">Guardar</button>
         <button class="table-link" data-draft-posts="${index}" ${state.socialPosts?.busy ? "disabled" : ""}>Posts WSP/X/LI</button>
@@ -1763,15 +1855,18 @@
   // ---------- guides ----------
 
   function guidesView() {
-    const chain = CHAINS.find((c) => c.id === state.guideForm.chain) || CHAINS[0];
+    const items = guideItems();
+    const chain = items.find((c) => c.id === state.guideForm.chain) || items[0];
     return `
       <div class="toolbar"><div><span class="eyebrow">Documentación oficial</span><h2>Guías técnicas</h2></div></div>
       <section class="card" style="margin-bottom:1.2rem">
         <h3>Generar una guía</h3>
-        <p style="color:var(--muted);margin:.2rem 0 .8rem;line-height:1.5">Elegí la blockchain y el tema exacto. La guía se verifica contra la doc oficial, con código real cuando corresponde, imágenes y posts para X, Discord y LinkedIn.</p>
+        <p style="color:var(--muted);margin:.2rem 0 .8rem;line-height:1.5">Elegí la categoría, la blockchain o agente y el tema exacto. La guía se verifica contra la doc oficial, con código real cuando corresponde, imágenes y posts para X, Discord y LinkedIn.</p>
         <form id="guide-form" class="form-grid">
-          <div class="field"><label for="guide-chain">Blockchain</label>
-            <select id="guide-chain">${CHAINS.map((c) => `<option value="${c.id}" ${state.guideForm.chain === c.id ? "selected" : ""}>${esc(c.label)}</option>`).join("")}</select>
+          <div class="field"><label for="guide-category">Categoría</label>
+            <select id="guide-category">${GUIDE_CATEGORIES.map((c) => `<option value="${c.id}" ${state.guideForm.category === c.id ? "selected" : ""}>${esc(c.label)}</option>`).join("")}</select></div>
+          <div class="field"><label for="guide-chain">${GUIDE_CATEGORIES.find((c) => c.id === state.guideForm.category)?.label || "Blockchain"}</label>
+            <select id="guide-chain">${items.map((c) => `<option value="${c.id}" ${state.guideForm.chain === c.id ? "selected" : ""}>${esc(c.label)}</option>`).join("")}</select>
             <small>Doc oficial: <a href="${esc(chain.docsUrl)}" target="_blank" rel="noopener">${esc(chain.docsUrl)}</a></small></div>
           <div class="field span-all"><label for="guide-topic">Tema de la guía</label>
             <input id="guide-topic" name="topic" value="${esc(state.guideForm.topic)}" placeholder="ej: cómo enviar un pago con el SDK de Stellar" required /></div>
@@ -1797,10 +1892,10 @@
 
       <div class="toolbar"><div><span class="eyebrow">Guardadas</span><h2>Guías</h2></div></div>
       ${state.guides.length ? `<div class="card table-wrap"><table>
-        <thead><tr><th>Guía</th><th>Blockchain</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
+        <thead><tr><th>Guía</th><th>Fuente</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
         <tbody>${state.guides.map((g) => `<tr>
           <td><button class="table-link" data-open-guide="${esc(g.id)}" style="text-align:left"><strong>${esc(g.title)}</strong></button><br /><span style="color:var(--muted)">${esc(g.subtitle || "")}</span></td>
-          <td>${esc((CHAINS.find((c) => c.id === g.chain) || {}).label || g.chain)}</td>
+          <td>${esc((findGuideItem(g.chain) || {}).label || g.chain)}</td>
           <td><span class="status status-${g.status === "draft" ? "inbox" : g.status === "discarded" ? "discarded" : "reviewed"}">${esc(articleStatusLabels[g.status] || g.status)}</span></td>
           <td>${fmtDate(g.created_at)}</td>
           <td>${state.preview ? "" : `<button class="table-link" data-copy-guide="${esc(g.id)}">Copiar</button>
@@ -1862,7 +1957,7 @@
   async function generateGuide(event) {
     event.preventDefault();
     if (state.preview) return notify("La vista previa es de solo lectura.", true);
-    const chain = CHAINS.find((c) => c.id === state.guideForm.chain) || CHAINS[0];
+    const chain = guideItems().find((c) => c.id === state.guideForm.chain) || guideItems()[0];
     const topic = state.guideForm.topic.trim();
     if (!topic) return;
     state.guideBusy = true;
@@ -1876,6 +1971,7 @@
     ], 9000);
     const { data, error } = await invokeEdge("generate-article", {
       format: "guide",
+      category: state.guideForm.category,
       chain: chain.id,
       chain_label: chain.label,
       docs_url: chain.docsUrl,
@@ -1965,6 +2061,11 @@
   }
 
   function wireGuides() {
+    document.querySelector("#guide-category")?.addEventListener("change", (e) => {
+      state.guideForm.category = e.target.value;
+      state.guideForm.chain = (GUIDE_CATEGORIES.find((c) => c.id === e.target.value) || GUIDE_CATEGORIES[0]).items[0].id;
+      renderShell();
+    });
     document.querySelector("#guide-chain")?.addEventListener("change", (e) => { state.guideForm.chain = e.target.value; renderShell(); });
     document.querySelector("#guide-topic")?.addEventListener("input", (e) => { state.guideForm.topic = e.target.value; });
     document.querySelector("#guide-use-images")?.addEventListener("change", (e) => { state.guideForm.useImages = e.target.checked; });
@@ -2384,6 +2485,10 @@
     document.querySelector("#art-generate")?.addEventListener("click", generateArticles);
     document.querySelector("#rewrite-form")?.addEventListener("submit", rewriteArticleFromSource);
     document.querySelector("#rewrite-source")?.addEventListener("input", (e) => { state.rewrite.source = e.target.value; });
+    [["brief-audience", "audience"], ["brief-level", "level"], ["brief-platform", "platform"], ["brief-maxwords", "maxWords"], ["brief-objective", "objective"], ["brief-outcome", "readerOutcome"]]
+      .forEach(([id, key]) => document.querySelector(`#${id}`)?.addEventListener("input", (e) => { state.brief[key] = e.target.value; }));
+    document.querySelector("#art-tweet-reply-form")?.addEventListener("submit", generateTweetReply);
+    document.querySelectorAll("[data-copy-text]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyText)));
 
     document.querySelectorAll("[data-save-draft]").forEach((button) => button.addEventListener("click", () => saveDraft(Number(button.dataset.saveDraft))));
     document.querySelectorAll("[data-copy-draft]").forEach((button) => button.addEventListener("click", () => copyText(draftToMarkdown(state.drafts[Number(button.dataset.copyDraft)]))));
@@ -2449,6 +2554,7 @@
       prompt_key: state.articleForm.prompt_key,
       prompt_md: state.articleForm.prompt_md || undefined,
       count: state.articleForm.count,
+      brief: briefPayload(),
     });
     state.articleBusy = false;
     if (error || data?.error) {
@@ -2476,6 +2582,7 @@
       source_text: source,
       prompt_key: state.articleForm.prompt_key,
       prompt_md: state.articleForm.prompt_md || undefined,
+      brief: briefPayload(),
     });
     state.rewrite.busy = false;
     if (error || data?.error) {
@@ -2508,7 +2615,7 @@
       notify(data?.error || "No se pudieron generar los posts.", true);
       return renderShell();
     }
-    state.socialPosts = { articleId, title: article.title, link, posts: data.posts, busy: false };
+    state.socialPosts = { articleId, title: article.title, link, posts: data.posts, imageProposal: data.imageProposal, quotableLines: data.quotableLines, busy: false };
     // Persist with the article so "Ver posts" works after a reload.
     const { error: saveError } = await supabase.from("articles")
       .update({ social_posts: data.posts, social_link: link || null })
@@ -2542,7 +2649,7 @@
       notify(data?.error || "No se pudieron generar los posts.", true);
       return renderShell();
     }
-    state.socialPosts = { articleId: null, title: draft.title, link, posts: data.posts, busy: false };
+    state.socialPosts = { articleId: null, title: draft.title, link, posts: data.posts, imageProposal: data.imageProposal, quotableLines: data.quotableLines, busy: false };
     notify("Posts generados (guarda el artículo si quieres conservarlos).");
     renderShell();
   }

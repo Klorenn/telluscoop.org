@@ -108,8 +108,13 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto
 
 async function fetchRepoMeta(fullName: string): Promise<RepoMeta | null> {
   try {
+    const token = Deno.env.get("GITHUB_TOKEN");
     const response = await fetch(`https://api.github.com/repos/${fullName}`, {
-      headers: { Accept: "application/vnd.github+json", "User-Agent": "tellus-social-ops" },
+      headers: {
+        Accept: "application/vnd.github+json",
+        "User-Agent": "tellus-social-ops",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
     });
     if (!response.ok) return null;
     const repo = await response.json();

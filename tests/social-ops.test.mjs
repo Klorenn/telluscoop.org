@@ -18,6 +18,7 @@ const xFollowersEdge = await readFile(new URL("../supabase/functions/x-followers
 const growthMigration = await readFile(new URL("../supabase/migrations/20260721050000_monthly_growth_goal_and_cron.sql", import.meta.url), "utf8");
 const refreshAllMigration = await readFile(new URL("../supabase/migrations/20260721060000_refresh_all_default_goals_meme_picks.sql", import.meta.url), "utf8");
 const followTargetsMigration = await readFile(new URL("../supabase/migrations/20260721070000_follow_targets.sql", import.meta.url), "utf8");
+const githubSearchEdge = await readFile(new URL("../supabase/functions/github-search/index.ts", import.meta.url), "utf8");
 
 test("production cache versions match", () => {
   const cssVersion = page.match(/styles\.css\?v=([^"']+)/)?.[1];
@@ -66,11 +67,18 @@ test("manual capture marks source and scraper source is reserved", () => {
   assert.match(migration, /check \(source in \('manual', 'scraper'\)\)/);
 });
 
-test("github search uses the public API with no token in the frontend", () => {
-  const fetchCall = app.match(/fetch\(`https:\/\/api\.github\.com\/search\/repositories[\s\S]*?\}\);/)?.[0];
-  assert.ok(fetchCall, "github fetch call not found");
-  assert.doesNotMatch(fetchCall, /Authorization/);
-  assert.match(fetchCall, /Accept: "application\/vnd\.github\+json"/);
+test("github search is proxied through the github-search edge function, token never in the frontend", () => {
+  assert.doesNotMatch(app, /fetch\(`?https:\/\/api\.github\.com/, "frontend must not call the GitHub API directly");
+  assert.match(app, /invokeEdge\("github-search", \{ op: "search"/);
+  assert.match(app, /invokeEdge\("github-search", \{ op: "repo"/);
+});
+
+test("github-search edge function authenticates to GitHub with the server-side GITHUB_TOKEN secret", () => {
+  assert.match(githubSearchEdge, /Sesión requerida/);
+  assert.match(githubSearchEdge, /\.neq\("role", "viewer"\)/);
+  assert.match(githubSearchEdge, /Deno\.env\.get\("GITHUB_TOKEN"\)/);
+  assert.match(githubSearchEdge, /Authorization: `Bearer \$\{token\}`/);
+  assert.match(githubSearchEdge, /archived/);
 });
 
 test("preview mode is read-only", () => {
@@ -438,16 +446,76 @@ test("repo search can sort by stars, forks, or recency", () => {
   assert.match(app, /id="repo-sort"/);
 });
 
-test("repo X post follows the viral thread style: caps hook, → bullets, cómo lo logra, repo link in tweet 2", () => {
+test("repo X post follows the viral thread style: normal-case hook (no all caps), → bullets, cómo lo logra, repo link in tweet 2", () => {
   const fn = edge.match(/async function generateRepoSocialPosts[\s\S]*?\n\}/)?.[0];
   assert.ok(fn, "generateRepoSocialPosts not found");
-  assert.match(fn, /MAYÚSCULAS/);
+  assert.doesNotMatch(fn, /gancho en MAYÚSCULAS/, "hook must not be forced to all caps");
+  assert.match(fn, /NUNCA todo en mayúsculas/);
   assert.match(fn, /→/);
   assert.match(fn, /¿Cómo lo logra\?/);
   assert.match(fn, /x_reply/);
   assert.match(fn, /SIN el link del repo/);
   assert.match(app, /repo-post-reply/);
   assert.match(app, /x_reply/);
+});
+
+test("viral X style writes the hook in normal sentence case, not all caps", () => {
+  const fn = edge.match(/function viralStyle[\s\S]*?\n\}/)?.[0];
+  assert.ok(fn, "viralStyle not found");
+  assert.doesNotMatch(fn, /gancho en MAYÚSCULAS/);
+  assert.doesNotMatch(fn, /hook in ALL CAPS/);
+  assert.match(fn, /NUNCA todo en mayúsculas/);
+  assert.match(fn, /NEVER in all caps/);
+});
+
+test("repo posts are re-verified against GitHub before generation, archived repos are flagged not hidden", () => {
+  assert.match(edge, /async function verifyGithubRepo/);
+  assert.match(edge, /Deno\.env\.get\("GITHUB_TOKEN"\)/);
+  const xPostFn = edge.match(/if \(body\.format === "x_post"\) \{[\s\S]*?\n    \}/)?.[0];
+  const repoSocialFn = edge.match(/if \(body\.format === "repo_social_posts"\) \{[\s\S]*?\n    \}/)?.[0];
+  assert.ok(xPostFn, "x_post handler not found");
+  assert.ok(repoSocialFn, "repo_social_posts handler not found");
+  assert.match(xPostFn, /verifyGithubRepo\(repo\.full_name\)/);
+  assert.match(repoSocialFn, /verifyGithubRepo\(repo\.full_name\)/);
+  assert.match(xPostFn, /No pudimos verificar/);
+  assert.match(repoSocialFn, /No pudimos verificar/);
+  assert.match(edge, /function archivedNote/);
+  assert.match(edge, /ARCHIVADO/);
+});
+
+test("editorial brief (stage 1) is optional and constrains audience/level/platform/length/objective before generation", () => {
+  assert.match(edge, /interface EditorialBrief/);
+  assert.match(edge, /function readBrief/);
+  assert.match(edge, /function editorialBriefRules/);
+  assert.match(edge, /Definición editorial \(obligatoria/);
+  assert.match(edge, /async function generateOne\(apiKey: string, promptMd: string, date: string, lang: Lang, brief: EditorialBrief/);
+  assert.match(edge, /async function rewriteArticle\(apiKey: string, promptMd: string, sourceText: string, lang: Lang, brief: EditorialBrief/);
+  assert.match(app, /state\.brief = \{|brief: \{ audience: "", level: "", platform: "", maxWords: "", objective: "", readerOutcome: "" \}/);
+  assert.match(app, /function briefPayload/);
+  assert.match(app, /brief: briefPayload\(\)/);
+});
+
+test("technical control checklist (stage 4) checks link liveness, archived repos and secret patterns on every long-form draft", () => {
+  assert.match(edge, /async function verifyDraft/);
+  assert.match(edge, /async function checkLink/);
+  assert.match(edge, /SECRET_PATTERNS/);
+  assert.match(edge, /interface DraftChecks/);
+  assert.match(edge, /draft\.checks = await verifyDraft\(draft\.body_md\)/);
+  assert.match(edge, /\*Verificado el: \$\{new Date\(\)\.toISOString\(\)\.slice\(0, 10\)\}\*/);
+  assert.match(app, /function checksBlock/);
+  assert.match(app, /checksBlock\(draft\.checks\)/);
+});
+
+test("social_posts adds an X-adaptation pass (stage 5): independent promo post, closing question, cover image proposal, 3 quotable lines", () => {
+  const fn = edge.match(/if \(body\.format === "social_posts"\) \{[\s\S]*?\n    \}/)?.[0];
+  assert.ok(fn, "social_posts handler not found");
+  assert.match(fn, /CIERRA con una pregunta abierta/);
+  assert.match(fn, /promo: post promocional INDEPENDIENTE/);
+  assert.match(fn, /image_proposal/);
+  assert.match(fn, /quotable_lines/);
+  assert.match(app, /imageProposal: data\.imageProposal, quotableLines: data\.quotableLines/);
+  assert.match(app, /Propuesta de imagen de portada/);
+  assert.match(app, /Frases destacables para reutilizar/);
 });
 
 test("follower scraping wakes the server and pulls a real page (tuned for 2GB)", () => {
