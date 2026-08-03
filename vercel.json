@@ -1,7 +1,7 @@
 {
   "rewrites": [
     { "source": "/brand", "destination": "/brand.html" },
-    { "source": "/dev", "destination": "/dev/index.html" },
-    { "source": "/dev/tools/:slug", "destination": "/dev/tool.html" }
+    { "source": "/resources", "destination": "/resources/index.html" },
+    { "source": "/resources/tools/:slug", "destination": "/resources/tool.html" }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "meta": {
     "source": "https://itsfree.dev/es and https://itsfree.dev (en)",
-    "total_tools": 110,
+    "total_tools": 109,
     "total_categories": 14,
     "recommended_count": 23,
     "last_reviewed": "2026-07-28"
@@ -1122,24 +1122,6 @@
       "no_card": true,
       "recommended": false,
       "slug": "grafana-cloud"
-    },
-    {
-      "name": "Uptime.com",
-      "description_es": "Monitorización de webs, APIs y usuarios reales con alertas y gestión de incidentes.",
-      "description_en": "Website, API and real-user monitoring with alerts and incident workflows.",
-      "url": "https://uptime.com",
-      "category": "observability",
-      "tags": [
-        "uptime",
-        "synthetic"
-      ],
-      "free_tier_note_es": "Solo prueba",
-      "free_tier_note_en": "Trial only",
-      "free_tier_detail_es": "Sin capa gratis permanente: actualmente ofrece una prueba temporal de sus planes de monitorización de pago.",
-      "free_tier_detail_en": "No permanent free tier: the platform currently offers a time-limited free trial of its paid monitoring plans.",
-      "no_card": false,
-      "recommended": false,
-      "slug": "uptime-com"
     },
     {
       "name": "Checkly",

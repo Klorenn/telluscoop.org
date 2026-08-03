@@ -636,6 +636,18 @@
 
   // ---------- feed ----------
 
+  // Accepts either a raw SearchTimeline qid or the full request URL pasted
+  // straight from the Network tab (…/graphql/<qid>/SearchTimeline?variables=…)
+  // so users don't have to hand-trim the hash out of the link themselves.
+  function extractQid(raw) {
+    const value = String(raw || "").trim();
+    if (!value) return "";
+    const fromUrl = value.match(/graphql\/([\w-]+)\/SearchTimeline/i);
+    if (fromUrl) return fromUrl[1];
+    if (/^https?:\/\//i.test(value)) return "";
+    return /^[\w-]+$/.test(value) ? value : "";
+  }
+
   function feedView() {
     const posts = filteredPosts();
     const categories = [...new Set(state.accounts.map((a) => a.category || "general"))].sort();
@@ -648,7 +660,7 @@
         <form id="topic-search-form" class="form-grid">
           <div class="field span-all"><label for="topic-query">Tema</label>
             <input id="topic-query" name="query" placeholder='ej: Kimi K3   ·   Stellar lang:es   ·   "AI agents"' required /></div>
-          <details class="span-all" style="margin-bottom:.6rem"><summary style="cursor:pointer;color:var(--muted);font-size:.78rem">Query ID de X (si cambió, actualizalo acá)</summary><div class="field" style="margin-top:.5rem"><label for="topic-qid">X_QID_SEARCH</label><input id="topic-qid" name="qid" placeholder="AQK...abc123" value="${esc(localStorage.getItem("x_qid_search") || "")}" /><small>Capturalo de la Network tab de x.com → SearchTimeline → el hash de la URL.</small></div></details>
+          <details class="span-all" style="margin-bottom:.6rem"><summary style="cursor:pointer;color:var(--muted);font-size:.78rem">Query ID de X (si dejó de funcionar, actualizalo acá)</summary><div class="field" style="margin-top:.5rem"><label for="topic-qid">Link o ID de búsqueda de X</label><div style="display:flex;gap:.5rem"><input id="topic-qid" name="qid" placeholder="Pegá el link completo de la request SearchTimeline…" value="${esc(localStorage.getItem("x_qid_search") || "")}" style="flex:1" /><button class="button button-secondary" type="button" id="save-qid">Guardar</button></div><small>En x.com, abrí la Network tab (F12), buscá algo, encontrá la request "SearchTimeline" y pegá acá su URL completa — no hace falta recortar nada, se extrae solo.</small></div></details>
           <div class="form-foot span-all">
             <label style="display:flex;align-items:center;gap:.4rem;color:var(--muted);font-size:.85rem">
               <input type="checkbox" id="topic-save" style="min-height:auto;width:auto" /> Guardar como tema fijo (cron cada 6h)</label>
@@ -869,6 +881,14 @@
       renderShell();
     });
     document.querySelector("#topic-search-form")?.addEventListener("submit", runTopicSearch);
+    document.querySelector("#save-qid")?.addEventListener("click", () => {
+      const input = document.querySelector("#topic-qid");
+      const qid = extractQid(input?.value);
+      if (!qid) return notify("No encontré un query ID válido en eso. Pegá el link completo de la request SearchTimeline.", true);
+      localStorage.setItem("x_qid_search", qid);
+      if (input) input.value = qid;
+      notify("Query ID guardado.");
+    });
     document.querySelector("#fetch-recent")?.addEventListener("click", fetchRecentFromAccounts);
     document.querySelector("#gen-from-feed")?.addEventListener("click", generateFromFeed);
     document.querySelectorAll("[data-feed-page]").forEach((b) => b.addEventListener("click", () => {
@@ -891,7 +911,7 @@
     const form = new FormData(event.target);
     const query = String(form.get("query")).trim();
     const saveAsTopic = document.querySelector("#topic-save")?.checked;
-    const qid = String(form.get("qid") || "").trim();
+    const qid = extractQid(form.get("qid"));
     if (qid) localStorage.setItem("x_qid_search", qid);
     if (!query) return;
     state.topicBusy = true;
@@ -968,10 +988,17 @@
     if (!handles.length) return notify("No hay cuentas activas de X.", true);
     state.topicBusy = true;
     renderShell();
+    const progress = createProgress("Buscando posts recientes de tus cuentas");
+    progress.auto([
+      "Despertando el scraper…",
+      "Abriendo X y armando la búsqueda de cuentas…",
+      `Revisando publicaciones de ${handles.length} cuenta${handles.length === 1 ? "" : "s"}…`,
+      "Filtrando los posts que ya tenías…",
+    ], 8000);
     const { data, error } = await invokeEdge("x-search", { query: `(${handles.join(" OR ")})`, count: 40 });
     state.topicBusy = false;
-    if (error || data?.error) { notify(data?.error || error?.message || "No se pudo buscar.", true); return renderShell(); }
-    notify(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts recientes de tus cuentas.`);
+    if (error || data?.error) { progress.fail(data?.error || error?.message || "No se pudo buscar."); return renderShell(); }
+    progress.done(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts recientes de tus cuentas.`);
     state.feedPage = 0;
     await loadLiveData();
     renderShell();
@@ -984,12 +1011,19 @@
     if (!topic) return;
     state.topicBusy = true;
     renderShell();
+    const progress = createProgress(`Buscando «${topic.label}» en X`);
+    progress.auto([
+      "Despertando el scraper…",
+      "Abriendo la búsqueda en X…",
+      "Capturando posts con sus métricas…",
+      "Filtrando los que ya tenías…",
+    ], 8000);
     const qid = localStorage.getItem("x_qid_search") || "";
     const { data, error } = await invokeEdge("x-search", { query: topic.query, count: 20, qid });
     state.topicBusy = false;
-    if (error || data?.error) { notify(data?.error || error?.message || "No se pudo buscar.", true); renderShell(); return; }
+    if (error || data?.error) { progress.fail(data?.error || error?.message || "No se pudo buscar."); renderShell(); return; }
     await supabase.from("social_topics").update({ last_run_at: new Date().toISOString() }).eq("id", topicId);
-    notify(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts capturados de "${topic.label}"`);
+    progress.done(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts capturados de "${topic.label}"`);
     await loadLiveData();
     renderShell();
     generateTopicPosts(topic.query, data.posts || []);

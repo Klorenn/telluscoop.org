@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tellus Dev — The Free Part of the Internet</title>
+  <title>Tellus Resources — The Free Part of the Internet</title>
 
   <!-- SEO -->
   <meta name="description" content="A curated catalog of 100+ developer tools with genuinely useful free tiers: hosting, backend, AI, auth, email, monitoring, CI/CD, analytics, APIs, design, security, productivity, CMS, and storage." />
   <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://telluscoop.org/dev" />
+  <link rel="canonical" href="https://telluscoop.org/resources" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://telluscoop.org/dev" />
+  <meta property="og:url" content="https://telluscoop.org/resources" />
   <meta property="og:site_name" content="Tellus Cooperative" />
-  <meta property="og:title" content="Tellus Dev — The Free Part of the Internet" />
+  <meta property="og:title" content="Tellus Resources — The Free Part of the Internet" />
   <meta property="og:description" content="A catalog curated by Tellus Cooperative of 100+ developer tools with genuinely useful free tiers: hosting, AI, auth, databases, and more." />
   <meta property="og:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
   <meta property="og:image:width" content="1774" />
@@ -26,7 +26,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@TellusCoop" />
   <meta name="twitter:creator" content="@TellusCoop" />
-  <meta name="twitter:title" content="Tellus Dev — The Free Part of the Internet" />
+  <meta name="twitter:title" content="Tellus Resources — The Free Part of the Internet" />
   <meta name="twitter:description" content="A catalog curated by Tellus Cooperative of 100+ developer tools with genuinely useful free tiers." />
   <meta name="twitter:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
 
@@ -432,7 +432,7 @@
   <div class="dv-nav-inner">
     <a class="dv-nav-home" href="../index.html">
       <img src="../uploads/TellusCooperative%20ICON.png" alt="Tellus Cooperative" />
-      <span>Tellus Dev</span>
+      <span>Tellus Resources</span>
     </a>
     <div class="dv-nav-right">
       <div class="dv-nav-meta"><a href="../index.html" id="dv-back-link">← telluscoop.org</a></div>
@@ -553,7 +553,7 @@
 (function () {
   var UI = {
     es: {
-      title: "Tellus Dev — La parte gratis de internet",
+      title: "Tellus Resources — La parte gratis de internet",
       eyebrowHero: "Directorio para developers",
       h1: "La parte <em>gratis</em><br>de internet",
       lede: "Construí más. Gastá menos. Catálogo curado por Tellus Cooperative de productos con planes gratuitos genuinamente útiles para developers, makers y equipos pequeños.",
@@ -591,7 +591,7 @@
       footerCopyright: "© 2026 Tellus Cooperative Foundation · New York, NY",
     },
     en: {
-      title: "Tellus Dev — The free part of the internet",
+      title: "Tellus Resources — The free part of the internet",
       eyebrowHero: "Directory for developers",
       h1: "The <em>free</em><br>part of the internet",
       lede: "Build more. Spend less. A curated catalog by Tellus Cooperative of products with genuinely useful free tiers for developers, makers and small teams.",
@@ -904,7 +904,7 @@
       var tags = (tool.tags || []).map(function (tag) {
         return '<span class="dv-tag">' + escapeHtml(tag) + '</span>';
       }).join("");
-      var detailHref = "/dev/tools/" + encodeURIComponent(tool.slug || "");
+      var detailHref = "/resources/tools/" + encodeURIComponent(tool.slug || "");
       // Stagger only the batch that scrolls into view together (capped at 9 = 3 grid rows);
       // otherwise 110 cards would accumulate an ever-growing, janky cumulative delay.
       var revealAttrs = "";
@@ -955,7 +955,7 @@
     if (initialCategory) state.category = initialCategory;
   } catch (e) {}
 
-  fetch("/dev/tools.json")
+  fetch("/resources/tools.json")
     .then(function (res) { return res.json(); })
     .then(function (data) {
       state.data = data;

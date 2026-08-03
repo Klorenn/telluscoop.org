@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tellus Dev — Resource</title>
+  <title>Tellus Resources — Resource</title>
 
-  <!-- SEO — this template is client-rendered (one file serves every /dev/tools/:slug via
+  <!-- SEO — this template is client-rendered (one file serves every /resources/tools/:slug via
        vercel.json rewrite), so per-tool title/description are set client-side in render()
        below for the browser tab + share preview once JS runs; these tags stay as the static
-       fallback non-JS crawlers see. og:url intentionally points at /dev (not a real per-slug
+       fallback non-JS crawlers see. og:url intentionally points at /resources (not a real per-slug
        canonical) since the actual slug can't be known statically without a build step. -->
-  <meta name="description" content="Resource profile from the Tellus Dev catalog: free plan, use cases, and alternatives." />
+  <meta name="description" content="Resource profile from the Tellus Resources catalog: free plan, use cases, and alternatives." />
   <meta name="robots" content="index, follow" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://telluscoop.org/dev" />
+  <meta property="og:url" content="https://telluscoop.org/resources" />
   <meta property="og:site_name" content="Tellus Cooperative" />
-  <meta property="og:title" content="Tellus Dev — Resource" />
-  <meta property="og:description" content="Resource profile from the Tellus Dev catalog: free plan, use cases, and alternatives." />
+  <meta property="og:title" content="Tellus Resources — Resource" />
+  <meta property="og:description" content="Resource profile from the Tellus Resources catalog: free plan, use cases, and alternatives." />
   <meta property="og:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
   <meta property="og:image:width" content="1774" />
   <meta property="og:image:height" content="887" />
@@ -29,8 +29,8 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@TellusCoop" />
   <meta name="twitter:creator" content="@TellusCoop" />
-  <meta name="twitter:title" content="Tellus Dev — Resource" />
-  <meta name="twitter:description" content="Resource profile from the Tellus Dev catalog: free plan, use cases, and alternatives." />
+  <meta name="twitter:title" content="Tellus Resources — Resource" />
+  <meta name="twitter:description" content="Resource profile from the Tellus Resources catalog: free plan, use cases, and alternatives." />
   <meta name="twitter:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
 
   <link rel="icon" type="image/png" href="/uploads/TellusCooperative%20ICON.png" />
@@ -67,7 +67,7 @@
       letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal-deep); opacity: 0.75;
     }
 
-    /* Nav (same as dev/index.html) */
+    /* Nav (same as resources/index.html) */
     .dv-nav {
       position: sticky; top: 0; z-index: 50;
       background: rgba(236,224,204,0.9); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
@@ -388,7 +388,7 @@
   <div class="dv-nav-inner">
     <a class="dv-nav-home" href="/">
       <img src="/uploads/TellusCooperative%20ICON.png" alt="Tellus Cooperative" />
-      <span>Tellus Dev</span>
+      <span>Tellus Resources</span>
     </a>
     <div class="dv-nav-right">
       <div class="dv-nav-meta"><a href="/" id="dv-back-link">← telluscoop.org</a></div>
@@ -417,7 +417,7 @@
         <img src="/uploads/tellus.svg" alt="Tellus Cooperative" class="dv-footer-mark-img" />
       </a>
       <p id="dv-footer-brand-text"></p>
-      <a class="dv-footer-backlink" href="/dev" id="dv-footer-back"></a>
+      <a class="dv-footer-backlink" href="/resources" id="dv-footer-back"></a>
     </div>
     <div>
       <div class="eyebrow" id="dv-footer-programs-label"></div>
@@ -452,12 +452,12 @@
   </div>
 </footer>
 
-<script src="/dev/category-content.js"></script>
+<script src="/resources/category-content.js"></script>
 <script>
 (function () {
   var UI = {
     es: {
-      title: function (name) { return (name ? name + " — " : "") + "Tellus Dev"; },
+      title: function (name) { return (name ? name + " — " : "") + "Tellus Resources"; },
       breadcrumbHome: "Directorio",
       liveEyebrow: "Vista previa",
       liveHeading: "Web oficial",
@@ -502,7 +502,7 @@
       footerCopyright: "© 2026 Tellus Cooperative Foundation · New York, NY",
     },
     en: {
-      title: function (name) { return (name ? name + " — " : "") + "Tellus Dev"; },
+      title: function (name) { return (name ? name + " — " : "") + "Tellus Resources"; },
       breadcrumbHome: "Directory",
       liveEyebrow: "Live preview",
       liveHeading: "Official site",
@@ -620,13 +620,13 @@
     document.getElementById("dv-footer-follow-label").textContent = t("footerFollow");
     document.getElementById("dv-footer-copyright").textContent = t("footerCopyright");
     document.getElementById("dv-footer-back").textContent = t("exploreAll");
-    document.getElementById("dv-footer-back").setAttribute("href", "/dev");
+    document.getElementById("dv-footer-back").setAttribute("href", "/resources");
   }
 
   // Updates the browser-tab title/description + OG/Twitter meta tags client-side once a tool
   // resolves, for a nicer tab/share preview when JS runs. Crawlers that don't execute JS still
   // see the static fallback tags baked into <head> (this is a client-rendered template serving
-  // every /dev/tools/:slug from one file, so real per-tool OG would need a build step or a
+  // every /resources/tools/:slug from one file, so real per-tool OG would need a build step or a
   // serverless function this repo doesn't have — out of scope here).
   function updateMetaTags(title, description) {
     document.title = title;
@@ -648,7 +648,7 @@
       '<div class="td-notfound">' +
         '<h1>' + escapeHtml(t("notFoundTitle")) + '</h1>' +
         '<p>' + escapeHtml(t("notFoundBody")) + '</p>' +
-        '<a href="/dev">' + escapeHtml(t("notFoundLink")) + '</a>' +
+        '<a href="/resources">' + escapeHtml(t("notFoundLink")) + '</a>' +
       '</div>';
     document.getElementById("dv-back-link").textContent = t("navBack");
     renderFooterStatic();
@@ -685,9 +685,9 @@
     var shortExtra = (catContent.shortVersionExtra && catContent.shortVersionExtra[state.lang]) || "";
 
     var breadcrumbHtml =
-      '<a href="/dev">' + escapeHtml(t("breadcrumbHome")) + '</a>' +
+      '<a href="/resources">' + escapeHtml(t("breadcrumbHome")) + '</a>' +
       '<span class="sep">/</span>' +
-      '<a href="/dev?category=' + encodeURIComponent(tool.category) + '">' + escapeHtml(categoryLabel(category)) + '</a>' +
+      '<a href="/resources?category=' + encodeURIComponent(tool.category) + '">' + escapeHtml(categoryLabel(category)) + '</a>' +
       '<span class="sep">/</span>' +
       '<strong>' + escapeHtml(name) + '</strong>';
 
@@ -702,7 +702,7 @@
         '<p class="td-desc">' + escapeHtml(desc) + '</p>' +
         '<div class="td-cta-row">' +
           '<a class="td-cta-primary" href="' + escapeHtml(tool.url) + '" target="_blank" rel="noopener">' + escapeHtml(t("visitPrefix") + " " + name) + ' ↗</a>' +
-          '<a class="td-cta-secondary" href="/dev">' + escapeHtml(t("backToDirectory")) + '</a>' +
+          '<a class="td-cta-secondary" href="/resources">' + escapeHtml(t("backToDirectory")) + '</a>' +
         '</div>' +
       '</div>' +
       '<div class="td-preview">' +
@@ -801,7 +801,7 @@
     var altCardsHtml = alternatives.map(function (alt, i) {
       var altTags = (alt.tags || []).map(function (tag) { return '<span>' + escapeHtml(tag) + '</span>'; }).join("");
       return (
-        '<a class="td-alt-card" style="--td-alt-delay:' + (i * 60) + 'ms" href="/dev/tools/' + encodeURIComponent(alt.slug) + '">' +
+        '<a class="td-alt-card" style="--td-alt-delay:' + (i * 60) + 'ms" href="/resources/tools/' + encodeURIComponent(alt.slug) + '">' +
           '<div class="td-alt-topline">' +
             '<span class="td-alt-favicon"><img src="' + faviconUrl(alt.url) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'" /></span>' +
             '<h3>' + escapeHtml(alt.name) + '</h3>' +
@@ -820,7 +820,7 @@
             '<div class="eyebrow">' + escapeHtml(t("keepExploringEyebrow")) + '</div>' +
             '<h2>' + escapeHtml(t("alternativesTo")(name)) + '</h2>' +
           '</div>' +
-          '<a class="td-alt-head-link" href="/dev?category=' + encodeURIComponent(tool.category) + '">' + escapeHtml(t("seeCategory")) + '</a>' +
+          '<a class="td-alt-head-link" href="/resources?category=' + encodeURIComponent(tool.category) + '">' + escapeHtml(t("seeCategory")) + '</a>' +
         '</div>' +
         '<div class="td-alt-grid">' + altCardsHtml + '</div>' +
       '</section>'
@@ -869,9 +869,9 @@
 
   function slugFromPath() {
     // Rewrites (vercel.json / serve.json) are transparent: the browser's
-    // visible URL stays "/dev/tools/<slug>" with no query string ever
+    // visible URL stays "/resources/tools/<slug>" with no query string ever
     // reaching this page, so the slug must come from the pathname.
-    var match = location.pathname.match(/\/dev\/tools\/([^/]+)\/?$/);
+    var match = location.pathname.match(/\/resources\/tools\/([^/]+)\/?$/);
     return match ? decodeURIComponent(match[1]) : null;
   }
 
@@ -883,7 +883,7 @@
 
   state.lang = loadLang();
 
-  fetch("/dev/tools.json")
+  fetch("/resources/tools.json")
     .then(function (res) { return res.json(); })
     .then(function (data) {
       state.data = data;

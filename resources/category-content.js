@@ -1,4 +1,4 @@
-// Category-level content templates for Tellus Dev tool detail pages (dev/tool.html).
+// Category-level content templates for Tellus Resources tool detail pages (resources/tool.html).
 // One set of templated strings per category id — reused across every tool in that
 // category with the tool's own name/tags/free-tier text substituted in.
 // Wording/structure verified against https://itsfree.dev/es tool detail pages
