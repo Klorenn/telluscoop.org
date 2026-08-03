@@ -227,8 +227,11 @@ test("guides section generates a docs-grounded guide, posts, and images for ever
 });
 
 test("guides let the user toggle images/emojis, enforce >=2 sources, add inline hyperlinks, and include SEO/GEO metadata", () => {
-  const guideFn = edge.match(/if \(body\.format === "guide"\)[\s\S]*?\n    \}/)?.[0];
-  assert.ok(guideFn, "guide format block not found");
+  const guideBlock = edge.match(/if \(body\.format === "guide"\)[\s\S]*?\n    \}/)?.[0];
+  assert.ok(guideBlock, "guide format block not found");
+  // The Markdown section headers now live in the bilingual guideFormatBlock() helper.
+  const guideHelper = edge.match(/function guideFormatBlock[\s\S]*?\n\}/)?.[0] ?? "";
+  const guideFn = guideBlock + guideHelper;
   assert.match(guideFn, /AL MENOS 2 fuentes/);
   assert.match(guideFn, /docsUrl.*title.*Documentación oficial/s);
   assert.match(guideFn, /hipervínculo real/);
@@ -459,8 +462,11 @@ test("repo search can sort by stars, forks, or recency", () => {
 });
 
 test("repo X post follows the viral thread style: normal-case hook (no all caps), → bullets, cómo lo logra, repo link in tweet 2", () => {
-  const fn = edge.match(/async function generateRepoSocialPosts[\s\S]*?\n\}/)?.[0];
-  assert.ok(fn, "generateRepoSocialPosts not found");
+  const repoFn = edge.match(/async function generateRepoSocialPosts[\s\S]*?\n\}/)?.[0];
+  assert.ok(repoFn, "generateRepoSocialPosts not found");
+  // The channel rules + worked example now live in the bilingual repoPostsBlock() helper.
+  const repoHelper = edge.match(/function repoPostsBlock[\s\S]*?\n\}/)?.[0] ?? "";
+  const fn = repoFn + repoHelper;
   assert.doesNotMatch(fn, /gancho en MAYÚSCULAS/, "hook must not be forced to all caps");
   assert.match(fn, /NUNCA todo en mayúsculas/);
   assert.match(fn, /→/);

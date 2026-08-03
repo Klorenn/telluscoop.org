@@ -164,6 +164,119 @@ function postJsonContract(lang: Lang): string {
 {"post": "${lang === "en" ? "Main X post, <=280 chars, hook + repo link" : "Post principal para X, <=280 caracteres, con gancho y el enlace del repo"}", "thread": ["0-3 tweets extra de hilo, opcionales"], "hashtags": ["2-4 hashtags relevantes sin espacios"]}`;
 }
 
+// Repo post channel rules + worked example. Kept fully bilingual because the
+// Spanish example is a literal "copy this format" anchor for the model —
+// leaving it Spanish-only leaked Spanish into English-requested output.
+function repoPostsBlock(lang: Lang): string {
+  if (lang === "en") {
+    return `Channels:
+- x: main post WITHOUT the repo link (the link goes in the second tweet). Mandatory format, matching this example exactly:
+"Direct humanitarian aid delivery with blockchain.
+Soter (27 stars) uses @StellarOrg and AI to send aid directly.
+→ Donors and NGOs create easy payment links.
+→ AI privately verifies needs.
+→ On-chain impact, full privacy.
+Join us building the future
+
+How does it work? Soter uses Soroban Smart Contracts to create simple \\"claim links\\". NGOs and donors generate these links, and an AI privately verifies needs, ensuring fair and efficient distribution."
+NOTE: that example is from a blockchain repo, but it's ONLY a FORMAT example — the format applies to ANY repo (AI, dev tools, UI, scraping, whatever it is), adapting the content to the repo's real domain. Structure: 1) normal hook (capitalize only the first letter and proper nouns, NEVER all caps) about what the repo does, 2) line "Name (N stars) uses/does X to Y" — mention the project's or ecosystem's @handle ONLY if it exists and you know it with certainty (e.g. @StellarOrg, @OpenAI); otherwise omit it, 3) 3 bullets starting "→ " with concrete details, 4) short closing line inviting action, 5) final paragraph "How does it work? ..." explaining the technique in 2-3 sentences. Only real facts from the repo.
+- x_reply: the thread's second tweet: ONLY the repo link with 1 short line inviting people to check it out (e.g. "The repo, open source: <link>").
+- whatsapp: 2-4 sober lines to share in technical groups, no emojis, ends with the link.
+- discord: 2-4 lines for a community/dev channel, friendly but no empty hype, ends with the link.
+- linkedin: 3-5 short paragraphs, professional tone, explain the value or use case, close with the link.
+- instagram: 2-3 line caption + 3-5 hashtags at the end (no clickable link — invite people to search for it or "link in bio").
+
+Respond ONLY with a valid JSON object, no code blocks or extra text:
+{"x": "main post for X (no link)", "x_reply": "second tweet with the repo link", "whatsapp": "message for WhatsApp", "discord": "message for Discord", "linkedin": "post for LinkedIn", "instagram": "caption for Instagram"}`;
+  }
+  return `Canales:
+- x: post principal SIN el link del repo (el link va en el segundo tweet). Formato obligatorio, igual a este ejemplo:
+"Envío de ayuda humanitaria directa con blockchain.
+Soter (27 estrellas) usa @StellarOrg y AI para enviar ayuda directo.
+→ Donantes y ONGs crean links de cobro fáciles.
+→ La IA verifica necesidades en privado.
+→ Impacto on-chain, privacidad total.
+Súmate a construir el futuro
+
+¿Cómo lo logra? Soter usa Smart Contracts de Soroban para crear \\"claim links\\" simples. Las ONGs y donantes generan estos enlaces, y una IA verifica de forma privada las necesidades, asegurando una distribución justa y eficiente."
+OJO: ese ejemplo es de un repo blockchain, pero es SOLO un ejemplo de FORMATO — el formato aplica a CUALQUIER repo (IA, dev tools, UI, scraping, lo que sea) adaptando el contenido al dominio real del repo. Estructura: 1) gancho normal (mayúscula solo al inicio y en nombres propios, NUNCA todo en mayúsculas) sobre lo que hace el repo, 2) línea "Nombre (N estrellas) usa/hace X para Y" — menciona la @cuenta de X del proyecto o ecosistema SOLO si existe y la conoces con certeza (ej: @StellarOrg, @OpenAI); si no, omite la mención, 3) 3 bullets "→ " con lo concreto, 4) cierre corto invitando a la acción, 5) párrafo final "¿Cómo lo logra? ..." explicando la técnica en 2-3 frases. Solo datos reales del repo.
+- x_reply: el segundo tweet del hilo: SOLO el enlace del repo con 1 línea corta invitando a verlo (ej: "El repo, open source: <enlace>").
+- whatsapp: 2-4 líneas sobrias para compartir en grupos técnicos, sin emojis, termina con el enlace.
+- discord: 2-4 líneas para un canal de comunidad/dev, tono cercano pero sin hype vacío, termina con el enlace.
+- linkedin: 3-5 párrafos cortos, tono profesional, explica el valor o caso de uso, cierre con el enlace.
+- instagram: caption de 2-3 líneas + 3-5 hashtags al final (sin link clickeable — invita a buscarlo o "link en bio").
+
+Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
+{"x": "post principal para X (sin link)", "x_reply": "segundo tweet con el enlace del repo", "whatsapp": "mensaje para WhatsApp", "discord": "mensaje para Discord", "linkedin": "post para LinkedIn", "instagram": "caption para Instagram"}`;
+}
+
+// Guide's Markdown section headers are a literal "follow this format exactly"
+// template — same language-leak risk as repoPostsBlock's worked example.
+function guideFormatBlock(lang: Lang, category: "agent" | "blockchain"): string {
+  if (lang === "en") {
+    return `Mandatory Markdown format:
+# Guide title (clear, specific, with the main keyword)
+### Subtitle: what the reader will achieve
+**Level:** beginner, intermediate, or advanced
+
+## SEO Meta
+**Meta description:** 1 sentence, 140 to 160 characters, natural, with the main keyword, written for the search engine snippet.
+**Keywords:** 5 to 8 relevant keywords separated by commas.
+
+## TL;DR
+2-3 sentences summarizing the whole guide on their own (so an AI search engine can cite them directly without reading the rest).
+
+## What you'll achieve
+2-3 lines.
+
+## Requirements
+List of what's needed before starting (SDK, account, language version, etc.).
+
+## Step by step
+Development with ## subheadings. WHENEVER a step involves code, ALWAYS include a real, working code block in \`\`\`language (not pseudocode, don't skip it).
+
+## Common mistakes
+2-4 typical mistakes and how to avoid them.
+
+## Tellus closing
+1 short paragraph connecting this to Tellus Cooperative's mission (${category === "agent" ? "open tools for builders, AI applied to building faster" : "open infrastructure, financial inclusion"}).
+
+---
+**SOURCES**
+At least 2 real, distinct links from the official documentation and other sources you verified.`;
+  }
+  return `Formato obligatorio en Markdown:
+# Título de la guía (claro, específico, con la keyword principal)
+### Subtítulo: qué va a lograr el lector
+**Nivel:** principiante, intermedio o avanzado
+
+## Meta SEO
+**Meta descripción:** 1 frase de 140 a 160 caracteres, natural, con la keyword principal, pensada para el snippet de buscadores.
+**Palabras clave:** 5 a 8 palabras clave relevantes separadas por coma.
+
+## TL;DR
+2-3 frases que resuman la guía completa por sí solas (para que un buscador con IA pueda citarlas directamente sin leer el resto).
+
+## Qué vas a lograr
+2-3 líneas.
+
+## Requisitos
+Lista de lo que hace falta antes de empezar (SDK, cuenta, versión de lenguaje, etc.).
+
+## Paso a paso
+Desarrollo con subtítulos ##. CUANDO el paso involucre código, SIEMPRE incluye un bloque de código real y funcional en \`\`\`lenguaje (no pseudocódigo, no lo omitas).
+
+## Errores comunes
+2-4 errores típicos y cómo evitarlos.
+
+## Cierre Tellus
+1 párrafo breve conectando esto con la misión de Tellus Cooperative (${category === "agent" ? "herramientas abiertas para builders, IA aplicada a construir más rápido" : "infraestructura abierta, inclusión financiera"}).
+
+---
+**SOURCES**
+Mínimo 2 links reales y distintos de la documentación oficial y otras fuentes que verificaste.`;
+}
+
 interface Draft {
   title: string;
   subtitle: string;
@@ -486,25 +599,7 @@ Usa Google Search para entender qué hace el proyecto y por qué es interesante 
 
 ${styleRules(lang)}
 
-Canales:
-- x: post principal SIN el link del repo (el link va en el segundo tweet). Formato obligatorio, igual a este ejemplo:
-"Envío de ayuda humanitaria directa con blockchain.
-Soter (27 estrellas) usa @StellarOrg y AI para enviar ayuda directo.
-→ Donantes y ONGs crean links de cobro fáciles.
-→ La IA verifica necesidades en privado.
-→ Impacto on-chain, privacidad total.
-Súmate a construir el futuro
-
-¿Cómo lo logra? Soter usa Smart Contracts de Soroban para crear \\"claim links\\" simples. Las ONGs y donantes generan estos enlaces, y una IA verifica de forma privada las necesidades, asegurando una distribución justa y eficiente."
-OJO: ese ejemplo es de un repo blockchain, pero es SOLO un ejemplo de FORMATO — el formato aplica a CUALQUIER repo (IA, dev tools, UI, scraping, lo que sea) adaptando el contenido al dominio real del repo. Estructura: 1) gancho normal (mayúscula solo al inicio y en nombres propios, NUNCA todo en mayúsculas) sobre lo que hace el repo, 2) línea "Nombre (N estrellas) usa/hace X para Y" — menciona la @cuenta de X del proyecto o ecosistema SOLO si existe y la conoces con certeza (ej: @StellarOrg, @OpenAI); si no, omite la mención, 3) 3 bullets "→ " con lo concreto, 4) cierre corto invitando a la acción, 5) párrafo final "¿Cómo lo logra? ..." explicando la técnica en 2-3 frases. Solo datos reales del repo.
-- x_reply: el segundo tweet del hilo: SOLO el enlace del repo con 1 línea corta invitando a verlo (ej: "El repo, open source: <enlace>").
-- whatsapp: 2-4 líneas sobrias para compartir en grupos técnicos, sin emojis, termina con el enlace.
-- discord: 2-4 líneas para un canal de comunidad/dev, tono cercano pero sin hype vacío, termina con el enlace.
-- linkedin: 3-5 párrafos cortos, tono profesional, explica el valor o caso de uso, cierre con el enlace.
-- instagram: caption de 2-3 líneas + 3-5 hashtags al final (sin link clickeable — invita a buscarlo o "link en bio").
-
-Responde ÚNICAMENTE con un objeto JSON válido, sin bloques de código ni texto extra:
-{"x": "post principal para X (sin link)", "x_reply": "segundo tweet con el enlace del repo", "whatsapp": "mensaje para WhatsApp", "discord": "mensaje para Discord", "linkedin": "post para LinkedIn", "instagram": "caption para Instagram"}`;
+${repoPostsBlock(lang)}`;
 
   const { data, model } = await callGemini(apiKey, input);
   const parsed = parseJsonLoose(extractText(data));
@@ -660,40 +755,11 @@ Cuando menciones una herramienta, librería o dato externo dentro del texto, agr
 ${reposContextBlock(verifiedRepos)}
 ${emojiRule}
 
-Formato obligatorio en Markdown:
-# Título de la guía (claro, específico, con la keyword principal)
-### Subtítulo: qué va a lograr el lector
-**Nivel:** principiante, intermedio o avanzado
-
-## Meta SEO
-**Meta descripción:** 1 frase de 140 a 160 caracteres, natural, con la keyword principal, pensada para el snippet de buscadores.
-**Palabras clave:** 5 a 8 palabras clave relevantes separadas por coma.
-
-## TL;DR
-2-3 frases que resuman la guía completa por sí solas (para que un buscador con IA pueda citarlas directamente sin leer el resto).
-
-## Qué vas a lograr
-2-3 líneas.
-
-## Requisitos
-Lista de lo que hace falta antes de empezar (SDK, cuenta, versión de lenguaje, etc.).
-
-## Paso a paso
-Desarrollo con subtítulos ##. CUANDO el paso involucre código, SIEMPRE incluye un bloque de código real y funcional en \`\`\`lenguaje (no pseudocódigo, no lo omitas).
-
-## Errores comunes
-2-4 errores típicos y cómo evitarlos.
-
-## Cierre Tellus
-1 párrafo breve conectando esto con la misión de Tellus Cooperative (${category === "agent" ? "herramientas abiertas para builders, IA aplicada a construir más rápido" : "infraestructura abierta, inclusión financiera"}).
-
----
-**SOURCES**
-Mínimo 2 links reales y distintos de la documentación oficial y otras fuentes que verificaste.
-
 ${styleRules(lang)}
 
-Responde ÚNICAMENTE con la guía completa en Markdown, siguiendo exactamente ese formato, sin comentarios extra antes ni después.`;
+${guideFormatBlock(lang, category)}
+
+${lang === "en" ? "Respond ONLY with the complete guide in Markdown, following exactly that format, no extra comments before or after." : "Responde ÚNICAMENTE con la guía completa en Markdown, siguiendo exactamente ese formato, sin comentarios extra antes ni después."}`;
 
       try {
         const { data, model } = await callGemini(apiKey, input);
