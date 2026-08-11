@@ -18,19 +18,28 @@ export default async function handler(req) {
   if (!key) return json({ error: 'Luma no está configurado' }, 503);
 
   try {
-    const r = await fetch('https://public-api.luma.com/public/v1/calendar/list-events?pagination_limit=6', {
-      headers: { 'x-luma-api-key': key },
-    });
-    if (!r.ok) throw new Error(`Luma respondió ${r.status}`);
-    const data = await r.json();
+    const now = Date.now();
+    let cursor = '';
+    let all = [];
+    let upcoming = [];
+    for (let page = 0; page < 20 && upcoming.length < 6; page += 1) {
+      const suffix = cursor ? `&pagination_cursor=${encodeURIComponent(cursor)}` : '';
+      const r = await fetch(`https://public-api.luma.com/public/v1/calendar/list-events?pagination_limit=50${suffix}`, {
+        headers: { 'x-luma-api-key': key },
+      });
+      if (!r.ok) throw new Error(`Luma respondió ${r.status}`);
+      const data = await r.json();
+      const entries = (data.entries || []).map((entry) => entry.event || entry);
+      all = all.concat(entries);
+      upcoming = all.filter((event) => event.start_at && new Date(event.start_at).getTime() >= now);
+      if (!data.has_more || !data.next_cursor) break;
+      cursor = data.next_cursor;
+    }
 
     const url = new URL(req.url);
-    if (url.searchParams.get('debug') === '1') return json(data, 200);
+    if (url.searchParams.get('debug') === '1') return json({ upcoming, scanned: all.length }, 200);
 
-    const now = Date.now();
-    const events = (data.entries || [])
-      .map((entry) => entry.event || entry)
-      .filter((event) => event.start_at && new Date(event.start_at).getTime() >= now)
+    const events = upcoming
       .sort((a, b) => new Date(a.start_at) - new Date(b.start_at))
       .slice(0, 6)
       .map((event) => ({ name: event.name, start_at: event.start_at, url: event.url }));
