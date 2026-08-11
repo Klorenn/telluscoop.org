@@ -131,11 +131,10 @@
 
     /* Carousel */
     .hub-carousel {
-      display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 12px;
-      -ms-overflow-style: none; scrollbar-width: thin;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
     }
     .hub-card {
-      scroll-snap-align: start; flex: 0 0 300px; background: var(--sand-soft); border: 1px solid var(--sand-muted);
+      background: var(--sand-soft); border: 1px solid var(--sand-muted);
       border-radius: 16px; padding: 28px;
       opacity: 0; transform: translateY(20px);
       transition: opacity 560ms ease, transform 560ms ease, border-color 220ms ease, box-shadow 220ms ease;
@@ -150,9 +149,9 @@
     .hub-card p { font-size: 13.5px; opacity: 0.75; line-height: 1.6; }
 
     /* Map */
-    .hub-map-wrap { border-radius: 18px; overflow: hidden; border: 1px solid var(--sand-muted); }
-    .hub-map-wrap iframe { display: block; width: 100%; height: 420px; border: 0; }
-    .hub-map-addr { margin-top: 14px; font-size: 13px; opacity: 0.7; font-family: var(--mono); }
+    .hub-map-wrap { max-width: 640px; border-radius: 14px; overflow: hidden; border: 1px solid var(--sand-muted); }
+    .hub-map-wrap iframe { display: block; width: 100%; height: 260px; border: 0; }
+    .hub-map-addr { margin-top: 12px; font-size: 13px; opacity: 0.7; font-family: var(--mono); }
 
     /* Stellar Barrio */
     .hub-barrio { background: var(--teal-deep); color: var(--sand); border-radius: 18px; padding: 48px; display: flex; gap: 40px; align-items: center; flex-wrap: wrap; }
@@ -180,6 +179,7 @@
 
     @media (max-width: 860px) {
       .hub-hero-grid { grid-template-columns: 1fr; padding: 40px 48px; }
+      .hub-carousel { grid-template-columns: repeat(2, 1fr); }
       .hub-barrio { flex-direction: column; align-items: flex-start; }
     }
     @media (max-width: 640px) {
@@ -187,6 +187,7 @@
       .hub-nav-links { display: none; }
       .hub-section { padding: 48px 20px; }
       .hub-hero-grid { padding: 32px 20px; gap: 32px; }
+      .hub-carousel { grid-template-columns: 1fr; }
       .hub-barrio { padding: 28px; }
     }
   </style>
@@ -198,7 +199,6 @@
   <div class="hub-nav-inner">
     <a class="hub-nav-home" href="index.html">
       <img src="uploads/tellus.svg" alt="Tellus Cooperative" />
-      <span>Blockchain Hub</span>
     </a>
     <div class="hub-nav-links">
       <a href="#hub">Hub</a>
