@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blockchain Hub — Tellus Cooperative</title>
+  <meta name="description" content="Blockchain Hub: el espacio presencial de Tellus Cooperative. Educación, comunidad, eventos y la iniciativa Stellar Barrio." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://telluscoop.org/hub" />
+  <link rel="icon" type="image/png" href="uploads/TellusCooperative%20ICON.png" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://telluscoop.org/hub" />
+  <meta property="og:site_name" content="Tellus Cooperative" />
+  <meta property="og:title" content="Blockchain Hub — Tellus Cooperative" />
+  <meta property="og:description" content="El espacio presencial de Tellus Cooperative: educación, comunidad, eventos y la iniciativa Stellar Barrio." />
+  <meta property="og:image" content="https://telluscoop.org/uploads/OPENGRAPH.jpg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --sand: #ECE0CC;
+      --sand-soft: #F5EDDD;
+      --sand-muted: #D4C8B5;
+      --teal: #3F8487;
+      --teal-deep: #2A5A5C;
+      --teal-ink: #1F3536;
+      --clay: #C75A2A;
+      --clay-deep: #9E441F;
+      --serif: 'Fraunces', 'Instrument Serif', Georgia, serif;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { background: var(--sand); color: var(--teal-ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+    body { line-height: 1.55; }
+    a { color: inherit; }
+
+    .eyebrow {
+      font-family: var(--sans); font-size: 11px; font-weight: 500;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal-deep);
+    }
+
+    /* Nav */
+    .hub-nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(236,224,204,0.88); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--sand-muted);
+    }
+    .hub-nav-inner {
+      max-width: 1320px; margin: 0 auto; padding: 14px 48px;
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    }
+    .hub-nav-home { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+    .hub-nav-home img { height: 38px; width: auto; }
+    .hub-nav-home span { font-family: var(--serif); font-size: 16px; letter-spacing: -0.02em; color: var(--teal-deep); }
+    .hub-nav-links { display: flex; gap: 24px; }
+    .hub-nav-links a { font-size: 13px; font-weight: 500; color: var(--teal-ink); opacity: 0.78; text-decoration: none; transition: opacity 180ms; }
+    .hub-nav-links a:hover { opacity: 1; }
+    .hub-nav-cta {
+      font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 999px;
+      background: var(--clay); color: var(--sand); text-decoration: none; white-space: nowrap;
+      transition: background 180ms;
+    }
+    .hub-nav-cta:hover { background: var(--clay-deep); }
+
+    /* Sections */
+    .hub-section { max-width: 1320px; margin: 0 auto; padding: 80px 48px; }
+    .hub-section + .hub-section { border-top: 1px solid var(--sand-muted); }
+    .hub-section-head { margin-bottom: 40px; max-width: 640px; }
+    .hub-h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(40px, 5.5vw, 76px); line-height: 1.02; letter-spacing: -0.025em; }
+    .hub-h1 em { font-style: italic; color: var(--teal); }
+    .hub-h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(28px, 3.2vw, 46px); line-height: 1.08; letter-spacing: -0.02em; margin-bottom: 8px; }
+    .hub-lede { font-size: 17px; color: var(--teal-ink); opacity: 0.78; max-width: 600px; margin-top: 14px; }
+
+    /* Hero */
+    .hub-hero { padding: 88px 48px 56px; text-align: center; }
+    .hub-hero .hub-h1 { margin-bottom: 16px; }
+    .hub-hero .hub-lede { margin: 0 auto; }
+    .hub-hero-tags { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 32px; }
+    .hub-tag {
+      font-size: 12px; font-weight: 500; padding: 7px 14px; border-radius: 999px;
+      background: var(--sand-soft); border: 1px solid var(--sand-muted); color: var(--teal-deep);
+    }
+    .hub-hero-cta { margin-top: 36px; }
+
+    /* Buttons */
+    .hub-btn {
+      display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;
+      padding: 12px 26px; border-radius: 999px; text-decoration: none; border: 1px solid var(--teal-deep);
+      color: var(--teal-deep); background: transparent; cursor: pointer; transition: all 180ms;
+      font-family: var(--sans);
+    }
+    .hub-btn:hover { background: var(--teal-deep); color: var(--sand); }
+    .hub-btn-accent { background: var(--clay); border-color: var(--clay); color: var(--sand); }
+    .hub-btn-accent:hover { background: var(--clay-deep); border-color: var(--clay-deep); }
+
+    /* Apply / CTA + Form */
+    .hub-apply-card {
+      background: var(--sand-soft); border: 1px solid var(--sand-muted); border-radius: 18px;
+      padding: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start;
+    }
+    .hub-apply-copy .eyebrow { margin-bottom: 10px; }
+    .hub-apply-copy p { font-size: 15px; opacity: 0.8; margin-top: 12px; max-width: 420px; }
+    .hub-form { display: flex; flex-direction: column; gap: 14px; }
+    .hub-form label { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--teal-deep); margin-bottom: 4px; display: block; }
+    .hub-form input, .hub-form select, .hub-form textarea {
+      width: 100%; font-family: var(--sans); font-size: 14px; padding: 12px 14px;
+      border: 1px solid var(--sand-muted); border-radius: 10px; background: var(--sand); color: var(--teal-ink);
+    }
+    .hub-form textarea { resize: vertical; min-height: 80px; }
+    .hub-form-status { font-size: 13px; margin-top: 4px; min-height: 18px; }
+    .hub-form-status.ok { color: var(--teal-deep); }
+
+    /* Carousel */
+    .hub-carousel {
+      display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 12px;
+      -ms-overflow-style: none; scrollbar-width: thin;
+    }
+    .hub-card {
+      scroll-snap-align: start; flex: 0 0 300px; background: var(--sand-soft); border: 1px solid var(--sand-muted);
+      border-radius: 16px; padding: 28px;
+    }
+    .hub-card-icon { font-size: 24px; margin-bottom: 14px; }
+    .hub-card h3 { font-family: var(--serif); font-size: 20px; font-weight: 400; margin-bottom: 8px; letter-spacing: -0.01em; }
+    .hub-card p { font-size: 13.5px; opacity: 0.75; line-height: 1.6; }
+
+    /* Pictures */
+    .hub-pictures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .hub-pic { aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: var(--sand-soft); border: 1px solid var(--sand-muted); }
+    .hub-pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* Map */
+    .hub-map-wrap { border-radius: 18px; overflow: hidden; border: 1px solid var(--sand-muted); }
+    .hub-map-wrap iframe { display: block; width: 100%; height: 420px; border: 0; }
+    .hub-map-addr { margin-top: 14px; font-size: 13px; opacity: 0.7; font-family: var(--mono); }
+
+    /* Stellar Barrio */
+    .hub-barrio { background: var(--teal-deep); color: var(--sand); border-radius: 18px; padding: 48px; display: flex; gap: 40px; align-items: center; flex-wrap: wrap; }
+    .hub-barrio .eyebrow { color: rgba(236,224,204,0.65); }
+    .hub-barrio-badge {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+      background: var(--clay); color: var(--sand); padding: 5px 12px; border-radius: 999px; display: inline-block; margin-bottom: 14px;
+    }
+    .hub-barrio h2 { color: var(--sand); }
+    .hub-barrio p { color: rgba(236,224,204,0.82); font-size: 15px; max-width: 520px; margin-top: 12px; }
+    .hub-barrio-cta { margin-top: 20px; }
+    .hub-barrio .hub-btn { border-color: var(--sand); color: var(--sand); }
+    .hub-barrio .hub-btn:hover { background: var(--sand); color: var(--teal-deep); }
+
+    /* Luma events */
+    .hub-events-wrap { border-radius: 18px; overflow: hidden; border: 1px solid var(--sand-muted); background: var(--sand-soft); min-height: 460px; }
+    .hub-events-wrap iframe { display: block; width: 100%; height: 560px; border: 0; }
+    .hub-events-fallback { padding: 48px; text-align: center; }
+    .hub-events-fallback p { opacity: 0.7; font-size: 14px; margin-bottom: 16px; }
+
+    /* Footer */
+    .hub-footer { max-width: 1320px; margin: 0 auto; padding: 40px 48px 56px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; opacity: 0.65; flex-wrap: wrap; gap: 12px; }
+    .hub-footer a { text-decoration: none; }
+    .hub-footer a:hover { opacity: 0.8; }
+
+    @media (max-width: 860px) {
+      .hub-apply-card { grid-template-columns: 1fr; }
+      .hub-pictures { grid-template-columns: repeat(2, 1fr); }
+      .hub-barrio { flex-direction: column; align-items: flex-start; }
+    }
+    @media (max-width: 640px) {
+      .hub-nav-inner { padding: 12px 20px; }
+      .hub-nav-links { display: none; }
+      .hub-section { padding: 48px 20px; }
+      .hub-hero { padding: 48px 20px 36px; }
+      .hub-apply-card, .hub-barrio { padding: 28px; }
+      .hub-pictures { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="hub-nav">
+  <div class="hub-nav-inner">
+    <a class="hub-nav-home" href="index.html">
+      <img src="uploads/tellus.svg" alt="Tellus Cooperative" />
+      <span>Blockchain Hub</span>
+    </a>
+    <div class="hub-nav-links">
+      <a href="#hub">Hub</a>
+      <a href="#pictures">Fotos</a>
+      <a href="#map">Mapa</a>
+      <a href="#barrio">Stellar Barrio</a>
+      <a href="#events">Eventos</a>
+    </div>
+    <a class="hub-nav-cta" href="#apply">Postularme</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hub-hero" id="hub">
+  <div class="eyebrow">Espacio presencial · Tellus Cooperative</div>
+  <h1 class="hub-h1">Blockchain <em>Hub</em></h1>
+  <p class="hub-lede">El punto de encuentro para aprender, construir y conectar con blockchain en Latinoamérica. Educación, comunidad y proyectos, en un mismo espacio.</p>
+  <div class="hub-hero-tags">
+    <span class="hub-tag">Educación</span>
+    <span class="hub-tag">Coworking</span>
+    <span class="hub-tag">Networking</span>
+    <span class="hub-tag">Soporte técnico</span>
+    <span class="hub-tag">Eventos</span>
+  </div>
+  <div class="hub-hero-cta">
+    <a class="hub-btn hub-btn-accent" href="#apply">Postularme</a>
+  </div>
+</section>
+
+<!-- Apply: CTA + Form -->
+<section class="hub-section" id="apply">
+  <div class="hub-apply-card">
+    <div class="hub-apply-copy">
+      <div class="eyebrow">Sumate</div>
+      <h2 class="hub-h2">Postulá al Hub</h2>
+      <p>Contanos quién sos y qué buscás — te respondemos por mail para coordinar tu ingreso al espacio.</p>
+    </div>
+    <form class="hub-form" id="hub-apply-form">
+      <div>
+        <label for="hub-name">Nombre</label>
+        <input type="text" id="hub-name" name="name" required />
+      </div>
+      <div>
+        <label for="hub-email">Email</label>
+        <input type="email" id="hub-email" name="email" required />
+      </div>
+      <div>
+        <label for="hub-interest">Área de interés</label>
+        <select id="hub-interest" name="interest">
+          <option>Educación</option>
+          <option>Coworking</option>
+          <option>Proyecto / Incubación</option>
+          <option>Otro</option>
+        </select>
+      </div>
+      <div>
+        <label for="hub-msg">Mensaje</label>
+        <textarea id="hub-msg" name="message"></textarea>
+      </div>
+      <button type="submit" class="hub-btn hub-btn-accent">Enviar postulación</button>
+      <p class="hub-form-status" id="hub-form-status"></p>
+    </form>
+  </div>
+</section>
+
+<!-- Carousel -->
+<section class="hub-section" id="carousel">
+  <div class="hub-section-head">
+    <div class="eyebrow">Qué hay adentro</div>
+    <h2 class="hub-h2">Un espacio para cada etapa</h2>
+    <p class="hub-lede">Desde tu primera clase de blockchain hasta el lanzamiento de tu proyecto.</p>
+  </div>
+  <div class="hub-carousel">
+    <div class="hub-card">
+      <div class="hub-card-icon">🎓</div>
+      <h3>Educación</h3>
+      <p>Talleres y clases abiertas sobre blockchain, Stellar y desarrollo Web3, dictadas por la comunidad.</p>
+    </div>
+    <div class="hub-card">
+      <div class="hub-card-icon">💻</div>
+      <h3>Coworking</h3>
+      <p>Puestos de trabajo abiertos para builders, con wifi, mentoría técnica y acompañamiento de pares.</p>
+    </div>
+    <div class="hub-card">
+      <div class="hub-card-icon">🚀</div>
+      <h3>Incubación</h3>
+      <p>Soporte para proyectos en etapa temprana: de la idea al prototipo, con la red de Tellus detrás.</p>
+    </div>
+    <div class="hub-card">
+      <div class="hub-card-icon">🤝</div>
+      <h3>Comunidad</h3>
+      <p>Meetups, demo days y eventos que conectan a la comunidad blockchain local.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Pictures -->
+<section class="hub-section" id="pictures">
+  <div class="hub-section-head">
+    <div class="eyebrow">El espacio</div>
+    <h2 class="hub-h2">Fotos del Hub</h2>
+  </div>
+  <div class="hub-pictures">
+    <div class="hub-pic"><img src="uploads/Stellar Academy Foto.png" alt="Actividad en el Hub" /></div>
+    <div class="hub-pic"><img src="uploads/EDUCACION COOPERATIVA.jpg" alt="Educación cooperativa" /></div>
+    <div class="hub-pic"><img src="uploads/project incubation.jpg" alt="Incubación de proyectos" /></div>
+    <div class="hub-pic"><img src="uploads/cooperative education.jpg" alt="Comunidad" /></div>
+  </div>
+</section>
+
+<!-- Map -->
+<section class="hub-section" id="map">
+  <div class="hub-section-head">
+    <div class="eyebrow">Ubicación</div>
+    <h2 class="hub-h2">Encontranos</h2>
+  </div>
+  <div class="hub-map-wrap">
+    <iframe
+      src="https://www.google.com/maps?q=-33.4331972,-70.6244579(Tellus+Coop+Blockchain+Hub)&output=embed"
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      title="Ubicación de Blockchain Hub"
+    ></iframe>
+  </div>
+  <p class="hub-map-addr">Triana 861, 7500668 Providencia, Región Metropolitana</p>
+</section>
+
+<!-- Stellar Barrio -->
+<section class="hub-section" id="barrio">
+  <div class="hub-barrio">
+    <div>
+      <span class="hub-barrio-badge">Iniciativa</span>
+      <div class="eyebrow">Tellus Cooperative × Stellar</div>
+      <h2 class="hub-h2">Stellar Barrio</h2>
+      <p>Stellar Barrio es una iniciativa de Tellus Cooperative que lleva la red Stellar a la escala barrial: comercios, vecinos y organizaciones locales adoptando pagos y herramientas blockchain en su día a día.</p>
+      <div class="hub-barrio-cta">
+        <a class="hub-btn" href="stellar/index.html">Conocer Stellar Barrio</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Luma events -->
+<section class="hub-section" id="events">
+  <div class="hub-section-head">
+    <div class="eyebrow">Agenda</div>
+    <h2 class="hub-h2">Próximos eventos</h2>
+    <p class="hub-lede">Todos los eventos del Hub, vía Luma.</p>
+  </div>
+  <div class="hub-events-wrap">
+    <div class="hub-events-fallback">
+      <p>Consultá el calendario completo de eventos del Hub en Luma.</p>
+      <a class="hub-btn hub-btn-accent" href="https://lu.ma/telluscoop" target="_blank" rel="noopener noreferrer">Ver eventos en Luma</a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="hub-footer">
+  <a href="index.html">← Volver a telluscoop.org</a>
+  <p>© 2026 Tellus Cooperative Foundation</p>
+</footer>
+
+<script>
+  document.getElementById('hub-apply-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const name = document.getElementById('hub-name').value;
+    const email = document.getElementById('hub-email').value;
+    const interest = document.getElementById('hub-interest').value;
+    const message = document.getElementById('hub-msg').value;
+    const body = encodeURIComponent(
+      `Nombre: ${name}\nEmail: ${email}\nÁrea de interés: ${interest}\n\n${message}`
+    );
+    window.location.href = `mailto:hola@telluscoop.org?subject=${encodeURIComponent('Postulación Blockchain Hub')}&body=${body}`;
+    document.getElementById('hub-form-status').textContent = 'Abriendo tu cliente de mail...';
+    document.getElementById('hub-form-status').className = 'hub-form-status ok';
+  });
+</script>
+
+</body>
+</html>
