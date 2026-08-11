@@ -76,17 +76,6 @@
     .hub-h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(28px, 3.2vw, 46px); line-height: 1.08; letter-spacing: -0.02em; margin-bottom: 8px; }
     .hub-lede { font-size: 17px; color: var(--teal-ink); opacity: 0.78; max-width: 600px; margin-top: 14px; }
 
-    /* Hero */
-    .hub-hero { padding: 88px 48px 56px; text-align: center; }
-    .hub-hero .hub-h1 { margin-bottom: 16px; }
-    .hub-hero .hub-lede { margin: 0 auto; }
-    .hub-hero-tags { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 32px; }
-    .hub-tag {
-      font-size: 12px; font-weight: 500; padding: 7px 14px; border-radius: 999px;
-      background: var(--sand-soft); border: 1px solid var(--sand-muted); color: var(--teal-deep);
-    }
-    .hub-hero-cta { margin-top: 36px; }
-
     /* Buttons */
     .hub-btn {
       display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;
@@ -98,13 +87,38 @@
     .hub-btn-accent { background: var(--clay); border-color: var(--clay); color: var(--sand); }
     .hub-btn-accent:hover { background: var(--clay-deep); border-color: var(--clay-deep); }
 
-    /* Apply / CTA + Form */
-    .hub-apply-card {
-      background: var(--sand-soft); border: 1px solid var(--sand-muted); border-radius: 18px;
-      padding: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start;
+    /* Hero: gallery (left) + heading/subheading/cta form (right) */
+    .hub-hero { padding: 0; text-align: left; border-bottom: 1px solid var(--sand-muted); }
+    .hub-hero-grid {
+      max-width: 1320px; margin: 0 auto; padding: 64px 48px;
+      display: grid; grid-template-columns: 58% 1fr; gap: 56px; align-items: center;
     }
-    .hub-apply-copy .eyebrow { margin-bottom: 10px; }
-    .hub-apply-copy p { font-size: 15px; opacity: 0.8; margin-top: 12px; max-width: 420px; }
+    .hub-hero-gallery {
+      position: relative; aspect-ratio: 4 / 3; border-radius: 20px; overflow: hidden;
+      background: var(--sand-soft); border: 1px solid var(--sand-muted);
+    }
+    .hub-gallery-track { display: flex; height: 100%; transition: transform 420ms ease; }
+    .hub-gallery-track img { flex: 0 0 100%; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .hub-gallery-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%); width: 38px; height: 38px;
+      border-radius: 50%; border: 1px solid var(--sand-muted); background: rgba(236,224,204,0.85);
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px;
+      color: var(--teal-deep); padding: 0; transition: background 180ms;
+    }
+    .hub-gallery-arrow:hover { background: var(--sand); }
+    .hub-gallery-prev { left: 14px; }
+    .hub-gallery-next { right: 14px; }
+    .hub-gallery-dots { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; }
+    .hub-gallery-dots button { width: 7px; height: 7px; border-radius: 50%; border: 0; background: rgba(31,53,54,0.32); cursor: pointer; padding: 0; transition: all 180ms; }
+    .hub-gallery-dots button.active { background: var(--teal-deep); width: 20px; border-radius: 4px; }
+
+    .hub-hero-info { display: flex; flex-direction: column; }
+    .hub-hero-info .eyebrow { margin-bottom: 14px; }
+    .hub-hero-info .hub-h1 { margin-bottom: 14px; }
+    .hub-hero-info .hub-lede { margin: 0; }
+    .hub-hero-sep { border: 0; border-top: 1px solid var(--sand-muted); margin: 28px 0; }
+    .hub-hero-info .hub-form { max-width: 420px; }
+
     .hub-form { display: flex; flex-direction: column; gap: 14px; }
     .hub-form label { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--teal-deep); margin-bottom: 4px; display: block; }
     .hub-form input, .hub-form select, .hub-form textarea {
@@ -127,12 +141,6 @@
     .hub-card-icon { font-size: 24px; margin-bottom: 14px; }
     .hub-card h3 { font-family: var(--serif); font-size: 20px; font-weight: 400; margin-bottom: 8px; letter-spacing: -0.01em; }
     .hub-card p { font-size: 13.5px; opacity: 0.75; line-height: 1.6; }
-
-    /* Pictures */
-    .hub-pictures-card { display: flex; flex-direction: column; gap: 28px; }
-    .hub-pictures-image { aspect-ratio: 21 / 9; border-radius: 18px; background: var(--sand-soft); border: 1px dashed var(--sand-muted); }
-    .hub-pictures-copy .eyebrow { margin-bottom: 10px; }
-    .hub-pictures-copy p { font-size: 15px; opacity: 0.8; margin-top: 12px; max-width: 420px; }
 
     /* Map */
     .hub-map-wrap { border-radius: 18px; overflow: hidden; border: 1px solid var(--sand-muted); }
@@ -164,15 +172,15 @@
     .hub-footer a:hover { opacity: 0.8; }
 
     @media (max-width: 860px) {
-      .hub-apply-card { grid-template-columns: 1fr; }
+      .hub-hero-grid { grid-template-columns: 1fr; padding: 40px 48px; }
       .hub-barrio { flex-direction: column; align-items: flex-start; }
     }
     @media (max-width: 640px) {
       .hub-nav-inner { padding: 12px 20px; }
       .hub-nav-links { display: none; }
       .hub-section { padding: 48px 20px; }
-      .hub-hero { padding: 48px 20px 36px; }
-      .hub-apply-card, .hub-barrio { padding: 28px; }
+      .hub-hero-grid { padding: 32px 20px; gap: 32px; }
+      .hub-barrio { padding: 28px; }
     }
   </style>
 </head>
@@ -187,30 +195,76 @@
     </a>
     <div class="hub-nav-links">
       <a href="#hub">Hub</a>
-      <a href="#pictures">Fotos</a>
       <a href="#map">Mapa</a>
       <a href="#barrio">Stellar Barrio</a>
       <a href="#events">Eventos</a>
     </div>
-    <a class="hub-nav-cta" href="#apply">Postularme</a>
   </div>
 </nav>
 
-<!-- Hero -->
+<!-- Hero: gallery + heading/subheading/cta form -->
 <section class="hub-hero" id="hub">
-  <div class="eyebrow">Espacio presencial · Tellus Cooperative</div>
-  <h1 class="hub-h1">Blockchain <em>Hub</em></h1>
-  <p class="hub-lede">El punto de encuentro para aprender, construir y conectar con blockchain en Latinoamérica. Educación, comunidad y proyectos, en un mismo espacio.</p>
-  <div class="hub-hero-tags">
-    <span class="hub-tag">Educación</span>
-    <span class="hub-tag">Coworking</span>
-    <span class="hub-tag">Networking</span>
-    <span class="hub-tag">Soporte técnico</span>
-    <span class="hub-tag">Eventos</span>
+  <div class="hub-hero-grid">
+    <div class="hub-hero-gallery">
+      <div class="hub-gallery-track" id="hub-gallery-track">
+        <img src="uploads/Stellar Academy Foto.png" alt="Actividad en el Hub" />
+        <img src="uploads/EDUCACION COOPERATIVA.jpg" alt="Educación cooperativa" />
+        <img src="uploads/project incubation.jpg" alt="Incubación de proyectos" />
+        <img src="uploads/cooperative education.jpg" alt="Comunidad" />
+      </div>
+      <button class="hub-gallery-arrow hub-gallery-prev" id="hub-gallery-prev" aria-label="Foto anterior">‹</button>
+      <button class="hub-gallery-arrow hub-gallery-next" id="hub-gallery-next" aria-label="Foto siguiente">›</button>
+      <div class="hub-gallery-dots" id="hub-gallery-dots"></div>
+    </div>
+    <div class="hub-hero-info">
+      <div class="eyebrow">Espacio presencial · Tellus Cooperative</div>
+      <h1 class="hub-h1">Blockchain <em>Hub</em></h1>
+      <p class="hub-lede">El punto de encuentro para aprender, construir y conectar con blockchain en Latinoamérica. Educación, comunidad y proyectos, en un mismo espacio.</p>
+      <hr class="hub-hero-sep" />
+      <form class="hub-form" id="hub-apply-form">
+        <div>
+          <label for="hub-name">Nombre</label>
+          <input type="text" id="hub-name" name="name" required />
+        </div>
+        <div>
+          <label for="hub-email">Email</label>
+          <input type="email" id="hub-email" name="email" required />
+        </div>
+        <div>
+          <label for="hub-interest">Área de interés</label>
+          <select id="hub-interest" name="interest">
+            <option>Educación</option>
+            <option>Coworking</option>
+            <option>Proyecto / Incubación</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div>
+          <label for="hub-msg">Mensaje</label>
+          <textarea id="hub-msg" name="message"></textarea>
+        </div>
+        <button type="submit" class="hub-btn hub-btn-accent">Enviar postulación</button>
+        <p class="hub-form-status" id="hub-form-status"></p>
+      </form>
+    </div>
   </div>
-  <div class="hub-hero-cta">
-    <a class="hub-btn hub-btn-accent" href="#apply">Postularme</a>
+</section>
+
+<!-- Google Map -->
+<section class="hub-section" id="map">
+  <div class="hub-section-head">
+    <div class="eyebrow">Ubicación</div>
+    <h2 class="hub-h2">Encontranos</h2>
   </div>
+  <div class="hub-map-wrap">
+    <iframe
+      src="https://www.google.com/maps?q=-33.4331972,-70.6244579(Tellus+Coop+Blockchain+Hub)&output=embed"
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      title="Ubicación de Blockchain Hub"
+    ></iframe>
+  </div>
+  <p class="hub-map-addr">Triana 861, 7500668 Providencia, Región Metropolitana</p>
 </section>
 
 <!-- Carousel -->
@@ -242,71 +296,6 @@
       <p>Meetups, demo days y eventos que conectan a la comunidad blockchain local.</p>
     </div>
   </div>
-</section>
-
-<!-- Apply: CTA + Form -->
-<section class="hub-section" id="apply">
-  <div class="hub-apply-card">
-    <div class="hub-apply-copy">
-      <div class="eyebrow">Sumate</div>
-      <h2 class="hub-h2">Postulá al Hub</h2>
-      <p>Contanos quién sos y qué buscás — te respondemos por mail para coordinar tu ingreso al espacio.</p>
-    </div>
-    <form class="hub-form" id="hub-apply-form">
-      <div>
-        <label for="hub-name">Nombre</label>
-        <input type="text" id="hub-name" name="name" required />
-      </div>
-      <div>
-        <label for="hub-email">Email</label>
-        <input type="email" id="hub-email" name="email" required />
-      </div>
-      <div>
-        <label for="hub-interest">Área de interés</label>
-        <select id="hub-interest" name="interest">
-          <option>Educación</option>
-          <option>Coworking</option>
-          <option>Proyecto / Incubación</option>
-          <option>Otro</option>
-        </select>
-      </div>
-      <div>
-        <label for="hub-msg">Mensaje</label>
-        <textarea id="hub-msg" name="message"></textarea>
-      </div>
-      <button type="submit" class="hub-btn hub-btn-accent">Enviar postulación</button>
-      <p class="hub-form-status" id="hub-form-status"></p>
-    </form>
-  </div>
-</section>
-
-<!-- Pictures -->
-<section class="hub-section" id="pictures">
-  <div class="hub-pictures-card">
-    <div class="hub-pictures-image"></div>
-    <div class="hub-pictures-copy">
-      <div class="eyebrow">El espacio</div>
-      <h2 class="hub-h2">Fotos del Hub</h2>
-      <p>Así se vive el día a día en el Hub: clases, coworking y comunidad.</p>
-    </div>
-  </div>
-</section>
-
-<!-- Google Map -->
-<section class="hub-section" id="map">
-  <div class="hub-section-head">
-    <div class="eyebrow">Ubicación</div>
-    <h2 class="hub-h2">Encontranos</h2>
-  </div>
-  <div class="hub-map-wrap">
-    <iframe
-      src="https://www.google.com/maps?q=-33.4331972,-70.6244579(Tellus+Coop+Blockchain+Hub)&output=embed"
-      loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade"
-      title="Ubicación de Blockchain Hub"
-    ></iframe>
-  </div>
-  <p class="hub-map-addr">Triana 861, 7500668 Providencia, Región Metropolitana</p>
 </section>
 
 <!-- Stellar Barrio -->
@@ -359,6 +348,31 @@
     document.getElementById('hub-form-status').textContent = 'Abriendo tu cliente de mail...';
     document.getElementById('hub-form-status').className = 'hub-form-status ok';
   });
+
+  (function () {
+    const track = document.getElementById('hub-gallery-track');
+    const dotsWrap = document.getElementById('hub-gallery-dots');
+    const slides = track.children;
+    let index = 0;
+
+    for (let i = 0; i < slides.length; i++) {
+      const dot = document.createElement('button');
+      dot.setAttribute('aria-label', `Ir a foto ${i + 1}`);
+      dot.addEventListener('click', () => goTo(i));
+      dotsWrap.appendChild(dot);
+    }
+
+    function goTo(i) {
+      index = (i + slides.length) % slides.length;
+      track.style.transform = `translateX(-${index * 100}%)`;
+      [...dotsWrap.children].forEach((dot, di) => dot.classList.toggle('active', di === index));
+    }
+
+    document.getElementById('hub-gallery-prev').addEventListener('click', () => goTo(index - 1));
+    document.getElementById('hub-gallery-next').addEventListener('click', () => goTo(index + 1));
+
+    goTo(0);
+  })();
 </script>
 
 </body>
