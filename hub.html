@@ -192,10 +192,16 @@
     .hub-academy .hub-barrio-mark { background: var(--sand); border-color: var(--sand-muted); }
 
     /* Luma events */
-    .hub-events-wrap { border-radius: 18px; overflow: hidden; border: 1px solid var(--sand-muted); background: var(--sand-soft); min-height: 460px; }
-    .hub-events-wrap iframe { display: block; width: 100%; height: 560px; border: 0; }
-    .hub-events-fallback { padding: 48px; text-align: center; }
-    .hub-events-fallback p { opacity: 0.7; font-size: 14px; margin-bottom: 16px; }
+    .hub-events-wrap { max-width: 640px; }
+    .hub-events-list { display: flex; flex-direction: column; }
+    .hub-event-row { display: flex; align-items: center; gap: 20px; padding: 18px 4px; border-bottom: 1px solid var(--sand-muted); text-decoration: none; color: inherit; }
+    .hub-event-row:last-child { border-bottom: none; }
+    .hub-event-date { font-family: var(--mono); font-size: 12.5px; color: var(--clay); white-space: nowrap; min-width: 84px; }
+    .hub-event-name { font-size: 15px; font-weight: 600; flex: 1; }
+    .hub-event-arrow { opacity: 0.4; transition: opacity 0.15s, transform 0.15s; }
+    .hub-event-row:hover .hub-event-arrow { opacity: 1; transform: translateX(3px); }
+    .hub-events-empty, .hub-events-fallback { padding: 32px 4px; opacity: 0.7; font-size: 14px; }
+    .hub-events-fallback a { color: var(--teal-deep); font-weight: 600; }
 
     /* Footer */
     .hub-footer { max-width: 1320px; margin: 0 auto; padding: 40px 48px 56px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; opacity: 0.65; flex-wrap: wrap; gap: 12px; }
@@ -395,15 +401,35 @@
     <p class="hub-lede">Todos los eventos del Hub, vía Luma.</p>
   </div>
   <div class="hub-events-wrap">
-    <iframe src="https://lu.ma/embed/calendar/telluscoop/events" width="100%" height="560" frameborder="0" allow="fullscreen" title="Calendario de eventos Tellus en Luma" loading="lazy"></iframe>
-    <noscript>
-      <div class="hub-events-fallback">
-        <p>Consultá el calendario completo de eventos del Hub en Luma.</p>
-        <a class="hub-btn hub-btn-accent" href="https://lu.ma/telluscoop" target="_blank" rel="noopener noreferrer">Ver eventos en Luma</a>
-      </div>
-    </noscript>
+    <div class="hub-events-list" id="hub-events-list">
+      <p class="hub-events-empty">Cargando eventos…</p>
+    </div>
   </div>
 </section>
+
+<script>
+  (function () {
+    const list = document.getElementById('hub-events-list');
+    const fmt = new Intl.DateTimeFormat('es-CL', { day: '2-digit', month: 'short' });
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    fetch('/api/luma-events')
+      .then((r) => r.json())
+      .then((data) => {
+        const events = data.events || [];
+        if (!events.length) throw new Error('empty');
+        list.innerHTML = events.map((e) => `
+          <a class="hub-event-row" href="${esc(e.url)}" target="_blank" rel="noopener noreferrer">
+            <span class="hub-event-date">${esc(fmt.format(new Date(e.start_at)).toUpperCase())}</span>
+            <span class="hub-event-name">${esc(e.name)}</span>
+            <span class="hub-event-arrow">→</span>
+          </a>
+        `).join('');
+      })
+      .catch(() => {
+        list.innerHTML = '<p class="hub-events-fallback">Consultá el calendario completo en <a href="https://lu.ma/telluscoop" target="_blank" rel="noopener noreferrer">Luma</a>.</p>';
+      });
+  })();
+</script>
 
 <!-- Footer -->
 <footer class="hub-footer">
