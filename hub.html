@@ -129,9 +129,10 @@
     .hub-card p { font-size: 13.5px; opacity: 0.75; line-height: 1.6; }
 
     /* Pictures */
-    .hub-pictures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-    .hub-pic { aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: var(--sand-soft); border: 1px solid var(--sand-muted); }
-    .hub-pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .hub-pictures-card { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+    .hub-pictures-image { aspect-ratio: 4 / 3; border-radius: 18px; background: var(--sand-soft); border: 1px dashed var(--sand-muted); }
+    .hub-pictures-copy .eyebrow { margin-bottom: 10px; }
+    .hub-pictures-copy p { font-size: 15px; opacity: 0.8; margin-top: 12px; max-width: 420px; }
 
     /* Map */
     .hub-map-wrap { border-radius: 18px; overflow: hidden; border: 1px solid var(--sand-muted); }
@@ -164,7 +165,7 @@
 
     @media (max-width: 860px) {
       .hub-apply-card { grid-template-columns: 1fr; }
-      .hub-pictures { grid-template-columns: repeat(2, 1fr); }
+      .hub-pictures-card { grid-template-columns: 1fr; }
       .hub-barrio { flex-direction: column; align-items: flex-start; }
     }
     @media (max-width: 640px) {
@@ -173,7 +174,6 @@
       .hub-section { padding: 48px 20px; }
       .hub-hero { padding: 48px 20px 36px; }
       .hub-apply-card, .hub-barrio { padding: 28px; }
-      .hub-pictures { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -188,10 +188,10 @@
     </a>
     <div class="hub-nav-links">
       <a href="#hub">Hub</a>
-      <a href="#events">Eventos</a>
       <a href="#pictures">Fotos</a>
       <a href="#map">Mapa</a>
       <a href="#barrio">Stellar Barrio</a>
+      <a href="#events">Eventos</a>
     </div>
     <a class="hub-nav-cta" href="#apply">Postularme</a>
   </div>
@@ -211,21 +211,6 @@
   </div>
   <div class="hub-hero-cta">
     <a class="hub-btn hub-btn-accent" href="#apply">Postularme</a>
-  </div>
-</section>
-
-<!-- Subscribing: Luma events -->
-<section class="hub-section" id="events">
-  <div class="hub-section-head">
-    <div class="eyebrow">Agenda</div>
-    <h2 class="hub-h2">Próximos eventos</h2>
-    <p class="hub-lede">Todos los eventos del Hub, vía Luma.</p>
-  </div>
-  <div class="hub-events-wrap">
-    <div class="hub-events-fallback">
-      <p>Consultá el calendario completo de eventos del Hub en Luma.</p>
-      <a class="hub-btn hub-btn-accent" href="https://lu.ma/telluscoop" target="_blank" rel="noopener noreferrer">Ver eventos en Luma</a>
-    </div>
   </div>
 </section>
 
@@ -257,20 +242,6 @@
       <h3>Comunidad</h3>
       <p>Meetups, demo days y eventos que conectan a la comunidad blockchain local.</p>
     </div>
-  </div>
-</section>
-
-<!-- Form: Pictures -->
-<section class="hub-section" id="pictures">
-  <div class="hub-section-head">
-    <div class="eyebrow">El espacio</div>
-    <h2 class="hub-h2">Fotos del Hub</h2>
-  </div>
-  <div class="hub-pictures">
-    <div class="hub-pic"><img src="uploads/Stellar Academy Foto.png" alt="Actividad en el Hub" /></div>
-    <div class="hub-pic"><img src="uploads/EDUCACION COOPERATIVA.jpg" alt="Educación cooperativa" /></div>
-    <div class="hub-pic"><img src="uploads/project incubation.jpg" alt="Incubación de proyectos" /></div>
-    <div class="hub-pic"><img src="uploads/cooperative education.jpg" alt="Comunidad" /></div>
   </div>
 </section>
 
@@ -310,6 +281,18 @@
   </div>
 </section>
 
+<!-- Pictures -->
+<section class="hub-section" id="pictures">
+  <div class="hub-pictures-card">
+    <div class="hub-pictures-image"></div>
+    <div class="hub-pictures-copy">
+      <div class="eyebrow">El espacio</div>
+      <h2 class="hub-h2">Fotos del Hub</h2>
+      <p>Así se vive el día a día en el Hub: clases, coworking y comunidad.</p>
+    </div>
+  </div>
+</section>
+
 <!-- Google Map -->
 <section class="hub-section" id="map">
   <div class="hub-section-head">
@@ -338,6 +321,21 @@
       <div class="hub-barrio-cta">
         <a class="hub-btn" href="stellar/index.html">Conocer Stellar Barrio</a>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- Luma events -->
+<section class="hub-section" id="events">
+  <div class="hub-section-head">
+    <div class="eyebrow">Agenda</div>
+    <h2 class="hub-h2">Próximos eventos</h2>
+    <p class="hub-lede">Todos los eventos del Hub, vía Luma.</p>
+  </div>
+  <div class="hub-events-wrap">
+    <div class="hub-events-fallback">
+      <p>Consultá el calendario completo de eventos del Hub en Luma.</p>
+      <a class="hub-btn hub-btn-accent" href="https://lu.ma/telluscoop" target="_blank" rel="noopener noreferrer">Ver eventos en Luma</a>
     </div>
   </div>
 </section>
