@@ -36,9 +36,6 @@ export default async function handler(req) {
       cursor = data.next_cursor;
     }
 
-    const url = new URL(req.url);
-    if (url.searchParams.get('debug') === '1') return json({ upcoming, scanned: all.length }, 200);
-
     const events = upcoming
       .sort((a, b) => new Date(a.start_at) - new Date(b.start_at))
       .slice(0, 6)
