@@ -24,6 +24,9 @@ export default async function handler(req) {
     if (!r.ok) throw new Error(`Luma respondió ${r.status}`);
     const data = await r.json();
 
+    const url = new URL(req.url);
+    if (url.searchParams.get('debug') === '1') return json(data, 200);
+
     const now = Date.now();
     const events = (data.entries || [])
       .map((entry) => entry.event || entry)
