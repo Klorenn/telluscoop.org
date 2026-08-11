@@ -149,23 +149,47 @@
     .hub-card p { font-size: 13.5px; opacity: 0.75; line-height: 1.6; }
 
     /* Map */
-    .hub-map-wrap { max-width: 640px; border-radius: 14px; overflow: hidden; border: 1px solid var(--sand-muted); }
+    .hub-map-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+    .hub-map-wrap { border-radius: 14px; overflow: hidden; border: 1px solid var(--sand-muted); }
     .hub-map-wrap iframe { display: block; width: 100%; height: 260px; border: 0; }
-    .hub-map-addr { margin-top: 12px; font-size: 13px; opacity: 0.7; font-family: var(--mono); }
+    .hub-map-label { font-size: 13px; font-weight: 600; color: var(--teal-deep); margin-top: 14px; }
+    .hub-map-addr { margin-top: 4px; font-size: 13px; opacity: 0.7; font-family: var(--mono); }
 
     /* Stellar Barrio */
-    .hub-barrio { background: var(--teal-deep); color: var(--sand); border-radius: 18px; padding: 48px; display: flex; gap: 40px; align-items: center; flex-wrap: wrap; }
+    .hub-barrio {
+      background: var(--teal-deep); color: var(--sand); border-radius: 20px; padding: 56px;
+      display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: center;
+      opacity: 0; transform: translateY(20px); transition: opacity 560ms ease, transform 560ms ease;
+    }
+    .hub-barrio.in-view { opacity: 1; transform: translateY(0); }
     .hub-barrio .eyebrow { color: rgba(236,224,204,0.65); }
     .hub-barrio-badge {
       font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
       background: var(--clay); color: var(--sand); padding: 5px 12px; border-radius: 999px; display: inline-block; margin-bottom: 14px;
     }
     .hub-barrio h2 { color: var(--sand); }
-    .hub-barrio p { color: rgba(236,224,204,0.82); font-size: 15px; max-width: 520px; margin-top: 12px; }
-    .hub-barrio-addr { font-family: var(--mono); font-size: 13px; color: rgba(236,224,204,0.65); margin-top: 12px; }
-    .hub-barrio-cta { margin-top: 20px; }
+    .hub-barrio p { color: rgba(236,224,204,0.82); font-size: 15px; max-width: 480px; margin-top: 12px; line-height: 1.65; }
+    .hub-barrio-addr { font-family: var(--mono); font-size: 13px; color: rgba(236,224,204,0.6); margin-top: 12px; letter-spacing: 0.02em; }
+    .hub-barrio-cta { margin-top: 24px; }
     .hub-barrio .hub-btn { border-color: var(--sand); color: var(--sand); }
     .hub-barrio .hub-btn:hover { background: var(--sand); color: var(--teal-deep); }
+    .hub-barrio-mark {
+      width: 128px; height: 128px; flex-shrink: 0; border-radius: 20px;
+      background: rgba(236,224,204,0.08); border: 1px solid rgba(236,224,204,0.14);
+      display: flex; align-items: center; justify-content: center; padding: 26px;
+    }
+    .hub-barrio-mark img { width: 100%; height: 100%; object-fit: contain; }
+
+    /* Stellar Academy — inverted palette to distinguish from Barrio */
+    .hub-academy { background: var(--sand-soft); border: 1px solid var(--sand-muted); color: var(--teal-ink); }
+    .hub-academy .eyebrow { color: var(--teal-deep); opacity: 0.75; }
+    .hub-academy .hub-barrio-badge { background: var(--teal-deep); color: var(--sand); }
+    .hub-academy h2 { color: var(--teal-ink); }
+    .hub-academy p { color: var(--teal-ink); opacity: 0.78; }
+    .hub-academy .hub-barrio-addr { color: var(--teal-deep); opacity: 0.75; }
+    .hub-academy .hub-btn { border-color: var(--teal-deep); color: var(--teal-deep); }
+    .hub-academy .hub-btn:hover { background: var(--teal-deep); color: var(--sand); }
+    .hub-academy .hub-barrio-mark { background: var(--sand); border-color: var(--sand-muted); }
 
     /* Luma events */
     .hub-events-wrap { border-radius: 18px; overflow: hidden; border: 1px solid var(--sand-muted); background: var(--sand-soft); min-height: 460px; }
@@ -181,7 +205,9 @@
     @media (max-width: 860px) {
       .hub-hero-grid { grid-template-columns: 1fr; padding: 40px 48px; }
       .hub-carousel { grid-template-columns: repeat(2, 1fr); }
-      .hub-barrio { flex-direction: column; align-items: flex-start; }
+      .hub-map-grid { grid-template-columns: 1fr; }
+      .hub-barrio { grid-template-columns: 1fr; }
+      .hub-barrio-mark { order: -1; }
     }
     @media (max-width: 640px) {
       .hub-nav-inner { padding: 12px 20px; }
@@ -263,17 +289,34 @@
 <section class="hub-section" id="map">
   <div class="hub-section-head">
     <div class="eyebrow">Ubicación</div>
-    <h2 class="hub-h2">Encontranos</h2>
+    <h2 class="hub-h2">Encuéntranos</h2>
   </div>
-  <div class="hub-map-wrap">
-    <iframe
-      src="https://www.google.com/maps?q=-33.4331972,-70.6244579(Tellus+Coop+Blockchain+Hub)&output=embed"
-      loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade"
-      title="Ubicación de Blockchain Hub"
-    ></iframe>
+  <div class="hub-map-grid">
+    <div>
+      <div class="hub-map-wrap">
+        <iframe
+          src="https://www.google.com/maps?q=-33.4331972,-70.6244579(Tellus+Coop+Blockchain+Hub)&output=embed"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          title="Ubicación de Blockchain Hub"
+        ></iframe>
+      </div>
+      <p class="hub-map-label">Blockchain Hub</p>
+      <p class="hub-map-addr">Triana 861, 7500668 Providencia, Región Metropolitana</p>
+    </div>
+    <div>
+      <div class="hub-map-wrap">
+        <iframe
+          src="https://www.google.com/maps?q=Uruguay+1695,+Temuco,+Araucan%C3%ADa&output=embed"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          title="Ubicación de Stellar Academy"
+        ></iframe>
+      </div>
+      <p class="hub-map-label">Stellar Academy · iDEAUFRO</p>
+      <p class="hub-map-addr">Uruguay 1695, Temuco, Araucanía</p>
+    </div>
   </div>
-  <p class="hub-map-addr">Triana 861, 7500668 Providencia, Región Metropolitana</p>
 </section>
 
 <!-- Carousel -->
@@ -319,12 +362,15 @@
         <a class="hub-btn" href="stellar/index.html">Conocer Stellar Barrio</a>
       </div>
     </div>
+    <div class="hub-barrio-mark">
+      <img src="uploads/Stellar.svg" alt="Stellar" />
+    </div>
   </div>
 </section>
 
 <!-- Stellar Academy -->
 <section class="hub-section" id="academy">
-  <div class="hub-barrio">
+  <div class="hub-barrio hub-academy">
     <div>
       <span class="hub-barrio-badge">Convenio</span>
       <div class="eyebrow">Tellus Cooperative × Universidad de La Frontera</div>
@@ -334,6 +380,9 @@
       <div class="hub-barrio-cta">
         <a class="hub-btn" href="https://www.google.com/maps?daddr=Uruguay+1695,+Temuco,+Araucan%C3%ADa" target="_blank" rel="noopener noreferrer">Cómo llegar</a>
       </div>
+    </div>
+    <div class="hub-barrio-mark">
+      <img src="uploads/IdeaUfro.svg" alt="iDEAUFRO" />
     </div>
   </div>
 </section>
@@ -346,10 +395,13 @@
     <p class="hub-lede">Todos los eventos del Hub, vía Luma.</p>
   </div>
   <div class="hub-events-wrap">
-    <div class="hub-events-fallback">
-      <p>Consultá el calendario completo de eventos del Hub en Luma.</p>
-      <a class="hub-btn hub-btn-accent" href="https://lu.ma/telluscoop" target="_blank" rel="noopener noreferrer">Ver eventos en Luma</a>
-    </div>
+    <iframe src="https://lu.ma/embed/calendar/telluscoop/events" width="100%" height="560" frameborder="0" allow="fullscreen" title="Calendario de eventos Tellus en Luma" loading="lazy"></iframe>
+    <noscript>
+      <div class="hub-events-fallback">
+        <p>Consultá el calendario completo de eventos del Hub en Luma.</p>
+        <a class="hub-btn hub-btn-accent" href="https://lu.ma/telluscoop" target="_blank" rel="noopener noreferrer">Ver eventos en Luma</a>
+      </div>
+    </noscript>
   </div>
 </section>
 
@@ -400,7 +452,7 @@
   })();
 
   (function () {
-    const cards = document.querySelectorAll('.hub-card');
+    const cards = document.querySelectorAll('.hub-card, .hub-barrio');
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
