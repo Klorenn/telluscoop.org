@@ -39,7 +39,7 @@ export default async function handler(req) {
     const events = upcoming
       .sort((a, b) => new Date(a.start_at) - new Date(b.start_at))
       .slice(0, 6)
-      .map((event) => ({ name: event.name, start_at: event.start_at, url: event.url }));
+      .map((event) => ({ name: event.name, start_at: event.start_at, url: event.url, cover_url: event.cover_url || null }));
 
     return json({ events }, 200, { 'Cache-Control': 's-maxage=600, stale-while-revalidate=1800' });
   } catch (err) {
