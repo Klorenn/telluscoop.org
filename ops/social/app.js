@@ -1,0 +1,2806 @@
+(() => {
+  "use strict";
+
+  const cfg = window.SOCIAL_OPS_CONFIG;
+  const supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabasePublishableKey, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+  });
+
+  const $app = document.querySelector("#app");
+  const PREVIEW = new URLSearchParams(location.search).get("preview") === "1";
+
+  const platformLabels = { x: "X", linkedin: "LinkedIn", instagram: "Instagram" };
+  const repoStatusLabels = { inbox: "Bandeja", reviewed: "Revisado", shared: "Compartido", discarded: "Descartado" };
+  const articleStatusLabels = { draft: "Borrador", approved: "Aprobado", published: "Publicado", discarded: "Descartado" };
+  const categoryLabels = {
+    "ai-dev-news": "IA / Dev news", memes: "Memes", saas: "SaaS", "micro-apps": "Micro apps",
+    "mobile-apps": "Mobile apps", distribution: "Distribución", "internet-business": "Internet business",
+    shipping: "Rapid shipping", "ai-coding": "AI coding", seo: "SEO", launch: "Lanzamientos",
+    "startup-ideas": "Ideas de startups", audience: "Audiencia", "indie-legend": "Indie legend",
+    repos: "Repositorios", "tellus-own": "Tellus (propia)", general: "General",
+  };
+
+  const state = {
+    session: null, preview: PREVIEW, view: "summary",
+    org: null, accounts: [], posts: [], repos: [],
+    filters: { platform: "", category: "", search: "" },
+    repoResults: [], repoQuery: "", repoBusy: false, repoSort: "stars",
+    repoPostDraft: null, repoPostBusy: false,
+    prompts: [], articles: [], drafts: [], articleBusy: false, articleView: null,
+    articleForm: { prompt_key: "crypto", count: 1, prompt_md: "" },
+    brief: { audience: "", level: "", platform: "", maxWords: "", objective: "", readerOutcome: "" },
+    articleFilters: { status: "", template: "", search: "" }, articlePage: 0,
+    topics: [], topicBusy: false, topicPosts: null, feedPage: 0,
+    memes: { query: "", busy: false, info: null, gifs: [], top: null, topBusy: false },
+    memePicks: [],
+    lang: localStorage.getItem("gen_lang") === "en" ? "en" : "es",
+    langPrompt: null,
+    tweetReply: null,
+    rewrite: { source: "", busy: false },
+    dailyReplies: null,
+    guides: [], guideForm: { category: "blockchain", chain: "stellar", topic: "", useImages: true, useEmojis: false }, guideDrafts: [], guideBusy: false,
+    guideView: null, guideSocialPosts: null,
+    metrics: [], goals: [], summaryBusy: false,
+    followView: null, followTargets: [], listView: null,
+  };
+
+  const CHAINS = [
+    { id: "stellar", label: "Stellar", docsUrl: "https://developers.stellar.org/docs" },
+    { id: "avalanche", label: "Avalanche", docsUrl: "https://build.avax.network/docs/primary-network" },
+    { id: "circle", label: "Circle / USDC", docsUrl: "https://developers.circle.com/" },
+    { id: "ethereum", label: "Ethereum", docsUrl: "https://ethereum.org/en/developers/docs/" },
+    { id: "solana", label: "Solana", docsUrl: "https://solana.com/docs" },
+    { id: "base", label: "Base", docsUrl: "https://docs.base.org/" },
+    { id: "mantle", label: "Mantle", docsUrl: "https://docs.mantle.xyz/" },
+  ];
+
+  const AGENTS = [
+    { id: "claude-code", label: "Claude Code", docsUrl: "https://docs.claude.com/en/docs/claude-code/overview" },
+    { id: "codex", label: "Codex (OpenAI)", docsUrl: "https://developers.openai.com/codex" },
+    { id: "kimi-code", label: "Kimi Code (Moonshot)", docsUrl: "https://github.com/MoonshotAI/kimi-cli" },
+    { id: "opencode", label: "OpenCode", docsUrl: "https://opencode.ai/docs" },
+  ];
+
+  const GUIDE_CATEGORIES = [
+    { id: "blockchain", label: "Blockchain", items: CHAINS },
+    { id: "agent", label: "Agente de IA", items: AGENTS },
+  ];
+  const guideItems = () => (GUIDE_CATEGORIES.find((c) => c.id === state.guideForm.category) || GUIDE_CATEGORIES[0]).items;
+  const findGuideItem = (id) => CHAINS.find((c) => c.id === id) || AGENTS.find((c) => c.id === id);
+
+  const esc = (value = "") => String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
+  const fmtDate = (value) => value ? new Intl.DateTimeFormat("es-CL", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(value)) : "Sin fecha";
+  const fmtNum = (value) => new Intl.NumberFormat("es-CL", { notation: "compact", maximumFractionDigits: 1 }).format(Number(value) || 0);
+  const icon = (name) => `<i data-lucide="${name}" aria-hidden="true"></i>`;
+  const hydrateIcons = () => window.lucide?.createIcons({ attrs: { "aria-hidden": "true" } });
+  const categoryLabel = (value) => categoryLabels[value] || value || "General";
+
+  const notify = (message, isError = false) => {
+    document.querySelector(".notice")?.remove();
+    const el = document.createElement("div");
+    el.className = `notice${isError ? " error" : ""}`;
+    el.textContent = message;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3600);
+  };
+
+  // Floating progress card for long operations (searches, generation,
+  // scraping): lives outside renderShell so re-renders don't kill it.
+  // Steps can be advanced by hand (step) or on a timer (auto) while a
+  // single long await resolves; done()/fail() close it out.
+  function createProgress(title) {
+    document.querySelector(".progress-pop")?.remove();
+    const card = document.createElement("div");
+    card.className = "progress-pop";
+    const head = document.createElement("div");
+    head.className = "progress-pop-head";
+    const spin = document.createElement("span");
+    spin.className = "spinner-mini";
+    const strong = document.createElement("strong");
+    strong.textContent = title;
+    head.append(spin, strong);
+    const ul = document.createElement("ul");
+    card.append(head, ul);
+    document.body.appendChild(card);
+    let timer = null;
+    const addStep = (text, className) => {
+      const li = document.createElement("li");
+      li.className = className;
+      li.textContent = text;
+      ul.appendChild(li);
+      // Keep it minimal: only the current step and the last couple done.
+      while (ul.children.length > 3) ul.removeChild(ul.firstChild);
+      return li;
+    };
+    const finish = (text, className, ttl) => {
+      clearInterval(timer);
+      ul.querySelectorAll("li.active").forEach((li) => { li.className = "done"; });
+      spin.remove();
+      addStep(text, className);
+      setTimeout(() => { card.classList.add("bye"); setTimeout(() => card.remove(), 350); }, ttl);
+    };
+    return {
+      step(text) {
+        ul.querySelectorAll("li.active").forEach((li) => { li.className = "done"; });
+        addStep(text, "active");
+      },
+      auto(steps, ms = 2800) {
+        let i = 0;
+        this.step(steps[i++]);
+        timer = setInterval(() => {
+          if (i < steps.length) this.step(steps[i++]);
+          else clearInterval(timer);
+        }, ms);
+      },
+      done(text) { finish(text, "final", 4200); },
+      fail(text) { finish(text, "failed", 5600); },
+    };
+  }
+
+  function accountById(id) { return state.accounts.find((a) => a.id === id); }
+  function accountByHandle(handle, platform) {
+    const clean = String(handle || "").replace(/^@/, "").toLowerCase();
+    return state.accounts.find((a) => a.platform === platform && a.handle.toLowerCase() === clean);
+  }
+
+  function filteredPosts() {
+    const { platform, category, search } = state.filters;
+    const term = search.trim().toLowerCase();
+    return state.posts.filter((post) => {
+      if (platform && post.platform !== platform) return false;
+      if (category) {
+        const account = accountById(post.account_id);
+        if ((account?.category || "general") !== category) return false;
+      }
+      if (term && !`${post.author_handle} ${post.content}`.toLowerCase().includes(term)) return false;
+      return true;
+    });
+  }
+
+  // ---------- auth ----------
+
+  function wirePasswordToggles() {
+    document.querySelectorAll("[data-password-toggle]").forEach((button) => button.addEventListener("click", () => {
+      const input = document.querySelector(`#${button.dataset.passwordToggle}`);
+      if (!input) return;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      button.innerHTML = icon(show ? "eye-off" : "eye");
+      button.setAttribute("aria-label", show ? "Ocultar contraseña" : "Mostrar contraseña");
+      hydrateIcons();
+      input.focus();
+    }));
+  }
+
+  function renderLoading() {
+    $app.innerHTML = `<main aria-busy="true" aria-labelledby="loading-title" style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#f7f4ed;color:#183034;font-family:Inter,system-ui,sans-serif"><section style="width:min(420px,100%);padding:28px;border:1px solid #d9d2c7;border-radius:18px;background:#fffdf8;box-shadow:0 12px 32px rgba(24,48,52,.08)"><span style="display:block;color:#c75a2a;font:600 12px/1.2 monospace;letter-spacing:.12em;text-transform:uppercase">Tellus Cooperative</span><h1 id="loading-title" style="margin:10px 0 8px;font:600 30px/1.1 Georgia,serif">Social Ops</h1><p style="margin:0 0 22px;color:#607276;line-height:1.5">Preparando tu radar de contenido…</p><div style="display:flex;align-items:center;gap:10px;color:#607276;font-size:14px"><span aria-hidden="true" style="display:block;width:20px;height:20px;flex:0 0 20px;border:2px solid #d9d2c7;border-top-color:#2f7478;border-radius:50%;animation:spin .8s linear infinite"></span><span>Cargando datos</span></div></section></main>`;
+  }
+
+  function renderAuth() {
+    $app.innerHTML = `
+      <main class="auth-shell" id="main">
+        <section class="auth-brand" aria-labelledby="auth-brand-title">
+          <div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Tellus Cooperative</div>
+          <div><span class="eyebrow" style="color:#f1a479">Operaciones</span><h1 id="auth-brand-title">Radar de contenido Tellus.</h1></div>
+        </section>
+        <section class="auth-panel">
+          <form class="auth-card" id="login-form">
+            <span class="eyebrow">Acceso seguro</span><h2>Entrar al panel</h2><p>Usa tu cuenta autorizada por Tellus. Es la misma credencial que en Stellar Ops.</p>
+            <div class="field"><label for="email">Correo</label><input id="email" name="email" type="email" autocomplete="email" required /></div>
+            <div class="field"><label for="password">Contraseña</label><div class="password-input"><input id="password" name="password" type="password" autocomplete="current-password" required /><button type="button" data-password-toggle="password" aria-label="Mostrar contraseña">${icon("eye")}</button></div></div>
+            <div class="auth-actions">
+              <button class="button button-primary button-block" type="submit">${icon("log-in")} Entrar</button>
+              <a class="button button-ghost" href="?preview=1">Ver vista previa</a>
+            </div><div class="form-message" id="auth-message" role="alert"></div>
+          </form>
+        </section>
+      </main>`;
+    hydrateIcons();
+    wirePasswordToggles();
+    document.querySelector("#login-form").addEventListener("submit", signIn);
+  }
+
+  async function signIn(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const message = document.querySelector("#auth-message");
+    const { error } = await supabase.auth.signInWithPassword({
+      email: String(form.email.value).trim().toLowerCase(),
+      password: String(form.password.value),
+    });
+    if (error) {
+      if (message) message.textContent = "No pudimos iniciar sesión. Revisá tus credenciales.";
+      return;
+    }
+    await boot();
+  }
+
+  // ---------- data ----------
+
+  async function loadLiveData() {
+    const safe = async (query) => { try { return await query; } catch { return { data: [], error: null }; } };
+    const [orgs, accounts, posts, repos, prompts, articles, topics, guides, metrics, goals] = await Promise.all([
+      safe(supabase.from("organizations").select("id, name, slug").limit(1)),
+      safe(supabase.from("social_accounts").select("*").order("category").order("handle")),
+      safe(supabase.from("social_posts").select("*").order("posted_at", { ascending: false, nullsFirst: false }).limit(300)),
+      safe(supabase.from("repo_picks").select("*").order("created_at", { ascending: false })),
+      safe(supabase.from("article_prompts").select("*").eq("active", true).order("key")),
+      safe(supabase.from("articles").select("*").order("created_at", { ascending: false }).limit(100)),
+      safe(supabase.from("social_topics").select("*").order("label")),
+      safe(supabase.from("guides").select("*").order("created_at", { ascending: false }).limit(100)),
+      safe(supabase.from("social_metrics").select("*").order("captured_at", { ascending: false }).limit(400)),
+      safe(supabase.from("social_goals").select("*")),
+    ]);
+    const [memePicks, followTargets] = await Promise.all([
+      safe(supabase.from("meme_picks").select("*").neq("status", "discarded").order("created_at", { ascending: false }).limit(60)),
+      safe(supabase.from("follow_targets").select("*").order("created_at", { ascending: false }).limit(1000)),
+    ]);
+    state.memePicks = memePicks.data || [];
+    state.followTargets = followTargets.data || [];
+    const critical = [orgs, accounts, posts].find((r) => r.error);
+    if (critical) throw critical.error;
+    state.org = orgs.data[0] || null;
+    state.accounts = accounts.data;
+    state.posts = posts.data;
+    state.repos = repos.data || [];
+    state.prompts = prompts.data || [];
+    state.articles = articles.data || [];
+    state.topics = topics.data || [];
+    state.guides = guides.data || [];
+    state.metrics = metrics.data || [];
+    state.goals = goals.data || [];
+    if (state.prompts[0]) state.articleForm.prompt_key = state.prompts[0].key;
+  }
+
+  // Stage 1 of the editorial pipeline: only send fields the user actually
+  // filled in — an empty brief means "the model decides", not "empty string".
+  function briefPayload() {
+    const b = state.brief;
+    const out = {};
+    if (b.audience.trim()) out.audience = b.audience.trim();
+    if (b.level.trim()) out.level = b.level.trim();
+    if (b.platform.trim()) out.platform = b.platform.trim();
+    if (Number(b.maxWords) > 0) out.maxWords = Number(b.maxWords);
+    if (b.objective.trim()) out.objective = b.objective.trim();
+    if (b.readerOutcome.trim()) out.readerOutcome = b.readerOutcome.trim();
+    return Object.keys(out).length ? out : undefined;
+  }
+
+  async function invokeEdge(name, body) {
+    // Every generation function reads body.lang; inject the user's current
+    // choice here so call sites don't each have to remember it.
+    const withLang = (name === "generate-article" || name === "reddit-search") && body && !("lang" in body)
+      ? { ...body, lang: state.lang }
+      : body;
+    const invoke = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return supabase.functions.invoke(name, {
+        body: withLang,
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      });
+    };
+    let result = await invoke();
+    if (result.error?.context?.status === 401) {
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (!refreshError) result = await invoke();
+    }
+    // On non-2xx, supabase-js leaves data null; recover the function's JSON body
+    // so callers can show the real error instead of a generic message.
+    if (result.error && !result.data && result.error.context?.clone) {
+      try { result = { ...result, data: await result.error.context.clone().json() }; } catch { /* body not JSON */ }
+    }
+    return result;
+  }
+
+  function loadPreviewData() {
+    state.org = { id: "preview-org", name: "Vista previa", slug: "tellus" };
+    state.accounts = [
+      { id: "a1", platform: "x", handle: "midudev", display_name: "Miguel Ángel Durán", category: "ai-dev-news", active: true },
+      { id: "a2", platform: "x", handle: "levelsio", display_name: "Pieter Levels", category: "internet-business", active: true },
+      { id: "a3", platform: "x", handle: "dev_gen88926", display_name: "Dev Gen", category: "memes", active: true },
+      { id: "own-x", platform: "x", handle: "telluscoop", display_name: "Tellus Cooperative", category: "tellus-own", active: true },
+      { id: "own-li", platform: "linkedin", handle: "tellus-cooperative", display_name: "Tellus Cooperative", category: "tellus-own", active: true },
+      { id: "own-ig", platform: "instagram", handle: "telluscoop", display_name: "Tellus Cooperative", category: "tellus-own", active: true },
+    ];
+    state.posts = [
+      { id: "p1", account_id: "a1", platform: "x", author_handle: "midudev", content: "Ha salido Kimi K3. Se siente como un nuevo momento DeepSeek para el mundo de la IA.", url: "https://x.com/midudev/status/1", posted_at: new Date().toISOString(), likes: 4200, reposts: 610, replies: 180, views: 520000, source: "manual", tags: [] },
+      { id: "p2", account_id: "a2", platform: "x", author_handle: "levelsio", content: "Ship fast. Charge money. Talk to users.", url: "https://x.com/levelsio/status/2", posted_at: new Date(Date.now() - 864e5).toISOString(), likes: 9800, reposts: 1200, replies: 340, views: 1200000, source: "manual", tags: [] },
+      { id: "p-own-x", account_id: "own-x", platform: "x", author_handle: "telluscoop", content: "Nuestro post de hoy en X.", url: "https://x.com/telluscoop/status/9", posted_at: new Date().toISOString(), likes: 40, reposts: 6, replies: 3, views: 3200, source: "scraper", tags: [] },
+      { id: "p-own-li", account_id: "own-li", platform: "linkedin", author_handle: "tellus-cooperative", content: "Novedades de la cooperativa.", url: null, posted_at: new Date(Date.now() - 3 * 864e5).toISOString(), likes: 0, reposts: 0, replies: 0, views: 0, source: "manual", tags: [] },
+    ];
+    state.metrics = [
+      { id: "m1", platform: "x", followers: 1840, source: "scraper", captured_at: new Date().toISOString() },
+      { id: "m2", platform: "x", followers: 1812, source: "scraper", captured_at: new Date(Date.now() - 7 * 864e5).toISOString() },
+      { id: "m3", platform: "x", followers: 1790, source: "manual", captured_at: new Date(Date.now() - 14 * 864e5).toISOString() },
+      { id: "m4", platform: "linkedin", followers: 620, source: "manual", captured_at: new Date(Date.now() - 5 * 864e5).toISOString() },
+      { id: "m5", platform: "linkedin", followers: 605, source: "manual", captured_at: new Date(Date.now() - 20 * 864e5).toISOString() },
+      { id: "m6", platform: "linkedin", followers: 590, source: "manual", captured_at: new Date(Date.now() - 35 * 864e5).toISOString() },
+      { id: "m7", platform: "instagram", followers: 310, source: "manual", captured_at: new Date(Date.now() - 20 * 864e5).toISOString() },
+    ];
+    state.goals = [
+      { id: "g1", platform: "x", target_followers: 3000, target_posts_per_week: 7, target_monthly_growth: 100 },
+      { id: "g2", platform: "linkedin", target_followers: 1500, target_posts_per_week: 3, target_monthly_growth: 50 },
+      { id: "g3", platform: "instagram", target_followers: 1000, target_posts_per_week: 4, target_monthly_growth: 40 },
+    ];
+    state.followTargets = [
+      { id: "ft1", list_name: "Prospectos de @midudev", handle: "goncy", display_name: "goncy.tsx", bio: "Forward Deployed Engineer en Vercel", followers: 90000, source_handle: "midudev", status: "pending" },
+      { id: "ft2", list_name: "Prospectos de @midudev", handle: "maripydev", display_name: "Maripy", bio: "Just a girl in tech", followers: 48000, source_handle: "midudev", status: "followed" },
+    ];
+    state.repos = [
+      { id: "r1", repo_full_name: "D4Vinci/Scrapling", url: "https://github.com/D4Vinci/Scrapling", description: "Undetectable, powerful, flexible web scraping for Python", stars: 12400, language: "Python", status: "inbox", topics: ["scraping"] },
+    ];
+    state.prompts = [
+      { id: "pr1", key: "crypto", name: "Cripto diario (Beehiiv)", prompt_md: "Escribe una nota diaria de noticias cripto en español LATAM, con la voz editorial de Tellus…", active: true },
+      { id: "pr2", key: "ai", name: "IA diario (Beehiiv)", prompt_md: "Escribe una nota diaria de noticias de IA en español LATAM, con la voz editorial de Tellus…", active: true },
+    ];
+    state.topics = [
+      { id: "pt-1", label: "Stellar", query: "Stellar OR Soroban lang:es", active: true, last_run_at: new Date().toISOString() },
+      { id: "pt-2", label: "Agentes IA", query: '"AI agents" OR "agentes de IA"', active: true, last_run_at: null },
+    ];
+    state.articles = [
+      { id: "ar1", prompt_key: "crypto", title: "Bitcoin sube tras dato de inflación", subtitle: "El mercado reacciona al IPC de EE.UU., un exchange anuncia licencia en Brasil y la minería marca récord.", summary: ["El IPC bajó y el mercado cripto respiró: por qué importa para LATAM.", "Un exchange sumó licencia regional: más acceso, más competencia."], body_md: "## Qué pasó\n\nEl dato de inflación…\n\n## Por qué importa\n\nPara la región…\n\n## Cierre Tellus\n\nQuién controla la infraestructura…", sources: [{ url: "https://example.com/ipc", title: "Comunicado oficial" }], model: "gemini-3.5-flash", status: "draft", created_at: new Date().toISOString() },
+    ];
+    state.articleForm.prompt_key = "crypto";
+  }
+
+  // ---------- shell ----------
+
+  function navButton(view, iconName, label) {
+    return `<button data-view="${view}" class="${state.view === view ? "active" : ""}">${icon(iconName)} ${label}</button>`;
+  }
+
+  function renderShell() {
+    $app.innerHTML = `
+      ${state.preview ? `<div class="preview-banner">Vista previa con datos de ejemplo — sin conexión a datos reales</div>` : ""}
+      <div class="shell">
+        <aside class="sidebar">
+          <div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Social Ops</div>
+          <nav aria-label="Secciones">
+            ${navButton("summary", "layout-dashboard", "Resumen")}
+            ${navButton("feed", "rss", "Feed")}
+            ${navButton("accounts", "users", "Cuentas")}
+            ${navButton("repos", "github", "Repos")}
+            ${navButton("articles", "newspaper", "Artículos")}
+            ${navButton("memes", "image", "Memes")}
+            ${navButton("guides", "book-open", "Guías")}
+          </nav>
+          <div class="sidebar-foot">
+            <span>${esc(state.preview ? "Vista previa" : state.session?.user?.email || "")}</span>
+            ${state.preview ? "" : `<button class="button button-ghost button-block" id="signout">${icon("log-out")} Salir</button>`}
+          </div>
+        </aside>
+        <main class="main" id="main">${renderView()}</main>
+      </div>
+      ${state.langPrompt ? langPromptModal() : ""}`;
+    hydrateIcons();
+    wireShell();
+  }
+
+  // Every content-generation action asks which language to write in instead
+  // of relying on one global toggle — resolves to "es"/"en", or null if the
+  // user backs out (backdrop click / Escape), which callers treat as cancel.
+  function askLang() {
+    return new Promise((resolve) => {
+      state.langPrompt = (lang) => {
+        state.langPrompt = null;
+        if (lang) { state.lang = lang; localStorage.setItem("gen_lang", lang); }
+        renderShell();
+        resolve(lang);
+      };
+      renderShell();
+    });
+  }
+
+  function langPromptModal() {
+    return modalShell(
+      `<h3>¿En qué idioma?</h3>`,
+      `<p style="color:var(--muted);margin:0 0 1rem">Elegí el idioma de este contenido.</p>
+      <div style="display:flex;gap:.6rem">
+        <button class="button button-primary" data-lang-choice="es" style="flex:1">Español</button>
+        <button class="button button-secondary" data-lang-choice="en" style="flex:1">English</button>
+      </div>`,
+    );
+  }
+
+  function renderView() {
+    return state.view === "summary" ? summaryView()
+      : state.view === "accounts" ? accountsView()
+      : state.view === "repos" ? reposView()
+      : state.view === "articles" ? articlesView()
+      : state.view === "memes" ? memesView()
+      : state.view === "guides" ? guidesView()
+      : feedView();
+  }
+
+  function wireShell() {
+    document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => {
+      state.view = button.dataset.view;
+      renderShell();
+    }));
+    document.querySelector("#signout")?.addEventListener("click", async () => { await supabase.auth.signOut(); location.reload(); });
+    document.querySelectorAll("[data-lang-choice]").forEach((button) => button.addEventListener("click", () => {
+      state.langPrompt?.(button.dataset.langChoice);
+    }));
+    // Popups used by Articles/Guides/Repos: click the code-block copy button,
+    // or click the dimmed backdrop itself (not the panel) to close.
+    document.querySelectorAll("[data-copy-code]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyCode)));
+    document.querySelectorAll("[data-modal-overlay]").forEach((overlay) => overlay.addEventListener("click", (e) => {
+      if (e.target !== overlay) return;
+      if (state.langPrompt) return state.langPrompt(null);
+      state.articleView = null;
+      state.guideView = null;
+      state.repoPostDraft = null;
+      state.followView = null;
+      state.listView = null;
+      renderShell();
+    }));
+    if (state.view === "summary") wireSummary();
+    if (state.view === "feed") wireFeed();
+    if (state.view === "accounts") wireAccounts();
+    if (state.view === "repos") wireRepos();
+    if (state.view === "articles") wireArticles();
+    if (state.view === "memes") wireMemes();
+    if (state.view === "guides") wireGuides();
+  }
+
+  // ---------- summary ----------
+
+  function sameDay(a, b) { return new Date(a).toDateString() === new Date(b).toDateString(); }
+
+  // Net growth since the start of the current calendar month: current
+  // followers minus the closest snapshot taken before the month began (falls
+  // back to the earliest known snapshot if all data is from this month).
+  function monthlyGrowth(metricsDesc) {
+    if (!metricsDesc.length) return null;
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+    const current = metricsDesc[0];
+    const baseline = metricsDesc.find((m) => new Date(m.captured_at).getTime() < monthStart) || metricsDesc[metricsDesc.length - 1];
+    return current.followers - baseline.followers;
+  }
+
+  // Minimal single-series trend line: thin 2px stroke, rounded caps, one
+  // highlighted endpoint, soft area fill underneath, and an optional dashed
+  // goal line (this month's baseline + monthly growth target). Invisible
+  // larger hit-circles carry a native <title> tooltip per point so the curve
+  // stays hoverable without a custom crosshair layer.
+  function lineChart(metricsAsc, goalTarget) {
+    if (metricsAsc.length < 2) return `<p class="chart-empty">Cargá seguidores 2 veces (o esperá al auto diario) y acá aparece la curva.</p>`;
+    const width = 320, height = 84, pad = 10;
+    const xs = metricsAsc.map((m) => new Date(m.captured_at).getTime());
+    const ys = metricsAsc.map((m) => m.followers);
+    // Goal line: where followers should end this month (baseline + target).
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+    const desc = metricsAsc.slice().reverse();
+    const baseline = (desc.find((m) => new Date(m.captured_at).getTime() < monthStart) || metricsAsc[0]).followers;
+    const goalY = goalTarget ? baseline + goalTarget : null;
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys, ...(goalY !== null ? [goalY] : []));
+    const maxY = Math.max(...ys, ...(goalY !== null ? [goalY] : []));
+    const spanX = maxX - minX || 1;
+    const spanY = maxY - minY || 1;
+    const x = (v) => pad + ((v - minX) / spanX) * (width - pad * 2);
+    const y = (v) => height - pad - ((v - minY) / spanY) * (height - pad * 2);
+    const pts = metricsAsc.map((m) => `${x(new Date(m.captured_at).getTime()).toFixed(1)},${y(m.followers).toFixed(1)}`);
+    const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p}`).join(" ");
+    const area = `${path} L${x(maxX).toFixed(1)},${height - pad} L${x(minX).toFixed(1)},${height - pad} Z`;
+    const last = metricsAsc[metricsAsc.length - 1];
+    const hits = metricsAsc.map((m) => `<circle cx="${x(new Date(m.captured_at).getTime()).toFixed(1)}" cy="${y(m.followers).toFixed(1)}" r="9" fill="transparent"><title>${esc(fmtDate(m.captured_at))}: ${esc(fmtNum(m.followers))} seguidores</title></circle>`).join("");
+    return `<svg class="trend-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Evolución de seguidores en el tiempo">
+      <path d="${area}" fill="var(--teal)" opacity=".08" />
+      ${goalY !== null ? `<line x1="${pad}" x2="${width - pad}" y1="${y(goalY).toFixed(1)}" y2="${y(goalY).toFixed(1)}" stroke="var(--clay)" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7"><title>Meta del mes: ${esc(fmtNum(goalY))}</title></line>` : ""}
+      <path d="${path}" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      <circle cx="${x(new Date(last.captured_at).getTime()).toFixed(1)}" cy="${y(last.followers).toFixed(1)}" r="4" fill="var(--teal)" />
+      ${hits}
+    </svg>`;
+  }
+
+  function summaryPlatform(platform) {
+    const account = state.accounts.find((a) => a.platform === platform && a.category === "tellus-own");
+    const metrics = state.metrics.filter((m) => m.platform === platform).slice().sort((a, b) => new Date(b.captured_at) - new Date(a.captured_at));
+    const goal = state.goals.find((g) => g.platform === platform) || {};
+    const posts = account
+      ? state.posts.filter((p) => p.account_id === account.id && p.posted_at).slice().sort((a, b) => new Date(b.posted_at) - new Date(a.posted_at))
+      : [];
+    const current = metrics[0] || null;
+    const previous = metrics[1] || null;
+    const delta = current && previous ? current.followers - previous.followers : null;
+    const lastPost = posts[0] || null;
+    const postedToday = lastPost ? sameDay(lastPost.posted_at, new Date()) : false;
+    const weekAgo = Date.now() - 7 * 864e5;
+    const postsThisWeek = posts.filter((p) => new Date(p.posted_at).getTime() >= weekAgo).length;
+    const trend = metrics.slice(0, 30).slice().reverse();
+    const growth = monthlyGrowth(metrics);
+    return { platform, account, current, delta, goal, lastPost, postedToday, postsThisWeek, trend, growth };
+  }
+
+  function summaryCard(platform) {
+    const s = summaryPlatform(platform);
+    const growthGoalPct = s.goal.target_monthly_growth && s.growth != null ? Math.min(100, Math.max(0, Math.round((s.growth / s.goal.target_monthly_growth) * 100))) : null;
+    const monthLabel = new Intl.DateTimeFormat("es-CL", { month: "short" }).format(new Date()).replace(".", "");
+    return `
+      <section class="card summary-card">
+        <div class="summary-head">
+          <span class="chip chip-platform-${platform}">${esc(platformLabels[platform])}</span>
+          ${s.account ? `<a href="${esc(s.account.url || "#")}" target="_blank" rel="noopener" class="summary-handle">@${esc(s.account.handle)}</a>` : `<span class="summary-handle">Sin cuenta</span>`}
+        </div>
+        <div class="stat-row">
+          <div class="stat"><span class="stat-value">${s.current ? fmtNum(s.current.followers) : "—"}</span><span class="stat-label">Seguidores</span></div>
+          <div class="stat"><span class="stat-value ${s.growth == null ? "" : s.growth >= 0 ? "stat-up" : "stat-down"}">${s.growth == null ? "—" : (s.growth >= 0 ? "+" : "") + fmtNum(s.growth)}</span><span class="stat-label">${esc(monthLabel)} · crecimiento</span></div>
+          <div class="stat"><span class="stat-value">${s.postsThisWeek}</span><span class="stat-label">Posts / semana</span></div>
+        </div>
+        ${lineChart(s.trend, Number(s.goal.target_monthly_growth) || null)}
+        ${growthGoalPct !== null ? `<div class="goal-row"><div class="progress"><div class="progress-fill" style="width:${growthGoalPct}%"></div></div><span class="progress-label">${growthGoalPct}% de +${fmtNum(s.goal.target_monthly_growth)} este mes</span></div>` : ""}
+        <div class="summary-status ${s.postedToday ? "status-ok" : "status-warn"}">
+          ${icon(s.postedToday ? "check-circle-2" : "alert-triangle")}
+          <span>${s.lastPost ? (s.postedToday ? "Posteaste hoy" : `Hoy no has posteado — última vez ${fmtDate(s.lastPost.posted_at)}`) : "Sin posts registrados todavía"}</span>
+          <button class="table-link" type="button" data-mark-posted="${platform}" title="Registrar que posteaste hoy">${icon("plus")} Posteé</button>
+        </div>
+        <details class="summary-edit">
+          <summary>Datos y metas</summary>
+          <form class="form-grid summary-form" data-followers-form="${platform}">
+            <div class="field"><label for="followers-${platform}">Seguidores hoy</label><input id="followers-${platform}" name="followers" type="number" min="0" placeholder="${s.current ? s.current.followers : 0}" /></div>
+            <div class="form-foot"><button class="button button-primary" type="submit">Guardar</button></div>
+          </form>
+          <form class="form-grid summary-form" data-goals-form="${platform}">
+            <div class="field"><label for="goal-growth-${platform}">Meta crecimiento/mes</label><input id="goal-growth-${platform}" name="target_monthly_growth" type="number" min="0" placeholder="200" value="${s.goal.target_monthly_growth ?? ""}" /></div>
+            <div class="field"><label for="goal-posts-${platform}">Meta posts/semana</label><input id="goal-posts-${platform}" name="target_posts_per_week" type="number" min="0" step="0.5" value="${s.goal.target_posts_per_week ?? ""}" /></div>
+            <div class="form-foot"><button class="button button-secondary" type="submit">Guardar metas</button></div>
+          </form>
+        </details>
+      </section>`;
+  }
+
+  function summaryView() {
+    const lastAuto = state.metrics.filter((m) => m.source === "scraper").map((m) => m.captured_at).sort().pop();
+    return `
+      <div class="toolbar">
+        <div><span class="eyebrow">${esc(state.org?.name || "")}</span><h2>Resumen</h2></div>
+        ${state.preview ? "" : `<div class="summary-toolbar">
+          <span class="summary-auto-note">${lastAuto ? `Auto: ${esc(fmtDate(lastAuto))} · corre 1 vez al día` : "Se actualiza solo 1 vez al día"}</span>
+          <button class="button button-secondary" type="button" id="summary-refresh-all" ${state.summaryBusy ? "disabled" : ""}>${icon("refresh-cw")} ${state.summaryBusy ? "Actualizando…" : "Actualizar ahora"}</button>
+        </div>`}
+      </div>
+      <div class="grid grid-3 summary-grid">${["x", "linkedin", "instagram"].map(summaryCard).join("")}</div>`;
+  }
+
+  function wireSummary() {
+    document.querySelectorAll("[data-mark-posted]").forEach((button) => button.addEventListener("click", async () => {
+      if (state.preview) return notify("La vista previa es de solo lectura.", true);
+      const platform = button.dataset.markPosted;
+      const account = state.accounts.find((a) => a.platform === platform && a.category === "tellus-own");
+      if (!account) return notify("Falta la cuenta propia de esta plataforma en Cuentas.", true);
+      const row = {
+        organization_id: state.org.id, account_id: account.id, platform,
+        author_handle: account.handle, url: null,
+        content: "(post propio registrado manualmente)", posted_at: new Date().toISOString(),
+        source: "manual",
+      };
+      const { data, error } = await supabase.from("social_posts").insert(row).select().single();
+      if (error) return notify("No se pudo registrar el post.", true);
+      state.posts.unshift(data);
+      notify("Post registrado.");
+      renderShell();
+    }));
+
+    document.querySelectorAll("[data-followers-form]").forEach((form) => form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (state.preview) return notify("La vista previa es de solo lectura.", true);
+      const platform = form.dataset.followersForm;
+      const value = Number(new FormData(form).get("followers"));
+      if (!Number.isFinite(value) || value < 0) return notify("Ingresá un número válido.", true);
+      const row = { organization_id: state.org.id, platform, followers: Math.floor(value), source: "manual" };
+      const { data, error } = await supabase.from("social_metrics").insert(row).select().single();
+      if (error) return notify("No se pudo guardar.", true);
+      state.metrics.unshift(data);
+      notify("Seguidores actualizados.");
+      renderShell();
+    }));
+
+    document.querySelectorAll("[data-goals-form]").forEach((form) => form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (state.preview) return notify("La vista previa es de solo lectura.", true);
+      const platform = form.dataset.goalsForm;
+      const fd = new FormData(form);
+      const target_followers = fd.get("target_followers") ? Number(fd.get("target_followers")) : null;
+      const target_posts_per_week = fd.get("target_posts_per_week") ? Number(fd.get("target_posts_per_week")) : null;
+      const target_monthly_growth = fd.get("target_monthly_growth") ? Number(fd.get("target_monthly_growth")) : null;
+      const { data, error } = await supabase.from("social_goals")
+        .upsert({ organization_id: state.org.id, platform, target_followers, target_posts_per_week, target_monthly_growth }, { onConflict: "organization_id,platform" })
+        .select().single();
+      if (error) return notify("No se pudo guardar la meta.", true);
+      state.goals = state.goals.filter((g) => g.platform !== platform).concat(data);
+      notify("Meta guardada.");
+      renderShell();
+    }));
+
+    document.querySelector("#summary-refresh-all")?.addEventListener("click", async () => {
+      state.summaryBusy = true;
+      renderShell();
+      const progress = createProgress("Actualizando las 3 cuentas");
+      progress.auto([
+        "Despertando el scraper de X…",
+        "Leyendo @telluscoop en X (seguidores y último post)…",
+        "Consultando el perfil público de Instagram…",
+        "Intentando con LinkedIn…",
+      ], 7000);
+      const account = state.accounts.find((a) => a.platform === "x" && a.category === "tellus-own");
+      const { data, error } = await invokeEdge("x-profile", { handle: account?.handle || "telluscoop", refresh: "all" });
+      state.summaryBusy = false;
+      if (error || data?.error) { progress.fail(data?.error || "No se pudo actualizar."); renderShell(); return; }
+      await loadLiveData();
+      const done = ["x", "instagram", "linkedin"].filter((p) => data[p] != null).map((p) => platformLabels[p]);
+      progress.done(done.length ? `Actualizado: ${done.join(", ")}` : "Sin datos nuevos — cargá a mano lo que falte");
+      renderShell();
+    });
+  }
+
+  // ---------- feed ----------
+
+  // Accepts either a raw SearchTimeline qid or the full request URL pasted
+  // straight from the Network tab (…/graphql/<qid>/SearchTimeline?variables=…)
+  // so users don't have to hand-trim the hash out of the link themselves.
+  function extractQid(raw) {
+    const value = String(raw || "").trim();
+    if (!value) return "";
+    const fromUrl = value.match(/graphql\/([\w-]+)\/SearchTimeline/i);
+    if (fromUrl) return fromUrl[1];
+    if (/^https?:\/\//i.test(value)) return "";
+    return /^[\w-]+$/.test(value) ? value : "";
+  }
+
+  function feedView() {
+    const posts = filteredPosts();
+    const categories = [...new Set(state.accounts.map((a) => a.category || "general"))].sort();
+    return `
+      <div class="toolbar"><div><span class="eyebrow">${esc(state.org?.name || "")}</span><h2>Feed por temas</h2></div></div>
+
+      <section class="card" style="margin-bottom:1.2rem">
+        <h3>Buscar un tema en X</h3>
+        <p style="color:var(--muted);margin:.2rem 0 .8rem;line-height:1.5">Escribí un tema y traé los posts al instante. Se guardan en el feed para que los revises.</p>
+        <form id="topic-search-form" class="form-grid">
+          <div class="field span-all"><label for="topic-query">Tema</label>
+            <input id="topic-query" name="query" placeholder='ej: Kimi K3   ·   Stellar lang:es   ·   "AI agents"' required /></div>
+          <details class="span-all" style="margin-bottom:.6rem"><summary style="cursor:pointer;color:var(--muted);font-size:.78rem">Query ID de X (si dejó de funcionar, actualizalo acá)</summary><div class="field" style="margin-top:.5rem"><label for="topic-qid">Link o ID de búsqueda de X</label><div style="display:flex;gap:.5rem"><input id="topic-qid" name="qid" placeholder="Pegá el link completo de la request SearchTimeline…" value="${esc(localStorage.getItem("x_qid_search") || "")}" style="flex:1" /><button class="button button-secondary" type="button" id="save-qid">Guardar</button></div><small>En x.com, abrí la Network tab (F12), buscá algo, encontrá la request "SearchTimeline" y pegá acá su URL completa — no hace falta recortar nada, se extrae solo.</small></div></details>
+          <div class="form-foot span-all">
+            <label style="display:flex;align-items:center;gap:.4rem;color:var(--muted);font-size:.85rem">
+              <input type="checkbox" id="topic-save" style="min-height:auto;width:auto" /> Guardar como tema fijo (cron cada 6h)</label>
+            <button class="button button-primary" type="submit" ${state.topicBusy || state.preview ? "disabled" : ""}>${icon("search")} ${state.topicBusy ? "Buscando…" : "Buscar ahora"}</button>
+            <button class="button button-secondary" type="button" id="fetch-recent" ${state.topicBusy || state.preview ? "disabled" : ""}>${icon("users")} Recientes de mis cuentas</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" style="margin-bottom:1.2rem">
+        <h3>Comentarios del día</h3>
+        <p style="color:var(--muted);margin:.2rem 0 .8rem;line-height:1.5">Crecer en X se hace comentando cuentas grandes del nicho, no solo publicando solo. Te armo comentario + cita para los posts más fuertes que ya capturaste.</p>
+        <div class="form-foot" style="justify-content:start">
+          <button class="button button-primary" id="gen-daily-replies" ${state.dailyReplies?.busy || state.preview ? "disabled" : ""}>${icon("message-circle")} ${state.dailyReplies?.busy ? "Escribiendo…" : "Generar comentarios del día"}</button>
+        </div>
+        ${state.dailyReplies?.items?.length ? `<div class="grid grid-2" style="margin-top:1rem">${state.dailyReplies.items.map((r) => `<article class="card">
+          <p style="color:var(--muted);margin:0 0 .4rem;font-size:.85rem">@${esc(r.handle)}: “${esc(r.content.slice(0, 90))}${r.content.length > 90 ? "…" : ""}”
+            ${r.url ? ` · <a href="${esc(r.url)}" target="_blank" rel="noopener">Ver original</a>` : ""}</p>
+          ${r.comment ? `<p class="post-content" style="margin:.3rem 0"><strong>Comentario:</strong> ${esc(r.comment)}</p><button class="table-link" data-copy-text="${esc(r.comment)}">Copiar comentario</button>` : ""}
+          ${r.quote ? `<p class="post-content" style="margin:.5rem 0 .3rem"><strong>Cita:</strong> ${esc(r.quote)}</p><button class="table-link" data-copy-text="${esc(r.quote)}">Copiar cita</button>` : ""}
+        </article>`).join("")}</div>` : ""}
+      </section>
+
+      <details class="span-all" style="margin-bottom:1.2rem">
+        <summary style="cursor:pointer;color:var(--teal);font-weight:600">Comentar o citar un post ajeno</summary>
+        <section class="card" style="margin-top:.6rem">
+          <p style="color:var(--muted);margin:0 0 .8rem;line-height:1.5">Pegá los datos de un tweet y te armo un comentario para responder y un texto para citarlo.</p>
+          <form id="tweet-reply-form" class="form-grid">
+            <div class="field"><label for="tr-handle">Handle (@usuario)</label><input id="tr-handle" name="handle" placeholder="midudev" /></div>
+            <div class="field span-all"><label for="tr-content">Qué dice el post</label><textarea id="tr-content" name="content" style="min-height:90px" required placeholder="Pegá acá el texto del post…"></textarea></div>
+            <div class="field span-all"><label for="tr-links">Links que menciona (opcional, uno por línea)</label><textarea id="tr-links" name="links" style="min-height:50px" placeholder="https://…"></textarea></div>
+            <div class="form-foot span-all"><button class="button button-primary" type="submit" ${state.tweetReply?.busy || state.preview ? "disabled" : ""}>${icon("message-circle")} ${state.tweetReply?.busy ? "Escribiendo…" : "Generar comentario"}</button></div>
+          </form>
+          ${state.tweetReply?.posts ? `<div class="grid grid-2" style="margin-top:1rem">
+            <article class="card"><h3>Comentario</h3><p class="post-content" style="margin:.5rem 0;white-space:pre-wrap">${esc(state.tweetReply.posts.comment)}</p><button class="table-link" data-copy-text="${esc(state.tweetReply.posts.comment)}">Copiar</button></article>
+            <article class="card"><h3>Para citar</h3><p class="post-content" style="margin:.5rem 0;white-space:pre-wrap">${esc(state.tweetReply.posts.quote)}</p><button class="table-link" data-copy-text="${esc(state.tweetReply.posts.quote)}">Copiar</button></article>
+          </div>` : ""}
+        </section>
+      </details>
+
+      ${state.topicPosts ? `<section class="card" style="margin-bottom:1.2rem">
+        <h3>Posts nuestros sobre «${esc(state.topicPosts.query)}»</h3>
+        ${state.topicPosts.busy ? `<p style="color:var(--muted);margin:.4rem 0 0">Escribiendo posts con la voz de Tellus…</p>` : `
+        <div class="grid grid-3" style="margin-top:.8rem">${(state.topicPosts.posts || []).map((p, i) => {
+          const img = (state.topicPosts.images || [])[i];
+          return `<article class="card">
+            ${img ? `<a href="${esc(img.page || img.url)}" target="_blank" rel="noopener"><img src="${esc(img.thumbnail || img.url)}" alt="" style="width:100%;border-radius:8px;max-height:160px;object-fit:cover" loading="lazy" /></a>` : ""}
+            <p class="post-content" style="margin:.5rem 0 .6rem;white-space:pre-wrap">${esc(p)}</p>
+            <div class="form-foot" style="justify-content:start">
+              <button class="table-link" data-copy-topic-post="${esc(p)}">Copiar post</button>
+              ${img ? `<button class="table-link" data-copy-topic-post="${esc(img.url)}">Copiar imagen</button>` : ""}
+            </div>
+          </article>`;
+        }).join("")}</div>`}
+      </section>` : ""}
+
+      ${(state.topics || []).length ? `<section class="card" style="margin-bottom:1.2rem">
+        <h3>Temas fijos</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tema</th><th>Query</th><th>Última búsqueda</th><th></th></tr></thead>
+          <tbody>${state.topics.map((topic) => `<tr>
+            <td><strong>${esc(topic.label)}</strong>${topic.active ? "" : ` <span class="chip">pausado</span>`}</td>
+            <td style="color:var(--muted)">${esc(topic.query)}</td>
+            <td>${topic.last_run_at ? fmtDate(topic.last_run_at) : "Nunca"}</td>
+            <td>${state.preview ? "" : `<button class="table-link" data-run-topic="${esc(topic.id)}" ${state.topicBusy ? "disabled" : ""}>${icon("search")} Buscar ahora</button>
+              <button class="table-link" data-toggle-topic="${esc(topic.id)}" style="margin-top:.3rem">${topic.active ? "Pausar" : "Activar"}</button>
+              <button class="table-link" data-delete-topic="${esc(topic.id)}" style="margin-top:.3rem;color:var(--red)">Borrar</button>`}</td>
+          </tr>`).join("")}</tbody>
+        </table></div>
+      </section>` : ""}
+
+      <div class="filters">
+        <select id="filter-platform" aria-label="Plataforma">
+          <option value="">Todas las plataformas</option>
+          ${Object.entries(platformLabels).map(([value, label]) => `<option value="${value}" ${state.filters.platform === value ? "selected" : ""}>${label}</option>`).join("")}
+        </select>
+        <select id="filter-category" aria-label="Categoría">
+          <option value="">Todas las categorías</option>
+          ${categories.map((c) => `<option value="${esc(c)}" ${state.filters.category === c ? "selected" : ""}>${esc(categoryLabel(c))}</option>`).join("")}
+        </select>
+        <input id="filter-search" type="search" placeholder="Filtrar texto o autor…" value="${esc(state.filters.search)}" aria-label="Filtrar" />
+      </div>
+      ${posts.length && !state.preview ? `<div class="form-foot" style="justify-content:flex-end;margin-bottom:.8rem">
+        ${state.posts.some((p) => p.source === "scraper") ? `<button class="button button-secondary" id="clear-scraped">${icon("trash-2")} Borrar todos los capturados</button>` : ""}
+        <button class="button button-primary" id="gen-from-feed" ${state.topicPosts?.busy ? "disabled" : ""}>${icon("sparkles")} ${state.topicPosts?.busy ? "Generando…" : "Generar posts con estos"}</button>
+      </div>` : ""}
+      ${posts.length ? (() => {
+        const perPage = 20;
+        const pages = Math.max(1, Math.ceil(posts.length / perPage));
+        const page = Math.min(state.feedPage, pages - 1);
+        const pager = pages > 1 ? `<div class="form-foot" style="justify-content:center;gap:1rem;margin-top:1rem">
+          <button class="button button-secondary" data-feed-page="${page - 1}" ${page === 0 ? "disabled" : ""}>← Anterior</button>
+          <span style="color:var(--muted)">Página ${page + 1} de ${pages} · ${posts.length} posts</span>
+          <button class="button button-secondary" data-feed-page="${page + 1}" ${page >= pages - 1 ? "disabled" : ""}>Siguiente →</button>
+        </div>` : "";
+        return `<div class="grid grid-2">${posts.slice(page * perPage, (page + 1) * perPage).map(postCard).join("")}</div>${pager}`;
+      })()
+        : `<div class="empty">Sin publicaciones todavía. Buscá un tema arriba para llenar el feed.</div>`}
+
+      <details style="margin-top:1.4rem">
+        <summary style="cursor:pointer;color:var(--muted);font-weight:600">Captura manual (opcional)</summary>
+        <section class="card" style="margin-top:.8rem">
+          <form id="post-form" class="form-grid">
+            <div class="field"><label for="post-platform">Plataforma</label>
+              <select id="post-platform" name="platform" required>${Object.entries(platformLabels).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></div>
+            <div class="field"><label for="post-author">Autor (@handle)</label><input id="post-author" name="author" required placeholder="midudev" /></div>
+            <div class="field"><label for="post-url">URL</label><input id="post-url" name="url" type="url" placeholder="https://x.com/…" /></div>
+            <div class="field"><label for="post-date">Fecha</label><input id="post-date" name="posted_at" type="datetime-local" /></div>
+            <div class="field span-all"><label for="post-content">Contenido</label><textarea id="post-content" name="content" required placeholder="Texto del post…"></textarea></div>
+            <div class="field"><label for="post-likes">Likes</label><input id="post-likes" name="likes" type="number" min="0" value="0" /></div>
+            <div class="field"><label for="post-reposts">Reposts</label><input id="post-reposts" name="reposts" type="number" min="0" value="0" /></div>
+            <div class="field"><label for="post-replies">Respuestas</label><input id="post-replies" name="replies" type="number" min="0" value="0" /></div>
+            <div class="field"><label for="post-views">Vistas</label><input id="post-views" name="views" type="number" min="0" value="0" /></div>
+            <div class="form-foot span-all"><button class="button button-secondary" type="submit">Guardar manual</button></div>
+          </form>
+        </section>
+      </details>`;
+  }
+
+  function postCard(post) {
+    const account = accountById(post.account_id);
+    return `<article class="card post-card">
+      <div class="post-head">
+        <div><span class="post-author">@${esc(post.author_handle)}</span>
+          ${account ? ` <span class="chip">${esc(categoryLabel(account.category))}</span>` : ""}</div>
+        <span class="chip chip-platform-${esc(post.platform)}">${esc(platformLabels[post.platform] || post.platform)}</span>
+      </div>
+      <p class="post-content post-clamp" title="Click para expandir">${esc(post.content).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')}</p>
+      <div class="post-stats">
+        <span title="Likes">♥ ${fmtNum(post.likes)}</span><span title="Reposts">⇄ ${fmtNum(post.reposts)}</span>
+        <span title="Respuestas">💬 ${fmtNum(post.replies)}</span><span title="Vistas">👁 ${fmtNum(post.views)}</span>
+      </div>
+      <div class="post-meta"><span>${fmtDate(post.posted_at)}</span><span>${post.source === "scraper" ? "Capturado automático" : "Captura manual"}</span></div>
+      <div class="post-actions">
+        ${post.url ? `<a class="table-link" href="${esc(post.url)}" target="_blank" rel="noopener">${icon("external-link")} Ver original</a>` : ""}
+        ${state.preview ? "" : `<button class="table-link" data-delete-post="${esc(post.id)}" style="color:var(--red)">${icon("trash-2")} Borrar</button>`}
+      </div>
+    </article>`;
+  }
+
+  async function generateTweetReply(event) {
+    event.preventDefault();
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const form = new FormData(event.target);
+    const handle = String(form.get("handle") || "").trim();
+    const content = String(form.get("content") || "").trim();
+    const links = String(form.get("links") || "").split("\n").map((l) => l.trim()).filter(Boolean);
+    if (!content) return notify("Pegá el texto del post primero.", true);
+    state.tweetReply = { busy: true, posts: null };
+    renderShell();
+    const { data, error } = await invokeEdge("generate-article", { format: "tweet_reply", handle, content, links });
+    if (error || data?.error) {
+      state.tweetReply = null;
+      notify(data?.error || "No se pudo generar el comentario.", true);
+      return renderShell();
+    }
+    state.tweetReply = { busy: false, posts: data.reply };
+    renderShell();
+  }
+
+  // Daily engagement batch: pick the strongest recent scraped posts (by
+  // views) and write a reply + quote for each in one Gemini call.
+  async function generateDailyReplies() {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const candidates = state.posts
+      .filter((p) => p.source === "scraper" && p.url && p.content)
+      .sort((a, b) => (b.views || 0) - (a.views || 0))
+      .slice(0, 8);
+    if (!candidates.length) return notify("Todavía no hay posts capturados. Buscá un tema o traé recientes de tus cuentas primero.", true);
+    state.dailyReplies = { busy: true, items: state.dailyReplies?.items || [] };
+    renderShell();
+    const progress = createProgress("Comentarios del día");
+    progress.auto([
+      `Eligiendo los ${candidates.length} posts más vistos del feed…`,
+      "Detectando el idioma de cada post…",
+      "Escribiendo comentario y cita para cada uno…",
+    ], 7000);
+    const tweets = candidates.map((p) => ({ handle: p.author_handle, content: p.content, url: p.url }));
+    const { data, error } = await invokeEdge("generate-article", { format: "tweet_reply_batch", tweets });
+    state.dailyReplies.busy = false;
+    if (error || data?.error) {
+      progress.fail(data?.error || "No se pudieron generar los comentarios.");
+      return renderShell();
+    }
+    state.dailyReplies.items = data.replies;
+    progress.done(`${data.replies.length} comentarios listos para publicar`);
+    renderShell();
+  }
+
+  function wireFeed() {
+    const rerender = () => { state.feedPage = 0; renderShell(); };
+    document.querySelector("#gen-daily-replies")?.addEventListener("click", generateDailyReplies);
+    document.querySelector("#tweet-reply-form")?.addEventListener("submit", generateTweetReply);
+    document.querySelectorAll("[data-copy-text]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyText)));
+    document.querySelector("#filter-platform")?.addEventListener("change", (e) => { state.filters.platform = e.target.value; rerender(); });
+    document.querySelector("#filter-category")?.addEventListener("change", (e) => { state.filters.category = e.target.value; rerender(); });
+    document.querySelector("#filter-search")?.addEventListener("input", (e) => {
+      state.filters.search = e.target.value;
+      clearTimeout(wireFeed._t); wireFeed._t = setTimeout(rerender, 350);
+    });
+    document.querySelector("#post-form")?.addEventListener("submit", savePost);
+    document.querySelectorAll("[data-delete-post]").forEach((button) => button.addEventListener("click", async () => {
+      if (!confirm("¿Borrar esta publicación?")) return;
+      const { error } = await supabase.from("social_posts").delete().eq("id", button.dataset.deletePost);
+      if (error) return notify("No se pudo borrar.", true);
+      state.posts = state.posts.filter((p) => p.id !== button.dataset.deletePost);
+      renderShell();
+    }));
+    document.querySelector("#clear-scraped")?.addEventListener("click", async () => {
+      const scrapedIds = state.posts.filter((p) => p.source === "scraper").map((p) => p.id);
+      if (!scrapedIds.length) return;
+      if (!confirm(`¿Borrar los ${scrapedIds.length} posts capturados automáticamente? Los cargados a mano no se tocan.`)) return;
+      const { error } = await supabase.from("social_posts").delete().eq("organization_id", state.org.id).eq("source", "scraper");
+      if (error) return notify("No se pudo borrar.", true);
+      state.posts = state.posts.filter((p) => p.source !== "scraper");
+      state.feedPage = 0;
+      notify("Feed capturado limpiado.");
+      renderShell();
+    });
+    document.querySelector("#topic-search-form")?.addEventListener("submit", runTopicSearch);
+    document.querySelector("#save-qid")?.addEventListener("click", () => {
+      const input = document.querySelector("#topic-qid");
+      const qid = extractQid(input?.value);
+      if (!qid) return notify("No encontré un query ID válido en eso. Pegá el link completo de la request SearchTimeline.", true);
+      localStorage.setItem("x_qid_search", qid);
+      if (input) input.value = qid;
+      notify("Query ID guardado.");
+    });
+    document.querySelector("#fetch-recent")?.addEventListener("click", fetchRecentFromAccounts);
+    document.querySelector("#gen-from-feed")?.addEventListener("click", generateFromFeed);
+    document.querySelectorAll("[data-feed-page]").forEach((b) => b.addEventListener("click", () => {
+      state.feedPage = Math.max(0, Number(b.dataset.feedPage) || 0);
+      renderShell();
+      document.querySelector(".filters")?.scrollIntoView({ behavior: "smooth" });
+    }));
+    document.querySelectorAll("[data-run-topic]").forEach((b) => b.addEventListener("click", () => runTopicSearchById(b.dataset.runTopic)));
+    document.querySelectorAll("[data-copy-topic-post]").forEach((b) => b.addEventListener("click", () => copyText(b.dataset.copyTopicPost)));
+    document.querySelectorAll(".post-clamp").forEach((el) => el.addEventListener("click", (e) => {
+      if (e.target.tagName !== "A") el.classList.toggle("expanded");
+    }));
+    document.querySelectorAll("[data-toggle-topic]").forEach((b) => b.addEventListener("click", () => toggleTopic(b.dataset.toggleTopic)));
+    document.querySelectorAll("[data-delete-topic]").forEach((b) => b.addEventListener("click", () => deleteTopic(b.dataset.deleteTopic)));
+  }
+
+  async function runTopicSearch(event) {
+    event.preventDefault();
+    if (state.preview || state.topicBusy) return;
+    const form = new FormData(event.target);
+    const query = String(form.get("query")).trim();
+    const saveAsTopic = document.querySelector("#topic-save")?.checked;
+    const qid = extractQid(form.get("qid"));
+    if (qid) localStorage.setItem("x_qid_search", qid);
+    if (!query) return;
+    state.topicBusy = true;
+    renderShell();
+    const progress = createProgress(`Buscando «${query}» en X`);
+    progress.auto([
+      "Despertando el scraper…",
+      "Abriendo la búsqueda en X…",
+      "Capturando posts con sus métricas…",
+      "Filtrando los que ya tenías…",
+    ], 8000);
+    const { data, error } = await invokeEdge("x-search", { query, count: 20, qid });
+    state.topicBusy = false;
+    if (error || data?.error) { progress.fail(data?.error || error?.message || "No se pudo buscar."); renderShell(); return; }
+    if (saveAsTopic) {
+      const label = query.length > 40 ? query.slice(0, 40) + "…" : query;
+      const { error: topicError } = await supabase.from("social_topics").insert({ organization_id: state.org.id, label, query, active: true });
+      if (topicError) notify("Post guardados, pero no se pudo crear el tema: " + topicError.message, true);
+    }
+    progress.done(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts nuevos capturados`);
+    await loadLiveData();
+    renderShell();
+    generateTopicPosts(query, data.posts || []);
+  }
+
+  // After a topic search, write Tellus-voice posts about it using the captured
+  // tweets as context, each paired with an image/GIF. Runs after render so the
+  // feed shows up immediately.
+  async function generateTopicPosts(query, capturedPosts) {
+    const lang = await askLang();
+    if (!lang) return;
+    state.topicPosts = { query, posts: null, images: [], busy: true };
+    renderShell();
+    const progress = createProgress(`Posts nuestros sobre «${query}»`);
+    progress.step("Leyendo los posts capturados…");
+    const samples = capturedPosts.map((p) => p.content).filter(Boolean).slice(0, 10);
+    progress.step("Escribiendo 3 posts con la voz de Tellus…");
+    const gen = await invokeEdge("generate-article", { format: "topic_posts", query, posts: samples, lang });
+    if (gen.error || gen.data?.error) {
+      state.topicPosts = null;
+      progress.fail(gen.data?.error || "No se pudieron generar posts del tema.");
+      return renderShell();
+    }
+    // Image search needs short English terms, not the long Spanish topic —
+    // the model suggests them; fall back to the topic's first words.
+    progress.step("Buscando imagen o GIF para acompañar…");
+    const gifQuery = gen.data.gifQuery || query.split(/\s+/).slice(0, 3).join(" ");
+    let media = await invokeEdge("reddit-search", { query: gifQuery, mode: "memes", count: 6 });
+    if (!media.data?.items?.length && gifQuery !== query) {
+      media = await invokeEdge("reddit-search", { query: query.split(/\s+/).slice(0, 3).join(" "), mode: "memes", count: 6 });
+    }
+    state.topicPosts = { query, posts: gen.data.posts, images: media.data?.items || [], busy: false };
+    progress.done(media.data?.items?.length ? "3 posts + imagen listos" : "3 posts listos (sin imagen para este tema)");
+    renderShell();
+  }
+
+  // Manual trigger: write Tellus posts from whatever the feed currently shows
+  // (scraped topic results, recent account posts, or a filtered view).
+  function generateFromFeed() {
+    const posts = filteredPosts();
+    if (!posts.length) return notify("No hay posts en el feed para inspirarse.", true);
+    const tema = state.filters.search.trim()
+      || state.topicPosts?.query
+      || "lo más comentado en estos posts de tecnología y cripto";
+    generateTopicPosts(tema, posts.slice(0, 12));
+    document.querySelector(".toolbar")?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  // Pull the latest posts from the curated accounts without picking a topic:
+  // one X search with "from:handle OR from:handle...".
+  async function fetchRecentFromAccounts() {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const handles = state.accounts.filter((a) => a.active && a.platform === "x").slice(0, 12).map((a) => `from:${a.handle}`);
+    if (!handles.length) return notify("No hay cuentas activas de X.", true);
+    state.topicBusy = true;
+    renderShell();
+    const progress = createProgress("Buscando posts recientes de tus cuentas");
+    progress.auto([
+      "Despertando el scraper…",
+      "Abriendo X y armando la búsqueda de cuentas…",
+      `Revisando publicaciones de ${handles.length} cuenta${handles.length === 1 ? "" : "s"}…`,
+      "Filtrando los posts que ya tenías…",
+    ], 8000);
+    const { data, error } = await invokeEdge("x-search", { query: `(${handles.join(" OR ")})`, count: 40 });
+    state.topicBusy = false;
+    if (error || data?.error) { progress.fail(data?.error || error?.message || "No se pudo buscar."); return renderShell(); }
+    progress.done(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts recientes de tus cuentas.`);
+    state.feedPage = 0;
+    await loadLiveData();
+    renderShell();
+    generateTopicPosts("lo último que publicaron nuestras cuentas de tecnología y cripto", data.posts || []);
+  }
+
+  async function runTopicSearchById(topicId) {
+    if (state.topicBusy) return;
+    const topic = state.topics.find((t) => t.id === topicId);
+    if (!topic) return;
+    state.topicBusy = true;
+    renderShell();
+    const progress = createProgress(`Buscando «${topic.label}» en X`);
+    progress.auto([
+      "Despertando el scraper…",
+      "Abriendo la búsqueda en X…",
+      "Capturando posts con sus métricas…",
+      "Filtrando los que ya tenías…",
+    ], 8000);
+    const qid = localStorage.getItem("x_qid_search") || "";
+    const { data, error } = await invokeEdge("x-search", { query: topic.query, count: 20, qid });
+    state.topicBusy = false;
+    if (error || data?.error) { progress.fail(data?.error || error?.message || "No se pudo buscar."); renderShell(); return; }
+    await supabase.from("social_topics").update({ last_run_at: new Date().toISOString() }).eq("id", topicId);
+    progress.done(data.message ? `${data.saved || 0} posts — ${data.message}` : `${data.saved || 0} posts capturados de "${topic.label}"`);
+    await loadLiveData();
+    renderShell();
+    generateTopicPosts(topic.query, data.posts || []);
+  }
+
+  async function toggleTopic(topicId) {
+    const topic = state.topics.find((t) => t.id === topicId);
+    if (!topic) return;
+    const { error } = await supabase.from("social_topics").update({ active: !topic.active }).eq("id", topicId);
+    if (error) return notify("No se pudo actualizar.", true);
+    topic.active = !topic.active;
+    renderShell();
+  }
+
+  async function deleteTopic(topicId) {
+    const topic = state.topics.find((t) => t.id === topicId);
+    if (!topic || !confirm(`¿Borrar el tema "${topic.label}"?`)) return;
+    const { error } = await supabase.from("social_topics").delete().eq("id", topicId);
+    if (error) return notify("No se pudo borrar.", true);
+    state.topics = state.topics.filter((t) => t.id !== topicId);
+    renderShell();
+  }
+
+  async function savePost(event) {
+    event.preventDefault();
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const form = new FormData(event.target);
+    const platform = String(form.get("platform"));
+    const author = String(form.get("author")).replace(/^@/, "").trim();
+    const account = accountByHandle(author, platform);
+    const row = {
+      organization_id: state.org.id,
+      account_id: account?.id || null,
+      platform,
+      author_handle: author,
+      url: String(form.get("url")).trim() || null,
+      content: String(form.get("content")).trim(),
+      posted_at: form.get("posted_at") ? new Date(String(form.get("posted_at"))).toISOString() : null,
+      likes: Number(form.get("likes")) || 0,
+      reposts: Number(form.get("reposts")) || 0,
+      replies: Number(form.get("replies")) || 0,
+      views: Number(form.get("views")) || 0,
+      source: "manual",
+      created_by: state.session?.user?.id || null,
+    };
+    const { data, error } = await supabase.from("social_posts").insert(row).select().single();
+    if (error) return notify(error.code === "23505" ? "Esa URL ya está capturada." : "No se pudo guardar la publicación.", true);
+    state.posts.unshift(data);
+    notify("Publicación capturada.");
+    renderShell();
+  }
+
+  // ---------- accounts ----------
+
+
+  // Distinct list names with their pending/followed counts.
+  function followListsSummary() {
+    const byList = new Map();
+    for (const t of state.followTargets) {
+      if (!byList.has(t.list_name)) byList.set(t.list_name, { pending: 0, followed: 0, total: 0 });
+      const b = byList.get(t.list_name);
+      b.total += 1;
+      if (t.status === "followed") b.followed += 1;
+      else if (t.status === "pending") b.pending += 1;
+    }
+    return [...byList.entries()].map(([name, c]) => ({ name, ...c }));
+  }
+
+  function listsSection() {
+    const lists = followListsSummary();
+    if (!lists.length) return "";
+    return `<section class="card" style="margin-bottom:1.2rem">
+      <h3>Listas de follow</h3>
+      <p style="color:var(--muted);margin:.2rem 0 .8rem">Prospectos guardados. Abrí una lista para seguirlos de a poco desde X, a ritmo humano.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Lista</th><th>Pendientes</th><th>Seguidos</th><th></th></tr></thead>
+        <tbody>${lists.map((l) => `<tr>
+          <td><strong>${esc(l.name)}</strong> <span style="color:var(--muted)">· ${l.total}</span></td>
+          <td>${l.pending}</td>
+          <td>${l.followed}</td>
+          <td><button class="table-link" data-open-list="${esc(l.name)}">${icon("play")} Abrir</button></td>
+        </tr>`).join("")}</tbody>
+      </table></div>
+    </section>`;
+  }
+
+  function listViewModal() {
+    const lv = state.listView;
+    if (!lv) return "";
+    const targets = state.followTargets.filter((t) => t.list_name === lv.name);
+    const pending = targets.filter((t) => t.status === "pending");
+    const shown = lv.filter === "followed" ? targets.filter((t) => t.status === "followed")
+      : lv.filter === "all" ? targets : pending;
+    const head = `<h2 style="margin:0">Lista «${esc(lv.name)}»</h2>
+      <button class="button button-ghost" type="button" data-close-list>${icon("x")} Cerrar</button>`;
+    const filters = [["pending", `Pendientes (${targets.filter((t) => t.status === "pending").length})`], ["followed", `Seguidos (${targets.filter((t) => t.status === "followed").length})`], ["all", `Todos (${targets.length})`]];
+    // A list fed by scraping remembers its source account so "Traer más"
+    // pulls fresh people (already-followed ones never come back — they're
+    // still in the DB, so the upsert skips them).
+    const source = targets.find((t) => t.source_handle)?.source_handle;
+    const dir = localStorage.getItem(`listdir:${lv.name}`) || "followers";
+    const body = `
+      <div class="save-list-bar">
+        <span>Seguí de a poco: abrí 5, confirmá en X, marcá acá. Los que seguís salen de la lista.</span>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          ${source ? `<button class="button button-secondary" type="button" data-refill="${esc(source)}" data-refill-dir="${esc(dir)}" ${state.listView?.busy ? "disabled" : ""} style="min-height:38px">${icon("refresh-cw")} ${state.listView?.busy ? "Trayendo…" : "Traer más"}</button>` : ""}
+          <button class="button button-primary" type="button" data-open-batch ${pending.length ? "" : "disabled"} style="min-height:38px">${icon("external-link")} Abrir 5 en X</button>
+        </div>
+      </div>
+      <div class="modal-tabs" role="tablist" aria-label="Estado" style="margin-top:.4rem">
+        ${filters.map(([key, label]) => `<button type="button" role="tab" aria-selected="${lv.filter === key}" class="${lv.filter === key ? "active" : ""}" data-list-filter="${key}">${esc(label)}</button>`).join("")}
+      </div>
+      ${targetRows(shown)}`;
+    return modalShell(head, body);
+  }
+
+  function targetRows(targets) {
+    if (!targets.length) return `<p style="color:var(--muted);margin:.6rem 0 0">Nada en esta vista.</p>`;
+    return `<div class="table-wrap" style="margin-top:.6rem"><table>
+      <thead><tr><th>Cuenta</th><th>Seguidores</th><th>Bio</th><th></th></tr></thead>
+      <tbody>${targets.map((t) => `<tr>
+        <td><a href="https://x.com/${esc(t.handle)}" target="_blank" rel="noopener" style="text-decoration:none"><strong>@${esc(t.handle)}</strong></a><br /><span style="color:var(--muted);font-size:.82rem">${esc(t.display_name || "")}</span></td>
+        <td>${fmtNum(t.followers)}</td>
+        <td style="color:var(--muted);font-size:.82rem;max-width:320px">${esc((t.bio || "").slice(0, 110))}</td>
+        <td><button type="button" class="follow-pill${t.status === "followed" ? " following" : ""}" data-target-follow="${esc(t.id)}">${t.status === "followed" ? "Siguiendo" : "Seguir"}</button>
+          <button class="table-link" data-target-skip="${esc(t.id)}" style="margin-left:.5rem;color:var(--muted)">Saltar</button></td>
+      </tr>`).join("")}</tbody>
+    </table></div>`;
+  }
+
+  function accountsView() {
+    return `
+      <div class="toolbar"><div><span class="eyebrow">Cuentas observadas</span><h2>Cuentas</h2></div></div>
+      ${listViewModal()}
+      ${listsSection()}
+      <section class="card" style="margin-bottom:1.2rem">
+        <h3>Listas de follow</h3>
+        <p style="color:var(--muted);margin:.2rem 0 .8rem;line-height:1.5">Pegá los handles que querés seguir (uno por línea o separados por coma) y guardalos en una lista. Después la abrís y los seguís de a poco desde X.</p>
+        <form id="list-add-form" class="form-grid">
+          <div class="field"><label for="list-name">Lista</label><input id="list-name" name="list_name" placeholder="Prospectos IA" required /></div>
+          <div class="field span-all"><label for="list-handles">Handles</label><textarea id="list-handles" name="handles" style="min-height:80px" placeholder="midudev, goncy&#10;@teffcode" required></textarea></div>
+          <div class="form-foot span-all"><button class="button button-primary" type="submit">${icon("list-plus")} Guardar en la lista</button></div>
+        </form>
+      </section>
+      <section class="card" style="margin-bottom:1.2rem">
+        <h3>Agregar cuenta</h3>
+        <form id="account-form" class="form-grid">
+          <div class="field"><label for="acc-platform">Plataforma</label>
+            <select id="acc-platform" name="platform" required>${Object.entries(platformLabels).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></div>
+          <div class="field"><label for="acc-handle">Handle</label><input id="acc-handle" name="handle" required placeholder="sin @" /></div>
+          <div class="field"><label for="acc-name">Nombre</label><input id="acc-name" name="display_name" /></div>
+          <div class="field"><label for="acc-category">Categoría</label>
+            <select id="acc-category" name="category">${Object.entries(categoryLabels).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></div>
+          <div class="form-foot span-all"><button class="button button-primary" type="submit">Agregar</button></div>
+        </form>
+      </section>
+      <div class="card table-wrap"><table>
+        <thead><tr><th>Cuenta</th><th>Plataforma</th><th>Categoría</th><th>Estado</th><th></th></tr></thead>
+        <tbody>${state.accounts.map((account) => `<tr>
+          <td><strong>@${esc(account.handle)}</strong><br /><span style="color:var(--muted)">${esc(account.display_name || "")}</span></td>
+          <td><span class="chip chip-platform-${esc(account.platform)}">${esc(platformLabels[account.platform] || account.platform)}</span></td>
+          <td>${esc(categoryLabel(account.category))}</td>
+          <td>${account.active ? "Activa" : "Pausada"}</td>
+          <td>${state.preview ? "" : `${account.platform === "x" ? `<button class="table-link" data-scrape-list="followers" data-scrape-handle="${esc(account.handle)}">${icon("users")} Seguidores</button><br /><button class="table-link" data-scrape-list="following" data-scrape-handle="${esc(account.handle)}" style="margin-top:.3rem">${icon("user-plus")} Sigue a</button><br />` : ""}<button class="table-link" data-toggle-account="${esc(account.id)}" style="margin-top:.3rem">${account.active ? "Pausar" : "Activar"}</button>`}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>`;
+  }
+
+  function wireAccounts() {
+    document.querySelector("#account-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (state.preview) return notify("La vista previa es de solo lectura.", true);
+      const form = new FormData(event.target);
+      const row = {
+        organization_id: state.org.id,
+        platform: String(form.get("platform")),
+        handle: String(form.get("handle")).replace(/^@/, "").trim(),
+        display_name: String(form.get("display_name")).trim() || null,
+        category: String(form.get("category")) || "general",
+      };
+      row.url = row.platform === "x" ? `https://x.com/${row.handle}` : null;
+      const { data, error } = await supabase.from("social_accounts").insert(row).select().single();
+      if (error) return notify(error.code === "23505" ? "Esa cuenta ya existe." : "No se pudo agregar la cuenta.", true);
+      state.accounts.push(data);
+      notify("Cuenta agregada.");
+      renderShell();
+    });
+    document.querySelectorAll("[data-toggle-account]").forEach((button) => button.addEventListener("click", async () => {
+      const account = accountById(button.dataset.toggleAccount);
+      const { error } = await supabase.from("social_accounts").update({ active: !account.active }).eq("id", account.id);
+      if (error) return notify("No se pudo actualizar.", true);
+      account.active = !account.active;
+      renderShell();
+    }));
+    document.querySelector("#list-add-form")?.addEventListener("submit", addHandlesToList);
+    document.querySelectorAll("[data-scrape-handle]").forEach((button) => button.addEventListener("click", () => {
+      scrapeToList(button.dataset.scrapeHandle, button.dataset.scrapeList);
+    }));
+    document.querySelector("[data-refill]")?.addEventListener("click", (e) => {
+      scrapeToList(e.currentTarget.dataset.refill, e.currentTarget.dataset.refillDir, true);
+    });
+    document.querySelectorAll("[data-open-list]").forEach((button) => button.addEventListener("click", () => {
+      state.listView = { name: button.dataset.openList, filter: "pending" };
+      renderShell();
+    }));
+    document.querySelector("[data-close-list]")?.addEventListener("click", () => { state.listView = null; renderShell(); });
+    document.querySelectorAll("[data-list-filter]").forEach((button) => button.addEventListener("click", () => {
+      if (state.listView) { state.listView.filter = button.dataset.listFilter; renderShell(); }
+    }));
+    document.querySelectorAll("[data-target-follow]").forEach((button) => button.addEventListener("click", () => toggleTargetFollow(button.dataset.targetFollow)));
+    document.querySelectorAll("[data-target-skip]").forEach((button) => button.addEventListener("click", () => setTargetStatus(button.dataset.targetSkip, "skipped")));
+    document.querySelector("[data-open-batch]")?.addEventListener("click", openNextBatch);
+  }
+
+  // Scrape a light sample of an account's followers/following and stock them
+  // into a list as pending targets. Re-running (Traer más) appends only NEW
+  // people — anyone already in the list, including those you already followed,
+  // is skipped by the upsert, so the pending view keeps flowing with fresh
+  // faces as you work through it.
+  async function scrapeToList(handle, list, refill = false) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const dirLabel = list === "following" ? "Sigue a @" : "Seguidores de @";
+    const listName = `${dirLabel}${handle}`;
+    if (refill && state.listView) state.listView.busy = true;
+    renderShell();
+    const progress = createProgress(refill ? `Trayendo más de @${handle}` : `${dirLabel}${handle}`);
+    progress.auto(["Despertando el scraper…", `Abriendo x.com/${handle}/${list}…`, "Capturando una muestra…"], 15000);
+    const { data, error } = await invokeEdge("x-followers", { handle, list });
+    if (state.listView) state.listView.busy = false;
+    if (error || data?.error) { progress.fail(data?.error || "No se pudo leer la lista."); return renderShell(); }
+    const users = data.users || [];
+    if (!users.length) { progress.fail(data.note || "X no cargó la lista esta vez. Reintentá."); return renderShell(); }
+    const rows = users.map((u) => ({
+      organization_id: state.org.id,
+      list_name: listName,
+      handle: u.handle,
+      display_name: u.name || null,
+      bio: u.bio || null,
+      followers: u.followers || 0,
+      source_handle: handle,
+      added_by: state.session?.user?.id || null,
+    }));
+    const { data: saved, error: saveErr } = await supabase.from("follow_targets")
+      .upsert(rows, { onConflict: "organization_id,list_name,handle", ignoreDuplicates: true })
+      .select();
+    if (saveErr) { progress.fail("No se pudo guardar: " + saveErr.message); return renderShell(); }
+    const added = saved || [];
+    state.followTargets = [...added, ...state.followTargets];
+    localStorage.setItem(`listdir:${listName}`, list);
+    state.listView = { name: listName, filter: "pending" };
+    progress.done(added.length ? `+${added.length} nuevos en «${listName}»` : "Sin gente nueva — ya los tenías todos");
+    renderShell();
+  }
+
+  // Add pasted handles to a named list as pending targets — manual alternative
+  // to scraping.
+  async function addHandlesToList(event) {
+    event.preventDefault();
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const form = new FormData(event.target);
+    const name = String(form.get("list_name") || "").trim();
+    const handles = [...new Set(String(form.get("handles") || "")
+      .split(/[\s,]+/).map((h) => h.replace(/^@/, "").trim().toLowerCase()).filter((h) => /^[a-z0-9_]{1,15}$/.test(h)))];
+    if (!name) return notify("Poné un nombre de lista.", true);
+    if (!handles.length) return notify("No reconocí ningún handle válido.", true);
+    const rows = handles.map((h) => ({
+      organization_id: state.org.id,
+      list_name: name,
+      handle: h,
+      added_by: state.session?.user?.id || null,
+    }));
+    const { data, error } = await supabase.from("follow_targets")
+      .upsert(rows, { onConflict: "organization_id,list_name,handle", ignoreDuplicates: true })
+      .select();
+    if (error) return notify("No se pudo guardar: " + error.message, true);
+    const added = data || [];
+    state.followTargets = [...added, ...state.followTargets];
+    event.target.reset();
+    notify(`${added.length} cuentas en «${name}»${added.length < rows.length ? ` (${rows.length - added.length} ya estaban)` : ""}.`);
+    renderShell();
+  }
+
+  async function setTargetStatus(id, status) {
+    const target = state.followTargets.find((t) => t.id === id);
+    if (!target) return;
+    const { error } = await supabase.from("follow_targets").update({ status }).eq("id", id);
+    if (error) return notify("No se pudo actualizar.", true);
+    target.status = status;
+    renderShell();
+  }
+
+  function toggleTargetFollow(id) {
+    const target = state.followTargets.find((t) => t.id === id);
+    if (!target) return;
+    if (target.status === "followed") return setTargetStatus(id, "pending");
+    window.open(`https://x.com/${target.handle}`, "_blank", "noopener");
+    notify(`Abrimos @${target.handle} en X — confirmá el follow allá.`);
+    setTargetStatus(id, "followed");
+  }
+
+  // Assisted batch: open the next few pending profiles in tabs so you follow
+  // them by hand in X. Never a headless mass-follow — that gets the account
+  // suspended.
+  function openNextBatch() {
+    const pending = state.followTargets.filter((t) => t.list_name === state.listView?.name && t.status === "pending").slice(0, 5);
+    if (!pending.length) return notify("No quedan pendientes en esta lista.", true);
+    for (const t of pending) window.open(`https://x.com/${t.handle}`, "_blank", "noopener");
+    notify(`Abrimos ${pending.length} perfiles en X. Seguilos ahí y marcá "Siguiendo" acá.`);
+  }
+
+  // ---------- repos ----------
+
+  // Curated GitHub searches; dates are computed at click time. An array means
+  // "super search": every query runs in parallel and results merge — needed
+  // for ecosystems like Stellar where a single narrow query hides the 1400+
+  // open-source repos that actually exist.
+  const REPO_CATEGORIES = [
+    ["Trending semana", () => `created:>${daysAgo(7)} stars:>50`],
+    ["Más forkeados", () => ({ q: `stars:>1000 pushed:>${daysAgo(180)}`, sort: "forks" })],
+    ["Top del año", () => `created:>${daysAgo(365)} stars:>500`],
+    ["Claude", () => `claude in:name,description stars:>30 pushed:>${daysAgo(60)}`],
+    ["Agentes IA", () => `ai agent in:name,description stars:>200 pushed:>${daysAgo(30)}`],
+    ["MCP", () => `mcp server in:name,description stars:>50 pushed:>${daysAgo(60)}`],
+    ["UI/UX", () => `topic:ui topic:design-system stars:>300 pushed:>${daysAgo(90)}`],
+    ["Librerías nuevas", () => `topic:library created:>${daysAgo(120)} stars:>100`],
+    // Stellar = the BLOCKCHAIN only. Anchored on the official org, curated
+    // topics, and terms unique to the Stellar network (Soroban smart
+    // contracts, Horizon API, stellar-sdk, XLM/Lumens) so astronomy/game
+    // repos named "stellar" don't leak in.
+    ["Stellar (blockchain)", () => [
+      "org:stellar",
+      "org:stellar-deprecated",
+      "topic:stellar",
+      "topic:soroban",
+      "topic:stellar-blockchain",
+      "soroban smart contract in:name,description",
+      "stellar-sdk in:name,description",
+      "stellar horizon in:name,description",
+      '"stellar network" in:name,description',
+    ]],
+  ];
+
+  // GitHub sort keys → label for the dropdown.
+  const REPO_SORTS = [["stars", "Más estrellas"], ["forks", "Más forkeados"], ["updated", "Más recientes"]];
+
+  function daysAgo(n) {
+    return new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+  }
+
+  function reposView() {
+    return `
+      <div class="toolbar"><div><span class="eyebrow">GitHub</span><h2>Buscador de repositorios</h2></div></div>
+      <section class="card" style="margin-bottom:1.2rem">
+        <form id="repo-form" class="form-grid">
+          <div class="field"><label for="repo-q">Búsqueda</label>
+            <input id="repo-q" name="q" value="${esc(state.repoQuery)}" placeholder="ej: scraping language:python stars:>500" /></div>
+          <div class="field"><label for="repo-sort">Ordenar por</label>
+            <select id="repo-sort" name="sort">${REPO_SORTS.map(([v, l]) => `<option value="${v}" ${state.repoSort === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+          <div class="form-foot span-all">
+            <button class="button button-secondary" type="button" id="repo-trending">Trending del mes</button>
+            <button class="button button-primary" type="submit" ${state.repoBusy ? "disabled" : ""}>Buscar</button>
+          </div>
+        </form>
+        <div style="margin-top:.8rem">
+          <span style="color:var(--muted);font-size:.85rem">Búsquedas rápidas:</span>
+          <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem">
+            ${REPO_CATEGORIES.map(([label]) => `<button class="button button-secondary" data-repo-chip="${esc(label)}" ${state.repoBusy ? "disabled" : ""} style="min-height:34px;padding:.3rem .8rem">${esc(label)}</button>`).join("")}
+          </div>
+        </div>
+      </section>
+      ${repoPostModal()}
+      ${state.repoResults.length ? `<div class="grid grid-2" style="margin-bottom:1.4rem">${state.repoResults.map(repoResultCard).join("")}</div>` : ""}
+      <div class="toolbar"><div><span class="eyebrow">Guardados</span><h2>Repos elegidos</h2></div></div>
+      ${state.repos.length ? `<div class="card table-wrap"><table>
+        <thead><tr><th>Repo</th><th>Stars</th><th>Lenguaje</th><th>Estado</th><th></th></tr></thead>
+        <tbody>${state.repos.map((repo) => `<tr>
+          <td><a class="table-link" href="${esc(repo.url)}" target="_blank" rel="noopener"><strong>${esc(repo.repo_full_name)}</strong></a><br />
+            <span style="color:var(--muted)">${esc(repo.description || "")}</span></td>
+          <td>★ ${fmtNum(repo.stars)}</td>
+          <td>${esc(repo.language || "—")}</td>
+          <td><span class="status status-${esc(repo.status)}">${esc(repoStatusLabels[repo.status] || repo.status)}</span></td>
+          <td>${state.preview ? "" : `<button class="table-link" data-post-repo-saved="${esc(repo.id)}" ${state.repoPostBusy ? "disabled" : ""}>${icon("sparkles")} Crear posts</button>
+          <select data-repo-status="${esc(repo.id)}" aria-label="Cambiar estado" style="margin-top:.4rem">
+            ${Object.entries(repoStatusLabels).map(([value, label]) => `<option value="${value}" ${repo.status === value ? "selected" : ""}>${label}</option>`).join("")}
+          </select>`}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>` : `<div class="empty">Todavía no guardaste repos. Buscá arriba y presioná “Guardar”.</div>`}`;
+  }
+
+  function repoResultCard(repo) {
+    const saved = state.repos.some((r) => r.repo_full_name === repo.full_name);
+    return `<article class="card">
+      <h3><a class="table-link" href="${esc(repo.html_url)}" target="_blank" rel="noopener">${esc(repo.full_name)}</a>${repo._source ? ` <span class="chip" style="margin-left:.4rem">${repo._source === "hn" ? "vía HN" : "vía web"}</span>` : ""}</h3>
+      <p style="color:var(--muted);margin:.2rem 0 .7rem;line-height:1.5">${esc(repo.description || "Sin descripción")}</p>
+      <div class="post-stats"><span title="Estrellas">★ ${fmtNum(repo.stargazers_count)}</span><span title="Forks">⑂ ${fmtNum(repo.forks_count)}</span><span>${esc(repo.language || "—")}</span><span>${fmtDate(repo.pushed_at)}</span></div>
+      <div class="form-foot" style="justify-content:start">
+        ${saved ? `<span class="chip">Ya guardado</span>` : state.preview ? "" : `<button class="button button-secondary" data-save-repo="${esc(repo.full_name)}" style="min-height:38px">Guardar</button>`}
+        ${state.preview ? "" : `<button class="button button-primary" data-post-repo-result="${esc(repo.full_name)}" style="min-height:38px" ${state.repoPostBusy ? "disabled" : ""}>${icon("sparkles")} ${state.repoPostBusy ? "Generando…" : "Crear posts"}</button>`}
+      </div>
+    </article>`;
+  }
+
+  const REPO_POST_CHANNELS = [["x", "X"], ["whatsapp", "WhatsApp"], ["discord", "Discord"], ["linkedin", "LinkedIn"], ["instagram", "Instagram"]];
+
+  function repoPostModal() {
+    const draft = state.repoPostDraft;
+    if (!draft) return "";
+    const head = `<h2 style="margin:0">Posts para «${esc(draft.repoName)}»</h2>
+      <button class="button button-ghost" type="button" data-close-post>${icon("x")} Cerrar</button>`;
+    const v = draft.verified;
+    const body = `
+      ${v ? `<div class="post-meta" style="margin-bottom:.6rem">
+        <span style="color:${v.archived ? "var(--red)" : "var(--muted)"}">
+          ${v.archived ? "⚠️ Repositorio ARCHIVADO en GitHub" : "✓ Verificado en GitHub"}
+          · dueño: ${esc(v.owner_login || "—")}
+          · licencia: ${esc(v.license || "sin licencia")}
+          · última actividad: ${fmtDate(v.pushed_at)}
+          · verificado el ${esc(v.verified_at)}
+        </span>
+      </div>` : ""}
+      <div class="modal-tabs" role="tablist" aria-label="Canal">
+        ${REPO_POST_CHANNELS.map(([key, label]) => `<button type="button" role="tab" aria-selected="${draft.tab === key}" class="${draft.tab === key ? "active" : ""}" data-repo-tab="${key}">${esc(label)}</button>`).join("")}
+      </div>
+      <textarea id="repo-post-text" style="width:100%;min-height:160px;margin:.8rem 0;border:1px solid var(--line);border-radius:11px;padding:.72rem .85rem">${esc(draft.posts[draft.tab] || "")}</textarea>
+      ${draft.tab === "x" ? `<label for="repo-post-reply" style="font-weight:600;font-size:.85rem">Tweet 2 (respuesta con el repo)</label>
+      <textarea id="repo-post-reply" style="width:100%;min-height:56px;margin:.4rem 0 .8rem;border:1px solid var(--line);border-radius:11px;padding:.72rem .85rem">${esc(draft.posts.x_reply || "")}</textarea>` : ""}
+      ${draft.sources?.length ? `<div class="post-meta"><span>${draft.sources.length} fuente(s):</span> ${draft.sources.slice(0, 4).map((s) => `<a class="table-link" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join(" · ")}</div>`
+        : `<div class="post-meta"><span style="color:var(--red)">Sin fuentes verificadas — revisá antes de publicar.</span></div>`}
+      <div class="form-foot" style="justify-content:start;margin-top:.7rem">
+        <button class="button button-secondary" id="repo-post-copy" type="button">${icon("copy")} Copiar ${esc(REPO_POST_CHANNELS.find(([k]) => k === draft.tab)?.[1] || "")}</button>
+        <button class="button button-primary" id="repo-post-save" type="button">Guardar los 5 como borrador</button>
+      </div>`;
+    return modalShell(head, body);
+  }
+
+  // GitHub's own search only matches name/description/readme, so a term like
+  // "stellar" returns very little. HN (stories + comments) and a Gemini web
+  // search fill in repos that are being *talked about* elsewhere.
+  const GITHUB_PATH_DENYLIST = new Set([
+    "topics", "search", "marketplace", "sponsors", "apps", "orgs", "settings",
+    "notifications", "issues", "pulls", "about", "contact", "pricing", "join",
+    "login", "signup", "site", "features", "collections", "trending", "explore", "events",
+  ]);
+
+  function extractGithubRepos(text) {
+    const out = [];
+    const re = /github\.com\/([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)\/([a-zA-Z0-9._-]+)/g;
+    let match;
+    while ((match = re.exec(String(text || "")))) {
+      const owner = match[1];
+      const repo = match[2].replace(/\.git$/i, "").replace(/\.+$/, "");
+      if (!repo || GITHUB_PATH_DENYLIST.has(owner.toLowerCase())) continue;
+      out.push(`${owner}/${repo}`);
+    }
+    return out;
+  }
+
+  async function searchHN(query) {
+    const fetchTag = async (tag) => {
+      try {
+        const res = await fetch(`https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(query)}&tags=${tag}&hitsPerPage=25`);
+        if (!res.ok) return [];
+        return (await res.json()).hits || [];
+      } catch { return []; }
+    };
+    const [stories, comments] = await Promise.all([fetchTag("story"), fetchTag("comment")]);
+    const names = new Set();
+    for (const hit of stories) extractGithubRepos(hit.url).forEach((n) => names.add(n));
+    for (const hit of comments) extractGithubRepos(hit.comment_text).forEach((n) => names.add(n));
+    return [...names].slice(0, 8);
+  }
+
+  // Routed through the github-search edge function so the GITHUB_TOKEN secret
+  // (server-side only) lifts the rate limit from 60/hr to 5000/hr instead of
+  // hitting api.github.com unauthenticated from the browser.
+  async function fetchRepoMeta(fullName) {
+    const { data, error } = await invokeEdge("github-search", { op: "repo", full_name: fullName });
+    if (error || !data?.repo) return null;
+    return { ...data.repo, _source: "hn" };
+  }
+
+  async function githubSearch(query, perPage, sort) {
+    const { data, error } = await invokeEdge("github-search", { op: "search", query, perPage, sort: sort || "stars" });
+    if (error || !data?.ok) return { ok: false, items: [] };
+    return { ok: true, items: data.items || [] };
+  }
+
+  const repoSortKey = (r) => state.repoSort === "forks" ? (r.forks_count || 0)
+    : state.repoSort === "updated" ? new Date(r.pushed_at || 0).getTime()
+    : (r.stargazers_count || 0);
+
+  // A string runs one GitHub query; an array runs a "super search": every
+  // query in parallel, merged and deduped, plus HN mentions and the Gemini
+  // web pass — so ecosystem-wide searches surface far more than 12 repos.
+  // A {q, sort} object forces a sort (e.g. the "Más forkeados" chip).
+  async function searchRepos(query) {
+    const forced = query && typeof query === "object" && !Array.isArray(query) ? query : null;
+    if (forced) { state.repoSort = forced.sort; query = forced.q; }
+    const deep = Array.isArray(query);
+    const queries = deep ? query : [query];
+    state.repoBusy = true;
+    state.repoQuery = deep ? "" : query;
+    const progress = createProgress(deep ? "Super búsqueda de repos" : "Buscando repositorios");
+    try {
+      progress.step(deep ? `Consultando GitHub (${queries.length} búsquedas en paralelo)…` : "Consultando GitHub…");
+      const responses = await Promise.all(queries.map((q) => githubSearch(q, deep ? 30 : 20, state.repoSort)));
+      const anyOk = responses.some((r) => r.ok);
+      const known = new Set();
+      const ghItems = [];
+      for (const r of responses) for (const item of r.items) {
+        if (known.has(item.full_name)) continue;
+        known.add(item.full_name);
+        ghItems.push(item);
+      }
+      ghItems.sort((a, b) => repoSortKey(b) - repoSortKey(a));
+
+      progress.step(`GitHub: ${ghItems.length} repos · revisando Hacker News…`);
+      const hnNames = (await searchHN(deep ? "stellar soroban" : query)).filter((n) => !known.has(n));
+      const hnItems = (await Promise.all(hnNames.map(fetchRepoMeta))).filter(Boolean);
+      hnItems.forEach((r) => known.add(r.full_name));
+
+      let webItems = [];
+      if ((deep || known.size < 6) && !state.preview) {
+        progress.step("Rastreando la web con IA (blogs, X, foros)…");
+        const { data, error } = await invokeEdge("repo-search", { query: deep ? "repositorios open source del ecosistema Stellar y Soroban" : query });
+        if (!error && Array.isArray(data?.repos)) {
+          webItems = data.repos.filter((r) => !known.has(r.full_name)).map((r) => ({ ...r, _source: "web" }));
+        }
+      }
+
+      state.repoResults = [...ghItems.slice(0, deep ? 60 : 20), ...hnItems, ...webItems];
+      if (!state.repoResults.length) {
+        progress.fail(!anyOk ? "GitHub no respondió (límite de 60 búsquedas/hora)" : "Sin resultados para esa búsqueda");
+      } else {
+        progress.done(`${state.repoResults.length} repos encontrados${hnItems.length || webItems.length ? ` (${hnItems.length} vía HN, ${webItems.length} vía web)` : ""}`);
+      }
+    } catch (error) {
+      progress.fail("La búsqueda falló. Probá de nuevo en un momento.");
+    } finally {
+      state.repoBusy = false;
+      renderShell();
+    }
+  }
+
+  function wireRepos() {
+    document.querySelector("#repo-sort")?.addEventListener("change", (e) => {
+      state.repoSort = e.target.value;
+      // Re-run the current query with the new order if there's one active.
+      if (state.repoQuery) searchRepos(state.repoQuery);
+    });
+    document.querySelector("#repo-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      state.repoSort = String(new FormData(event.target).get("sort")) || state.repoSort;
+      const query = String(new FormData(event.target).get("q")).trim();
+      if (query) searchRepos(query);
+    });
+    document.querySelector("#repo-trending")?.addEventListener("click", () => {
+      searchRepos(`created:>${daysAgo(30)} stars:>300`);
+    });
+    document.querySelectorAll("[data-repo-chip]").forEach((button) => button.addEventListener("click", () => {
+      const category = REPO_CATEGORIES.find(([label]) => label === button.dataset.repoChip);
+      if (category) searchRepos(category[1]());
+    }));
+    document.querySelectorAll("[data-save-repo]").forEach((button) => button.addEventListener("click", async () => {
+      const repo = state.repoResults.find((r) => r.full_name === button.dataset.saveRepo);
+      if (!repo) return;
+      const row = {
+        organization_id: state.org.id,
+        repo_full_name: repo.full_name,
+        url: repo.html_url,
+        description: repo.description,
+        stars: repo.stargazers_count,
+        language: repo.language,
+        topics: repo.topics || [],
+        added_by: state.session?.user?.id || null,
+      };
+      const { data, error } = await supabase.from("repo_picks").insert(row).select().single();
+      if (error) return notify(error.code === "23505" ? "Ese repo ya está guardado." : "No se pudo guardar el repo.", true);
+      state.repos.unshift(data);
+      notify("Repo guardado.");
+      renderShell();
+    }));
+    document.querySelectorAll("[data-repo-status]").forEach((select) => select.addEventListener("change", async () => {
+      const { error } = await supabase.from("repo_picks").update({ status: select.value }).eq("id", select.dataset.repoStatus);
+      if (error) return notify("No se pudo actualizar el estado.", true);
+      const repo = state.repos.find((r) => r.id === select.dataset.repoStatus);
+      if (repo) repo.status = select.value;
+      renderShell();
+    }));
+
+    document.querySelectorAll("[data-post-repo-result]").forEach((button) => button.addEventListener("click", () => {
+      const repo = state.repoResults.find((r) => r.full_name === button.dataset.postRepoResult);
+      if (repo) generatePostForRepo({ full_name: repo.full_name, description: repo.description, url: repo.html_url, language: repo.language, stars: repo.stargazers_count });
+    }));
+    document.querySelectorAll("[data-post-repo-saved]").forEach((button) => button.addEventListener("click", () => {
+      const repo = state.repos.find((r) => r.id === button.dataset.postRepoSaved);
+      if (repo) generatePostForRepo({ full_name: repo.repo_full_name, description: repo.description, url: repo.url, language: repo.language, stars: repo.stars });
+    }));
+    document.querySelectorAll("[data-repo-tab]").forEach((button) => button.addEventListener("click", () => {
+      if (!state.repoPostDraft) return;
+      state.repoPostDraft.tab = button.dataset.repoTab;
+      renderShell();
+    }));
+    document.querySelector("#repo-post-text")?.addEventListener("input", (e) => {
+      if (state.repoPostDraft) state.repoPostDraft.posts[state.repoPostDraft.tab] = e.target.value;
+    });
+    document.querySelector("#repo-post-reply")?.addEventListener("input", (e) => {
+      if (state.repoPostDraft) state.repoPostDraft.posts.x_reply = e.target.value;
+    });
+    document.querySelector("#repo-post-copy")?.addEventListener("click", () => {
+      const draft = state.repoPostDraft;
+      if (draft) copyText(draft.posts[draft.tab] || "");
+    });
+    document.querySelector("#repo-post-save")?.addEventListener("click", saveRepoPost);
+    document.querySelector("[data-close-post]")?.addEventListener("click", () => { state.repoPostDraft = null; renderShell(); });
+  }
+
+  async function generatePostForRepo(repo) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const lang = await askLang();
+    if (!lang) return;
+    state.repoPostBusy = true;
+    renderShell();
+    const progress = createProgress(`Posts para ${repo.full_name}`);
+    progress.auto([
+      "Leyendo el repositorio…",
+      "Investigando el proyecto con Google…",
+      "Escribiendo el hilo para X…",
+      "Adaptando a WhatsApp, Discord, LinkedIn e Instagram…",
+    ], 6000);
+    const { data, error } = await invokeEdge("generate-article", { format: "repo_social_posts", repo, lang });
+    state.repoPostBusy = false;
+    if (error || data?.error) {
+      progress.fail(data?.error || "No se pudo generar. Revisá que Gemini esté configurado.");
+      return renderShell();
+    }
+    state.repoPostDraft = { repoName: repo.full_name, repoUrl: repo.url, posts: data.posts, sources: data.sources || [], model: data.model, tab: "x", verified: data.verified || null };
+    progress.done(data.verified?.archived ? "5 posts listos — el repo está ARCHIVADO, revisalo antes de publicar" : "5 posts listos — revisalos por pestaña");
+    renderShell();
+  }
+
+  async function saveRepoPost() {
+    const draft = state.repoPostDraft;
+    if (!draft) return;
+    const body_md = REPO_POST_CHANNELS
+      .filter(([key]) => draft.posts[key]?.trim())
+      .map(([key, label]) => {
+        const section = `## ${label}\n\n${draft.posts[key].trim()}`;
+        return key === "x" && draft.posts.x_reply?.trim() ? `${section}\n\n**Tweet 2:** ${draft.posts.x_reply.trim()}` : section;
+      })
+      .join("\n\n");
+    const row = {
+      organization_id: state.org.id,
+      prompt_key: "repo_social_posts",
+      title: draft.repoName,
+      subtitle: draft.repoUrl || "",
+      summary: [],
+      body_md,
+      sources: draft.sources || [],
+      model: draft.model,
+      status: "draft",
+      created_by: state.session?.user?.id || null,
+    };
+    const { data, error } = await supabase.from("articles").insert(row).select().single();
+    if (error) return notify("No se pudo guardar el post.", true);
+    state.articles.unshift(data);
+    state.repoPostDraft = null;
+    notify("Posts guardados como borrador en Artículos.");
+    renderShell();
+  }
+
+  // ---------- articles ----------
+
+  function currentPrompt() { return state.prompts.find((p) => p.key === state.articleForm.prompt_key) || state.prompts[0]; }
+
+  // "crypto"/"ai" show their template name; special keys from other flows get
+  // a human label instead of the raw key.
+  function articleTemplateLabel(key) {
+    if (key === "x_post") return "Post de repo (X)";
+    if (key === "repo_social_posts") return "Posts de repo (multi-canal)";
+    if (key === "reescrito") return "Reescrito de fuente";
+    return state.prompts.find((p) => p.key === key)?.name || key || "—";
+  }
+
+  function filteredArticles() {
+    const { status, template, search } = state.articleFilters;
+    const term = search.trim().toLowerCase();
+    return state.articles.filter((a) => {
+      if (status && a.status !== status) return false;
+      if (template && (a.prompt_key || "") !== template) return false;
+      if (term && !`${a.title} ${a.subtitle || ""}`.toLowerCase().includes(term)) return false;
+      return true;
+    });
+  }
+
+  function articlesView() {
+    const prompt = currentPrompt();
+    const draftText = state.articleForm.prompt_md || prompt?.prompt_md || "";
+    const articles = filteredArticles();
+    const templates = [...new Set(state.articles.map((a) => a.prompt_key || ""))].sort();
+    const b = state.brief;
+    return `
+      <div class="toolbar"><div><span class="eyebrow">Boletín Beehiiv</span><h2>Generador de artículos</h2></div></div>
+
+      <details class="span-all" style="margin-bottom:1.2rem">
+        <summary style="cursor:pointer;color:var(--teal);font-weight:600">Definición editorial (opcional, fija el rumbo antes de investigar)</summary>
+        <section class="card" style="margin-top:.6rem">
+          <p style="color:var(--muted);margin:0 0 .8rem;line-height:1.5">Completá lo que quieras fijar para esta corrida — audiencia, nivel, extensión, objetivo. Se le pasa al modelo como restricción obligatoria antes de investigar y redactar. Vacío = el modelo decide.</p>
+          <div class="form-grid">
+            <div class="field"><label for="brief-audience">Audiencia exacta</label><input id="brief-audience" value="${esc(b.audience)}" placeholder="ej: developers principiantes con JS básico" /></div>
+            <div class="field"><label for="brief-level">Nivel técnico</label><input id="brief-level" value="${esc(b.level)}" placeholder="ej: principiante" /></div>
+            <div class="field"><label for="brief-platform">Plataforma</label><input id="brief-platform" value="${esc(b.platform)}" placeholder="ej: artículo de X" /></div>
+            <div class="field"><label for="brief-maxwords">Extensión máxima (palabras)</label><input id="brief-maxwords" type="number" min="0" value="${esc(b.maxWords)}" placeholder="ej: 900" /></div>
+            <div class="field span-all"><label for="brief-objective">Objetivo del artículo</label><input id="brief-objective" value="${esc(b.objective)}" placeholder="ej: ayudar a elegir el primer repositorio de Stellar" /></div>
+            <div class="field span-all"><label for="brief-outcome">Qué debe poder hacer el lector después</label><input id="brief-outcome" value="${esc(b.readerOutcome)}" placeholder="ej: escoger, clonar y explorar un repositorio" /></div>
+          </div>
+        </section>
+      </details>
+
+      <section class="card" style="margin-bottom:1.2rem">
+        <div class="form-grid">
+          <div class="field"><label for="art-prompt">Plantilla</label>
+            <select id="art-prompt">${state.prompts.map((p) => `<option value="${esc(p.key)}" ${state.articleForm.prompt_key === p.key ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select></div>
+          <div class="field"><label for="art-count">¿Cuántos generar?</label>
+            <select id="art-count">${[1, 2, 3, 4, 5].map((n) => `<option value="${n}" ${state.articleForm.count === n ? "selected" : ""}>${n}</option>`).join("")}</select></div>
+          <div class="field span-all"><label for="art-promptmd">Prompt (editable para esta corrida)</label>
+            <textarea id="art-promptmd" style="min-height:150px">${esc(draftText)}</textarea></div>
+          <div class="form-foot span-all">
+            <button class="button button-secondary" id="art-save-prompt" type="button">Guardar plantilla</button>
+            <button class="button button-primary" id="art-generate" type="button" ${state.articleBusy || state.preview ? "disabled" : ""}>
+              ${state.articleBusy ? "Generando…" : "Generar"}
+            </button>
+          </div>
+        </div>
+        ${state.preview ? `<p style="color:var(--muted);margin:.6rem 0 0">La generación real usa Gemini vía Edge Function; en vista previa está deshabilitada.</p>` : ""}
+      </section>
+
+      <details class="span-all" style="margin-bottom:1.2rem">
+        <summary style="cursor:pointer;color:var(--teal);font-weight:600">Reescribir un artículo o fuente pegada</summary>
+        <section class="card" style="margin-top:.6rem">
+          <p style="color:var(--muted);margin:0 0 .8rem;line-height:1.5">Pegá un artículo o texto fuente (puede estar en inglés u otro idioma) y te lo reescribo con el tono de Tellus, usando la misma plantilla de arriba. No hace una búsqueda nueva: usa solo lo que pegaste.</p>
+          <form id="rewrite-form" class="form-grid">
+            <div class="field span-all"><label for="rewrite-source">Texto fuente</label><textarea id="rewrite-source" name="source" style="min-height:180px" required placeholder="Pegá acá el artículo, en el idioma que sea…">${esc(state.rewrite.source)}</textarea></div>
+            <div class="form-foot span-all"><button class="button button-primary" type="submit" ${state.rewrite.busy || state.preview ? "disabled" : ""}>${icon("sparkles")} ${state.rewrite.busy ? "Reescribiendo…" : "Reescribir con la voz de Tellus"}</button></div>
+          </form>
+        </section>
+      </details>
+
+      <details class="span-all" style="margin-bottom:1.2rem">
+        <summary style="cursor:pointer;color:var(--teal);font-weight:600">Generador de comentarios manual</summary>
+        <section class="card" style="margin-top:.6rem">
+          <p style="color:var(--muted);margin:0 0 .8rem;line-height:1.5">Pegá el texto de un post ajeno y te armo un comentario para responder y un texto para citarlo.</p>
+          <form id="art-tweet-reply-form" class="form-grid">
+            <div class="field"><label for="art-tr-handle">Handle (@usuario)</label><input id="art-tr-handle" name="handle" placeholder="midudev" /></div>
+            <div class="field span-all"><label for="art-tr-content">Qué dice el post</label><textarea id="art-tr-content" name="content" style="min-height:90px" required placeholder="Pegá acá el texto del post…"></textarea></div>
+            <div class="field span-all"><label for="art-tr-links">Links que menciona (opcional, uno por línea)</label><textarea id="art-tr-links" name="links" style="min-height:50px" placeholder="https://…"></textarea></div>
+            <div class="form-foot span-all"><button class="button button-primary" type="submit" ${state.tweetReply?.busy || state.preview ? "disabled" : ""}>${icon("message-circle")} ${state.tweetReply?.busy ? "Escribiendo…" : "Generar comentario"}</button></div>
+          </form>
+          ${state.tweetReply?.posts ? `<div class="grid grid-2" style="margin-top:1rem">
+            <article class="card"><h3>Comentario</h3><p class="post-content" style="margin:.5rem 0;white-space:pre-wrap">${esc(state.tweetReply.posts.comment)}</p><button class="table-link" data-copy-text="${esc(state.tweetReply.posts.comment)}">Copiar</button></article>
+            <article class="card"><h3>Para citar</h3><p class="post-content" style="margin:.5rem 0;white-space:pre-wrap">${esc(state.tweetReply.posts.quote)}</p><button class="table-link" data-copy-text="${esc(state.tweetReply.posts.quote)}">Copiar</button></article>
+          </div>` : ""}
+        </section>
+      </details>
+
+      ${state.drafts.length ? `<div class="toolbar"><div><span class="eyebrow">Recién generados, sin guardar</span><h2>Elegí cuáles guardar</h2></div></div>
+        <div class="grid grid-2" style="margin-bottom:1.4rem">${state.drafts.map(draftCard).join("")}</div>` : ""}
+
+      ${articleViewModal()}
+
+      <div class="toolbar"><div><span class="eyebrow">Guardados</span><h2>Artículos (${articles.length}${articles.length !== state.articles.length ? ` de ${state.articles.length}` : ""})</h2></div></div>
+
+      ${socialPostsSection()}
+
+      ${state.articles.length ? `<div class="filters">
+        <select id="art-filter-status" aria-label="Estado">
+          <option value="">Todos los estados</option>
+          ${Object.entries(articleStatusLabels).map(([value, label]) => `<option value="${value}" ${state.articleFilters.status === value ? "selected" : ""}>${label}</option>`).join("")}
+        </select>
+        <select id="art-filter-template" aria-label="Plantilla">
+          <option value="">Todas las plantillas</option>
+          ${templates.map((t) => `<option value="${esc(t)}" ${state.articleFilters.template === t ? "selected" : ""}>${esc(articleTemplateLabel(t))}</option>`).join("")}
+        </select>
+        <input id="art-filter-search" type="search" placeholder="Buscar por título…" value="${esc(state.articleFilters.search)}" aria-label="Buscar" />
+      </div>` : ""}
+
+      ${articles.length ? (() => {
+        const perPage = 20;
+        const pages = Math.max(1, Math.ceil(articles.length / perPage));
+        const page = Math.min(state.articlePage, pages - 1);
+        const pageItems = articles.slice(page * perPage, (page + 1) * perPage);
+        const pager = pages > 1 ? `<div class="form-foot" style="justify-content:center;gap:1rem;margin-top:1rem">
+          <button class="button button-secondary" data-article-page="${page - 1}" ${page === 0 ? "disabled" : ""}>← Anterior</button>
+          <span style="color:var(--muted)">Página ${page + 1} de ${pages}</span>
+          <button class="button button-secondary" data-article-page="${page + 1}" ${page >= pages - 1 ? "disabled" : ""}>Siguiente →</button>
+        </div>` : "";
+        return `<div class="card table-wrap"><table>
+          <thead><tr><th>Artículo</th><th>Origen</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+          <tbody>${pageItems.map((article) => `<tr>
+            <td><button class="table-link" data-open-article="${esc(article.id)}" style="text-align:left"><strong>${esc(article.title)}</strong></button><br /><span style="color:var(--muted)">${esc(article.subtitle || "")}</span></td>
+            <td>${esc(articleTemplateLabel(article.prompt_key))}</td>
+            <td><span class="status status-${article.status === "draft" ? "inbox" : article.status === "discarded" ? "discarded" : "reviewed"}">${esc(articleStatusLabels[article.status] || article.status)}</span></td>
+            <td>${fmtDate(article.created_at)}</td>
+            <td>${state.preview ? "" : `<div style="display:flex;flex-wrap:wrap;gap:.4rem;align-items:center">
+              <button class="table-link" data-copy-article="${esc(article.id)}">${icon("copy")} Copiar</button>
+              <button class="table-link" data-open-social="${esc(article.id)}" ${state.socialPosts?.busy ? "disabled" : ""}>${icon("message-circle")} ${article.social_posts ? "Difusión ✓" : "Difusión"}</button>
+              <select data-article-status="${esc(article.id)}" aria-label="Estado">
+                ${Object.entries(articleStatusLabels).map(([value, label]) => `<option value="${value}" ${article.status === value ? "selected" : ""}>${label}</option>`).join("")}
+              </select>
+            </div>`}</td>
+          </tr>`).join("")}</tbody>
+        </table></div>${pager}`;
+      })() : state.articles.length ? `<div class="empty">Ningún artículo coincide con el filtro.</div>` : `<div class="empty">Todavía no hay artículos. Elegí una plantilla, cuántos querés y presioná Generar.</div>`}`;
+  }
+
+  function articleViewModal() {
+    if (!state.articleView) return "";
+    const article = state.articles.find((a) => a.id === state.articleView);
+    if (!article) return "";
+    const head = `<h2 style="margin:0">${esc(article.title)}</h2>
+      <div class="form-foot" style="margin:0">
+        <button class="button button-secondary" data-copy-article="${esc(article.id)}">${icon("copy")} Copiar todo</button>
+        <button class="button button-ghost" id="close-article">${icon("x")} Cerrar</button>
+      </div>`;
+    const body = `${imagesGallery(article.images)}
+      <div class="article-md">${mdToHtml(stripSourcesSection(draftToMarkdown(article)))}</div>
+      ${sourcesBlock(article.sources)}`;
+    return modalShell(head, body);
+  }
+
+  function socialPostsSection() {
+    const sp = state.socialPosts;
+    if (!sp) return "";
+    if (sp.busy) return `<section class="card" style="margin-bottom:1.2rem"><p style="color:var(--muted);margin:0">Generando posts para «${esc(sp.title)}»…</p></section>`;
+    if (!sp.posts) return "";
+    const block = (label, key) => sp.posts[key] ? `<article class="card">
+      <h3>${label}</h3>
+      <p class="post-content" style="margin:.5rem 0 .7rem;white-space:pre-wrap">${esc(sp.posts[key])}</p>
+      <button class="table-link" data-copy-social="${key}">Copiar</button>
+    </article>` : "";
+    return `<section class="card" style="margin-bottom:1.2rem">
+      <div class="toolbar" style="margin-bottom:.6rem"><div><span class="eyebrow">Difusión</span><h2>Posts para «${esc(sp.title)}»</h2></div>
+        <div class="form-foot" style="margin:0">
+          <button class="button button-secondary" data-regen-social="${esc(sp.articleId)}">${icon("sparkles")} Regenerar</button>
+          <button class="button button-ghost" id="close-social">${icon("x")} Cerrar</button>
+        </div></div>
+      ${sp.link ? `<p style="color:var(--muted);margin:0 0 .8rem">Link: <a href="${esc(sp.link)}" target="_blank" rel="noopener">${esc(sp.link)}</a></p>` : ""}
+      <div class="grid grid-3">${block("X", "x")}${block("WhatsApp", "whatsapp")}${block("LinkedIn", "linkedin")}${block("Promo independiente", "promo")}</div>
+      ${sp.imageProposal ? `<p style="color:var(--muted);margin:.8rem 0 0"><strong>Propuesta de imagen de portada:</strong> ${esc(sp.imageProposal)}</p>` : ""}
+      ${sp.quotableLines?.length ? `<div style="margin-top:.6rem"><strong style="display:block;margin-bottom:.3rem">Frases destacables para reutilizar</strong>
+        <ul style="margin:0;padding-left:1.1rem;line-height:1.6">${sp.quotableLines.map((q) => `<li>${esc(q)} <button class="table-link" data-copy-text="${esc(q)}">Copiar</button></li>`).join("")}</ul>
+      </div>` : ""}
+    </section>`;
+  }
+
+  // Stage 4 of the pipeline: renders the deterministic technical-control
+  // checklist the edge function ran on the draft (link liveness, archived
+  // repos, secret-looking strings) — red flag if anything failed, quiet
+  // confirmation if it's all clean.
+  function checksBlock(checks) {
+    if (!checks) return "";
+    const problems = [];
+    if (!checks.allLinksOk) problems.push(`${checks.brokenLinks.length} enlace(s) no responden: ${checks.brokenLinks.map((l) => l.url).join(", ")}`);
+    if (checks.archivedRepos?.length) problems.push(`Repo(s) archivados sin advertencia en el texto: ${checks.archivedRepos.join(", ")}`);
+    if (checks.hasSecrets) problems.push(`Posible secreto/credencial detectado: ${checks.secretFindings.join(", ")}`);
+    if (!problems.length) {
+      return `<div class="post-meta"><span style="color:var(--teal)">✓ Control técnico: ${checks.linksChecked} enlace(s) verificados el ${esc(checks.checkedAt)}, sin problemas</span></div>`;
+    }
+    return `<div class="post-meta"><span style="color:var(--red)">⚠️ Control técnico (${esc(checks.checkedAt)}): ${problems.map(esc).join(" · ")}</span></div>`;
+  }
+
+  function draftCard(draft, index) {
+    return `<article class="card">
+      <h3>${esc(draft.title || "(sin título)")}</h3>
+      <p style="color:var(--muted);margin:.2rem 0 .7rem;line-height:1.5">${esc(draft.subtitle || "")}</p>
+      ${draft.summary?.length ? `<ul style="margin:0 0 .7rem;padding-left:1.1rem;line-height:1.5">${draft.summary.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : ""}
+      <details style="margin-bottom:.6rem"><summary style="cursor:pointer;color:var(--teal);font-weight:600">Ver cuerpo</summary>
+        <div class="article-md" style="margin-top:.5rem;max-height:50vh;overflow-y:auto">${mdToHtml(stripSourcesSection(draft.body_md || ""))}${sourcesBlock(draft.sources)}</div></details>
+      ${draft.sources?.length ? `<div class="post-meta"><span>${draft.sources.length} fuente(s)</span></div>` : `<div class="post-meta"><span style="color:var(--red)">Sin fuentes — revisá antes de publicar</span></div>`}
+      ${checksBlock(draft.checks)}
+      <div class="form-foot" style="justify-content:start">
+        <button class="button button-secondary" data-save-draft="${index}" style="min-height:38px">Guardar</button>
+        <button class="table-link" data-draft-posts="${index}" ${state.socialPosts?.busy ? "disabled" : ""}>Posts WSP/X/LI</button>
+        <button class="table-link" data-copy-draft="${index}">Copiar</button>
+        <button class="table-link" data-discard-draft="${index}" style="color:var(--red)">Descartar</button>
+      </div>
+    </article>`;
+  }
+
+  // ---------- guides ----------
+
+  function guidesView() {
+    const items = guideItems();
+    const chain = items.find((c) => c.id === state.guideForm.chain) || items[0];
+    return `
+      <div class="toolbar"><div><span class="eyebrow">Documentación oficial</span><h2>Guías técnicas</h2></div></div>
+      <section class="card" style="margin-bottom:1.2rem">
+        <h3>Generar una guía</h3>
+        <p style="color:var(--muted);margin:.2rem 0 .8rem;line-height:1.5">Elegí la categoría, la blockchain o agente y el tema exacto. La guía se verifica contra la doc oficial, con código real cuando corresponde, imágenes y posts para X, Discord y LinkedIn.</p>
+        <form id="guide-form" class="form-grid">
+          <div class="field"><label for="guide-category">Categoría</label>
+            <select id="guide-category">${GUIDE_CATEGORIES.map((c) => `<option value="${c.id}" ${state.guideForm.category === c.id ? "selected" : ""}>${esc(c.label)}</option>`).join("")}</select></div>
+          <div class="field"><label for="guide-chain">${GUIDE_CATEGORIES.find((c) => c.id === state.guideForm.category)?.label || "Blockchain"}</label>
+            <select id="guide-chain">${items.map((c) => `<option value="${c.id}" ${state.guideForm.chain === c.id ? "selected" : ""}>${esc(c.label)}</option>`).join("")}</select>
+            <small>Doc oficial: <a href="${esc(chain.docsUrl)}" target="_blank" rel="noopener">${esc(chain.docsUrl)}</a></small></div>
+          <div class="field span-all"><label for="guide-topic">Tema de la guía</label>
+            <input id="guide-topic" name="topic" value="${esc(state.guideForm.topic)}" placeholder="ej: cómo enviar un pago con el SDK de Stellar" required /></div>
+          <div class="form-foot span-all" style="justify-content:flex-start;gap:1.2rem">
+            <label style="display:flex;align-items:center;gap:.4rem;color:var(--muted);font-size:.85rem">
+              <input type="checkbox" id="guide-use-images" style="min-height:auto;width:auto" ${state.guideForm.useImages ? "checked" : ""} /> Buscar imagen del tema</label>
+            <label style="display:flex;align-items:center;gap:.4rem;color:var(--muted);font-size:.85rem">
+              <input type="checkbox" id="guide-use-emojis" style="min-height:auto;width:auto" ${state.guideForm.useEmojis ? "checked" : ""} /> Usar emojis (con criterio, sin los típicos de IA)</label>
+          </div>
+          <div class="form-foot span-all">
+            <button class="button button-primary" type="submit" ${state.guideBusy || state.preview ? "disabled" : ""}>${icon("sparkles")} ${state.guideBusy ? "Escribiendo guía…" : "Generar guía"}</button>
+          </div>
+        </form>
+        <p style="color:var(--muted);margin:.6rem 0 0;font-size:.85rem">Verificada contra la doc oficial, con mínimo 2 fuentes, hipervínculos en el texto, y sección SEO (meta descripción, keywords, TL;DR) para buscadores y motores con IA.</p>
+        ${state.preview ? `<p style="color:var(--muted);margin:.6rem 0 0">La generación real usa Gemini vía Edge Function; en vista previa está deshabilitada.</p>` : ""}
+      </section>
+
+      ${state.guideDrafts.length ? `<div class="toolbar"><div><span class="eyebrow">Recién generadas</span><h2>Elegí cuáles guardar</h2></div></div>
+        <div class="grid grid-2" style="margin-bottom:1.4rem">${state.guideDrafts.map(guideDraftCard).join("")}</div>` : ""}
+
+      ${guideViewPanel()}
+      ${guideSocialPostsPanel()}
+
+      <div class="toolbar"><div><span class="eyebrow">Guardadas</span><h2>Guías</h2></div></div>
+      ${state.guides.length ? `<div class="card table-wrap"><table>
+        <thead><tr><th>Guía</th><th>Fuente</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
+        <tbody>${state.guides.map((g) => `<tr>
+          <td><button class="table-link" data-open-guide="${esc(g.id)}" style="text-align:left"><strong>${esc(g.title)}</strong></button><br /><span style="color:var(--muted)">${esc(g.subtitle || "")}</span></td>
+          <td>${esc((findGuideItem(g.chain) || {}).label || g.chain)}</td>
+          <td><span class="status status-${g.status === "draft" ? "inbox" : g.status === "discarded" ? "discarded" : "reviewed"}">${esc(articleStatusLabels[g.status] || g.status)}</span></td>
+          <td>${fmtDate(g.created_at)}</td>
+          <td>${state.preview ? "" : `<button class="table-link" data-copy-guide="${esc(g.id)}">Copiar</button>
+            ${g.social_posts ? `<button class="table-link" data-view-guide-posts="${esc(g.id)}">Ver posts</button>` : ""}
+            <button class="table-link" data-guide-posts="${esc(g.id)}" ${state.guideSocialPosts?.busy ? "disabled" : ""}>${g.social_posts ? "Regenerar posts" : "Posts"}</button>
+            <select data-guide-status="${esc(g.id)}" aria-label="Estado" style="margin-top:.4rem">
+              ${Object.entries(articleStatusLabels).map(([value, label]) => `<option value="${value}" ${g.status === value ? "selected" : ""}>${label}</option>`).join("")}
+            </select>`}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>` : `<div class="empty">Todavía no hay guías. Elegí una blockchain, escribí el tema y generá la primera.</div>`}`;
+  }
+
+  function guideDraftCard(draft, index) {
+    return `<article class="card">
+      <h3>${esc(draft.title || "(sin título)")}</h3>
+      <p style="color:var(--muted);margin:.2rem 0 .7rem;line-height:1.5">${esc(draft.subtitle || "")}</p>
+      ${draft.images?.length ? `<div class="grid grid-3" style="margin-bottom:.7rem">${draft.images.map((img) => `<a href="${esc(img.page || img.url)}" target="_blank" rel="noopener"><img src="${esc(img.thumbnail || img.url)}" alt="" style="width:100%;border-radius:8px;max-height:110px;object-fit:cover" loading="lazy" /></a>`).join("")}</div>` : ""}
+      <details style="margin-bottom:.6rem"><summary style="cursor:pointer;color:var(--teal);font-weight:600">Ver guía completa</summary>
+        <div class="article-md" style="margin-top:.5rem;max-height:50vh;overflow-y:auto">${mdToHtml(stripSourcesSection(draft.body_md || ""))}${sourcesBlock(draft.sources)}</div></details>
+      ${(draft.sources?.length || 0) >= 2 ? `<div class="post-meta"><span>${draft.sources.length} fuentes</span></div>` : `<div class="post-meta"><span style="color:var(--red)">${draft.sources?.length ? "Solo 1 fuente" : "Sin fuentes"} — mínimo 2, revisá antes de publicar</span></div>`}
+      <div class="form-foot" style="justify-content:start">
+        <button class="button button-secondary" data-save-guide-draft="${index}" style="min-height:38px">Guardar</button>
+        <button class="table-link" data-copy-draft-guide="${index}">Copiar</button>
+        <button class="table-link" data-discard-guide-draft="${index}" style="color:var(--red)">Descartar</button>
+      </div>
+    </article>`;
+  }
+
+  function guideViewPanel() {
+    if (!state.guideView) return "";
+    const guide = state.guides.find((g) => g.id === state.guideView);
+    if (!guide) return "";
+    const head = `<h2 style="margin:0">${esc(guide.title)}</h2>
+      <div class="form-foot" style="margin:0">
+        <button class="button button-secondary" data-copy-guide="${esc(guide.id)}">${icon("copy")} Copiar todo</button>
+        <button class="button button-ghost" id="close-guide">${icon("x")} Cerrar</button>
+      </div>`;
+    const body = `${imagesGallery(guide.images)}
+      <div class="article-md">${mdToHtml(stripSourcesSection(draftToMarkdown(guide)))}</div>
+      ${sourcesBlock(guide.sources)}`;
+    return modalShell(head, body);
+  }
+
+  function guideSocialPostsPanel() {
+    const sp = state.guideSocialPosts;
+    if (!sp) return "";
+    if (sp.busy) return `<div class="card" style="margin-bottom:1.4rem"><p style="color:var(--muted)">Generando posts para «${esc(sp.title)}»…</p></div>`;
+    if (!sp.posts) return "";
+    const block = (label, key) => sp.posts[key] ? `<article class="card">
+      <h3>${label}</h3>
+      <p class="post-content" style="margin:.5rem 0 .7rem;white-space:pre-wrap">${esc(sp.posts[key])}</p>
+      <button class="table-link" data-copy-text="${esc(sp.posts[key])}">Copiar</button>
+    </article>` : "";
+    return `<div class="toolbar" style="margin-top:1.6rem"><div><span class="eyebrow">Difusión</span><h2>Posts para «${esc(sp.title)}»</h2></div></div>
+      ${sp.link ? `<p style="color:var(--muted);margin:0 0 .8rem">Link: <a href="${esc(sp.link)}" target="_blank" rel="noopener">${esc(sp.link)}</a></p>` : ""}
+      <div class="grid grid-3">${block("X", "x")}${block("Discord", "discord")}${block("LinkedIn", "linkedin")}</div>`;
+  }
+
+  async function generateGuide(event) {
+    event.preventDefault();
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const chain = guideItems().find((c) => c.id === state.guideForm.chain) || guideItems()[0];
+    const topic = state.guideForm.topic.trim();
+    if (!topic) return;
+    const lang = await askLang();
+    if (!lang) return;
+    state.guideBusy = true;
+    renderShell();
+    const progress = createProgress(`Guía de ${chain.label}`);
+    progress.auto([
+      `Leyendo la documentación oficial de ${chain.label}…`,
+      "Verificando el tema con Google…",
+      "Escribiendo la guía técnica con código…",
+      "Armando SEO, TL;DR y fuentes…",
+    ], 9000);
+    const { data, error } = await invokeEdge("generate-article", {
+      format: "guide",
+      category: state.guideForm.category,
+      chain: chain.id,
+      chain_label: chain.label,
+      lang,
+      docs_url: chain.docsUrl,
+      topic,
+      use_emojis: state.guideForm.useEmojis,
+    });
+    state.guideBusy = false;
+    if (error || data?.error) {
+      progress.fail(data?.error || "No se pudo generar la guía.");
+      return renderShell();
+    }
+    const draft = data.drafts[0];
+    draft.chain = chain.id;
+    draft.images = [];
+    state.guideDrafts = [draft, ...state.guideDrafts];
+    if (draft.sources.length < 2) progress.fail("Guía generada, pero con menos de 2 fuentes — revisala antes de publicar");
+    else progress.done(state.guideForm.useImages ? "Guía lista — buscando una imagen del tema…" : "Guía lista");
+    renderShell();
+    if (!state.guideForm.useImages) return;
+    // Illustrative stock image matched to the actual topic (not a generic
+    // "<chain> blockchain" shot): the model already suggested the query.
+    // Fetched after the draft is visible so the text never waits on it.
+    const imageQuery = data.imageQuery || `${chain.label} blockchain technology`;
+    const { data: media } = await invokeEdge("reddit-search", { query: imageQuery, mode: "images", count: 3 });
+    draft.images = media?.items || [];
+    renderShell();
+  }
+
+  async function saveGuideDraft(index) {
+    const draft = state.guideDrafts[index];
+    if (!draft) return;
+    const row = {
+      organization_id: state.org.id,
+      chain: draft.chain,
+      title: draft.title,
+      subtitle: draft.subtitle,
+      body_md: draft.body_md,
+      sources: draft.sources || [],
+      images: draft.images || [],
+      model: draft.model,
+      status: "draft",
+      created_by: state.session?.user?.id || null,
+    };
+    const { data, error } = await supabase.from("guides").insert(row).select().single();
+    if (error) return notify("No se pudo guardar la guía.", true);
+    state.guides.unshift(data);
+    state.guideDrafts.splice(index, 1);
+    notify("Guía guardada.");
+    renderShell();
+  }
+
+  async function generateGuidePosts(guideId) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const guide = state.guides.find((g) => g.id === guideId);
+    if (!guide) return;
+    const answer = window.prompt("Link público de la guía (opcional — deja vacío y dale OK para seguir sin link):", guide.social_link || state.guideSocialPosts?.link || "");
+    if (answer === null) return;
+    const link = answer.trim();
+    const lang = await askLang();
+    if (!lang) return;
+    state.guideSocialPosts = { guideId, title: guide.title, link, posts: null, busy: true };
+    renderShell();
+    const { data, error } = await invokeEdge("generate-article", {
+      format: "guide_posts",
+      link,
+      guide: { title: guide.title, subtitle: guide.subtitle },
+      lang,
+    });
+    if (error || data?.error) {
+      state.guideSocialPosts = null;
+      notify(data?.error || "No se pudieron generar los posts.", true);
+      return renderShell();
+    }
+    state.guideSocialPosts = { guideId, title: guide.title, link, posts: data.posts, busy: false };
+    const { error: saveError } = await supabase.from("guides").update({ social_posts: data.posts, social_link: link || null }).eq("id", guideId);
+    if (saveError) notify("Posts generados, pero no se pudieron guardar.", true);
+    else {
+      guide.social_posts = data.posts;
+      guide.social_link = link;
+      notify("Posts generados y guardados.");
+    }
+    renderShell();
+  }
+
+  function viewGuidePosts(guideId) {
+    const guide = state.guides.find((g) => g.id === guideId);
+    if (!guide?.social_posts) return;
+    state.guideSocialPosts = { guideId, title: guide.title, link: guide.social_link || "", posts: guide.social_posts, busy: false };
+    renderShell();
+  }
+
+  function wireGuides() {
+    document.querySelector("#guide-category")?.addEventListener("change", (e) => {
+      state.guideForm.category = e.target.value;
+      state.guideForm.chain = (GUIDE_CATEGORIES.find((c) => c.id === e.target.value) || GUIDE_CATEGORIES[0]).items[0].id;
+      renderShell();
+    });
+    document.querySelector("#guide-chain")?.addEventListener("change", (e) => { state.guideForm.chain = e.target.value; renderShell(); });
+    document.querySelector("#guide-topic")?.addEventListener("input", (e) => { state.guideForm.topic = e.target.value; });
+    document.querySelector("#guide-use-images")?.addEventListener("change", (e) => { state.guideForm.useImages = e.target.checked; });
+    document.querySelector("#guide-use-emojis")?.addEventListener("change", (e) => { state.guideForm.useEmojis = e.target.checked; });
+    document.querySelector("#guide-form")?.addEventListener("submit", generateGuide);
+
+    document.querySelectorAll("[data-save-guide-draft]").forEach((b) => b.addEventListener("click", () => saveGuideDraft(Number(b.dataset.saveGuideDraft))));
+    document.querySelectorAll("[data-copy-draft-guide]").forEach((b) => b.addEventListener("click", () => copyText(draftToMarkdown(state.guideDrafts[Number(b.dataset.copyDraftGuide)]))));
+    document.querySelectorAll("[data-discard-guide-draft]").forEach((b) => b.addEventListener("click", () => { state.guideDrafts.splice(Number(b.dataset.discardGuideDraft), 1); renderShell(); }));
+
+    document.querySelectorAll("[data-copy-guide]").forEach((b) => b.addEventListener("click", () => {
+      const guide = state.guides.find((g) => g.id === b.dataset.copyGuide);
+      if (guide) copyText(draftToMarkdown(guide));
+    }));
+    document.querySelectorAll("[data-open-guide]").forEach((b) => b.addEventListener("click", () => {
+      state.guideView = b.dataset.openGuide;
+      renderShell();
+      document.querySelector("#main")?.scrollTo?.(0, 0);
+    }));
+    document.querySelector("#close-guide")?.addEventListener("click", () => { state.guideView = null; renderShell(); });
+
+    document.querySelectorAll("[data-guide-posts]").forEach((b) => b.addEventListener("click", () => generateGuidePosts(b.dataset.guidePosts)));
+    document.querySelectorAll("[data-view-guide-posts]").forEach((b) => b.addEventListener("click", () => viewGuidePosts(b.dataset.viewGuidePosts)));
+    document.querySelectorAll("[data-copy-text]").forEach((b) => b.addEventListener("click", () => copyText(b.dataset.copyText)));
+
+    document.querySelectorAll("[data-guide-status]").forEach((select) => select.addEventListener("change", async () => {
+      const { error } = await supabase.from("guides").update({ status: select.value }).eq("id", select.dataset.guideStatus);
+      if (error) return notify("No se pudo actualizar el estado.", true);
+      const guide = state.guides.find((g) => g.id === select.dataset.guideStatus);
+      if (guide) guide.status = select.value;
+      renderShell();
+    }));
+  }
+
+  // ---------- memes & reddit ----------
+
+  const MEME_CATEGORIES = [
+    ["IA", "artificial intelligence meme funny"],
+    ["Claude", "claude anthropic ai meme"],
+    ["ChatGPT", "chatgpt openai meme"],
+    ["Gemini", "google gemini ai meme"],
+    ["Cripto", "crypto bitcoin meme funny"],
+    ["Devs", "programming developer meme"],
+    ["Web3", "blockchain web3 meme"],
+  ];
+
+  function memesView() {
+    const m = state.memes;
+    return `
+      <div class="toolbar"><div><span class="eyebrow">${esc(state.org?.name || "")}</span><h2>Memes y Reddit</h2></div></div>
+      <section class="card" style="margin-bottom:1.2rem">
+        <h3>Buscar un tema</h3>
+        <p style="color:var(--muted);margin:.2rem 0 .8rem">Trae contexto de Reddit y memes/GIFs de subs de humor para acompañar un post.</p>
+        <form id="meme-form" class="form-grid">
+          <div class="field span-all"><label for="meme-query">Tema</label><input id="meme-query" name="query" placeholder="ej: bitcoin etf, google gemini, stellar" value="${esc(m.query)}" required /></div>
+          <div class="form-foot span-all">
+            <button class="button button-primary" type="submit" ${m.busy || state.preview ? "disabled" : ""}>${icon("search")} ${m.busy ? "Buscando…" : "Buscar info + memes"}</button>
+            <button class="button button-secondary" type="button" id="meme-create" ${m.created?.busy || state.preview ? "disabled" : ""}>🎨 ${m.created?.busy ? "Creando…" : "Crear memes propios"}</button>
+          </div>
+        </form>
+        <div style="margin-top:.8rem">
+          <span style="color:var(--muted);font-size:.85rem">O explora lo que ríen las comunidades:</span>
+          <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem">
+            ${MEME_CATEGORIES.map(([label, q]) => `<button class="button button-secondary" data-meme-cat="${esc(q)}" data-meme-label="${esc(label)}" ${m.busy || state.preview ? "disabled" : ""} style="min-height:34px;padding:.3rem .8rem">${esc(label)}</button>`).join("")}
+          </div>
+        </div>
+      </section>
+
+      <section class="card" style="margin-bottom:1.2rem">
+        <div class="post-head"><h3 style="margin:0">Top memes de hoy</h3>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+            ${[["Todos", ""], ["Devs", "ProgrammerHumor"], ["Cripto", "cryptocurrencymemes+bitcoinmemes"], ["Clásicos", "memes+wholesomememes"]].map(([label, subs]) => `<button class="button button-secondary" data-top-memes="${esc(subs)}" ${m.topBusy || state.preview ? "disabled" : ""} style="min-height:34px;padding:.3rem .8rem">${esc(label)}</button>`).join("")}
+          </div>
+        </div>
+        <p style="color:var(--muted);margin:.3rem 0 0">Los memes con más votos del día en Reddit. Guardá los buenos en tu banco para usarlos cuando quieras.</p>
+        ${m.topBusy ? `<p style="color:var(--muted);margin:.8rem 0 0">Trayendo lo mejor del día…</p>` : ""}
+        ${m.top?.length ? `<div class="grid grid-3" style="margin-top:.9rem">${m.top.map((g, i) => `<article class="card">
+          <a href="${esc(g.page || g.url)}" target="_blank" rel="noopener"><img src="${esc(g.url)}" alt="" style="width:100%;border-radius:8px;max-height:200px;object-fit:cover" loading="lazy" /></a>
+          <p style="margin:.5rem 0 .2rem;line-height:1.35;font-size:.9rem">${esc(g.title.slice(0, 90))}</p>
+          <span style="color:var(--muted);font-size:.78rem">r/${esc(g.subreddit)} · ▲ ${fmtNum(g.score)}</span>
+          <div class="form-foot" style="justify-content:start;margin-top:.4rem">
+            ${state.memePicks.some((p) => p.image_url === g.url) ? `<span class="chip">Guardado</span>` : `<button class="table-link" data-save-meme="${i}">${icon("bookmark")} Guardar</button>`}
+            <button class="table-link" data-copy-meme="${esc(g.url)}">Copiar link</button>
+          </div>
+        </article>`).join("")}</div>` : ""}
+      </section>
+
+      ${state.memePicks.length ? `<div class="toolbar"><div><span class="eyebrow">Tu banco</span><h2>Memes guardados</h2></div></div>
+        <div class="grid grid-3" style="margin-bottom:1.4rem">${state.memePicks.map((p) => `<article class="card">
+          <a href="${esc(p.page_url || p.image_url)}" target="_blank" rel="noopener"><img src="${esc(p.image_url)}" alt="" style="width:100%;border-radius:8px;max-height:200px;object-fit:cover;${p.status === "used" ? "opacity:.55" : ""}" loading="lazy" /></a>
+          <p style="margin:.5rem 0 .2rem;line-height:1.35;font-size:.9rem">${esc((p.title || "").slice(0, 90))}</p>
+          <span style="color:var(--muted);font-size:.78rem">${p.subreddit ? `r/${esc(p.subreddit)} · ` : ""}${p.status === "used" ? "Ya usado" : "Sin usar"}</span>
+          <div class="form-foot" style="justify-content:start;margin-top:.4rem">
+            <button class="table-link" data-pick-post="${esc(p.id)}">✨ Crear post</button>
+            <button class="table-link" data-copy-meme="${esc(p.image_url)}">Copiar</button>
+            ${p.status !== "used" ? `<button class="table-link" data-pick-used="${esc(p.id)}">Marcar usado</button>` : ""}
+            <button class="table-link" data-pick-discard="${esc(p.id)}" style="color:var(--red)">Quitar</button>
+          </div>
+        </article>`).join("")}</div>` : ""}
+      ${m.memePost ? `<section class="card" style="margin-bottom:1.2rem">
+        <h3>Post para el meme ${m.memePost.title ? `«${esc(m.memePost.title)}»` : ""}</h3>
+        ${m.memePost.busy ? `<p style="color:var(--muted);margin:.4rem 0 0">Escribiendo el post…</p>` : `
+        <div class="grid grid-3" style="margin-top:.8rem">
+          ${[["X", "x"], ["WhatsApp", "whatsapp"], ["Instagram", "instagram"]].map(([label, key]) => m.memePost.posts?.[key] ? `<article class="card">
+            <h3>${label}</h3>
+            <p class="post-content" style="margin:.5rem 0 .7rem;white-space:pre-wrap">${esc(m.memePost.posts[key])}</p>
+            <button class="table-link" data-copy-meme="${esc(m.memePost.posts[key])}">Copiar</button>
+          </article>` : "").join("")}
+        </div>
+        <p style="color:var(--muted);margin:.6rem 0 0">GIF: <a href="${esc(m.memePost.url)}" target="_blank" rel="noopener">${esc(m.memePost.url.slice(0, 60))}…</a> <button class="table-link" data-copy-meme="${esc(m.memePost.url)}">Copiar link del GIF</button></p>`}
+      </section>` : ""}
+      ${m.info?.posts?.length ? `<div class="toolbar"><div><span class="eyebrow">Listos para publicar</span><h2>Post + meme</h2></div></div>
+        <div class="grid grid-3" style="margin-bottom:1.4rem">${m.info.posts.map((p, i) => {
+          const gif = m.gifs[i];
+          return `<article class="card">
+            ${gif ? `<a href="${esc(gif.page || gif.url)}" target="_blank" rel="noopener"><img src="${esc(gif.thumbnail || gif.url)}" alt="" style="width:100%;border-radius:8px;max-height:170px;object-fit:cover" loading="lazy" /></a>` : ""}
+            <p class="post-content" style="margin:.6rem 0;white-space:pre-wrap">${esc(p)}</p>
+            <div class="form-foot" style="justify-content:start">
+              <button class="table-link" data-copy-meme="${esc(p)}">Copiar post</button>
+              ${gif ? `<button class="table-link" data-copy-meme="${esc(gif.url)}">Copiar GIF</button>` : ""}
+            </div>
+          </article>`;
+        }).join("")}</div>` : ""}
+      ${m.created?.items?.length ? `<div class="toolbar"><div><span class="eyebrow">Hechos por nosotros</span><h2>Memes creados</h2></div></div>
+        <div class="grid grid-3" style="margin-bottom:1.4rem">${m.created.items.map((g, i) => `<article class="card">
+          <a href="${esc(g.url)}" target="_blank" rel="noopener"><img src="${esc(g.url)}" alt="" style="width:100%;border-radius:8px" loading="lazy" /></a>
+          <p style="margin:.5rem 0 .4rem;color:var(--muted);font-size:.85rem">${esc(g.title)}</p>
+          <div class="form-foot" style="justify-content:start;margin-top:.2rem">
+            <button class="table-link" data-created-post="${i}">✨ Crear post</button>
+            <button class="table-link" data-copy-meme="${esc(g.url)}">Copiar link</button>
+          </div>
+        </article>`).join("")}</div>` : ""}
+      ${m.gifs.length ? `<div class="toolbar"><div><span class="eyebrow">Más opciones</span><h2>GIFs</h2></div></div>
+        <div class="grid grid-3" style="margin-bottom:1.4rem">${m.gifs.map((g, i) => `<article class="card">
+          <a href="${esc(g.page || g.url)}" target="_blank" rel="noopener"><img src="${esc(g.thumbnail || g.url)}" alt="" style="width:100%;border-radius:8px;max-height:180px;object-fit:cover" loading="lazy" /></a>
+          <p style="margin:.5rem 0 .4rem;line-height:1.4">${esc(g.title || "GIF")}</p>
+          <div class="form-foot" style="justify-content:start;margin-top:.4rem">
+            <button class="table-link" data-meme-post-idx="${i}">✨ Crear post</button>
+            <button class="table-link" data-copy-meme="${esc(g.url)}">Copiar link</button>
+          </div>
+        </article>`).join("")}</div>` : ""}
+      ${m.info ? `<div class="toolbar"><div><span class="eyebrow">Contexto</span><h2>Qué se está diciendo</h2></div></div>
+        <article class="card" style="margin-bottom:1.4rem">
+          <p style="line-height:1.6;margin:0 0 .7rem">${esc(m.info.summary || "")}</p>
+          ${m.info.points?.length ? `<ul style="margin:0 0 .7rem;padding-left:1.1rem;line-height:1.6">${m.info.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}
+          ${m.info.sources?.length ? `<div class="post-meta" style="flex-wrap:wrap;gap:.5rem">${m.info.sources.slice(0, 8).map((s) => `<a class="table-link" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title.slice(0, 40))}</a>`).join("")}</div>` : ""}
+        </article>` : ""}
+      ${!m.busy && !m.gifs.length && m.gifsError ? `<div class="card" style="margin-bottom:1.4rem"><p style="color:var(--red);margin:0">Sin GIFs: ${esc(m.gifsError)}</p>
+        <p style="color:var(--muted);margin:.4rem 0 0">Creá una key gratis en developers.giphy.com y cargala como secret <code>GIPHY_API_KEY</code> en Supabase.</p></div>` : ""}
+      ${!m.busy && !m.info && !m.gifs.length ? `<div class="empty">Buscá un tema: te traigo el pulso de la conversación (Reddit y foros) y GIFs listos para usar.</div>` : ""}`;
+  }
+
+  function wireMemes() {
+    document.querySelector("#meme-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (state.preview) return notify("La vista previa es de solo lectura.", true);
+      const query = String(new FormData(event.target).get("query") || "").trim();
+      if (!query) return;
+      state.memes = { ...state.memes, query, busy: true };
+      renderShell();
+      const info = await invokeEdge("reddit-search", { query, mode: "info" });
+      // The model suggests the best English search phrase for a matching GIF.
+      const gifQuery = info.data?.gifQuery || query;
+      const gifs = await invokeEdge("reddit-search", { query: gifQuery, mode: "memes", count: 9 });
+      state.memes.busy = false;
+      state.memes.info = info.data?.summary ? { summary: info.data.summary, points: info.data.points || [], posts: info.data.posts || [], sources: info.data.sources || [] } : null;
+      state.memes.gifs = gifs.data?.items || [];
+      state.memes.gifsError = gifs.data?.error || (gifs.error ? "No se pudieron buscar GIFs." : "");
+      const problems = [info.data?.error, state.memes.gifsError].filter(Boolean);
+      if (problems.length) notify(problems.join(" · "), true);
+      else notify(`${state.memes.info?.posts?.length || 0} posts listos y ${state.memes.gifs.length} GIFs.`);
+      renderShell();
+    });
+    document.querySelectorAll("[data-copy-meme]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyMeme)));
+    document.querySelector("#meme-create")?.addEventListener("click", createOwnMemes);
+    document.querySelectorAll("[data-meme-cat]").forEach((button) => button.addEventListener("click", () => browseMemeCategory(button.dataset.memeLabel, button.dataset.memeCat)));
+    document.querySelectorAll("[data-meme-post-idx]").forEach((button) => button.addEventListener("click", () => generateMemePost(Number(button.dataset.memePostIdx))));
+    document.querySelectorAll("[data-created-post]").forEach((button) => button.addEventListener("click", () => generateCreatedMemePost(Number(button.dataset.createdPost))));
+    document.querySelectorAll("[data-top-memes]").forEach((button) => button.addEventListener("click", () => loadTopMemes(button.dataset.topMemes)));
+    document.querySelectorAll("[data-save-meme]").forEach((button) => button.addEventListener("click", () => saveMemePick(Number(button.dataset.saveMeme))));
+    document.querySelectorAll("[data-pick-post]").forEach((button) => button.addEventListener("click", () => {
+      const pick = state.memePicks.find((p) => p.id === button.dataset.pickPost);
+      if (pick) memePostFor({ title: pick.title, url: pick.image_url });
+    }));
+    document.querySelectorAll("[data-pick-used]").forEach((button) => button.addEventListener("click", () => updateMemePick(button.dataset.pickUsed, "used")));
+    document.querySelectorAll("[data-pick-discard]").forEach((button) => button.addEventListener("click", () => updateMemePick(button.dataset.pickDiscard, "discarded")));
+  }
+
+  async function loadTopMemes(subs) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    state.memes.topBusy = true;
+    renderShell();
+    const progress = createProgress("Top memes de hoy");
+    progress.auto(["Recorriendo los subreddits de memes…", "Ordenando por votos del día…"], 3500);
+    const { data, error } = await invokeEdge("reddit-search", { mode: "top", query: subs || "", count: 12 });
+    state.memes.topBusy = false;
+    state.memes.top = data?.items || [];
+    if (error || data?.error) progress.fail(data?.error || "No se pudieron traer los memes.");
+    else if (!state.memes.top.length) progress.fail(data?.message || "Reddit no devolvió memes ahora.");
+    else progress.done(`${state.memes.top.length} memes del día — guardá los buenos`);
+    renderShell();
+  }
+
+  async function saveMemePick(index) {
+    const g = state.memes.top?.[index];
+    if (!g) return;
+    const row = {
+      organization_id: state.org.id,
+      title: g.title,
+      image_url: g.url,
+      page_url: g.page || null,
+      source: "reddit",
+      subreddit: g.subreddit || null,
+      score: g.score || 0,
+      added_by: state.session?.user?.id || null,
+    };
+    const { data, error } = await supabase.from("meme_picks").insert(row).select().single();
+    if (error) return notify(error.code === "23505" ? "Ese meme ya está guardado." : "No se pudo guardar.", true);
+    state.memePicks.unshift(data);
+    notify("Meme guardado en tu banco.");
+    renderShell();
+  }
+
+  async function updateMemePick(id, status) {
+    const { error } = await supabase.from("meme_picks").update({ status }).eq("id", id);
+    if (error) return notify("No se pudo actualizar.", true);
+    if (status === "discarded") state.memePicks = state.memePicks.filter((p) => p.id !== id);
+    else { const pick = state.memePicks.find((p) => p.id === id); if (pick) pick.status = status; }
+    renderShell();
+  }
+
+  // Own memes: Gemini writes the joke, memegen renders it. Used templates are
+  // remembered locally and excluded so images never repeat.
+  async function createOwnMemes() {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const query = String(document.querySelector("#meme-query")?.value || state.memes.query || "").trim();
+    if (!query) return notify("Escribe un tema primero (arriba) y dale a Crear memes.", true);
+    const used = JSON.parse(localStorage.getItem("used_meme_templates") || "[]");
+    state.memes.query = query;
+    state.memes.created = { busy: true, items: state.memes.created?.items || [] };
+    renderShell();
+    const { data, error } = await invokeEdge("reddit-search", { mode: "create", query, count: 10, exclude: used });
+    state.memes.created.busy = false;
+    if (error || data?.error) {
+      notify(data?.error || "No se pudieron crear memes.", true);
+      return renderShell();
+    }
+    // Append: pressing the button again keeps the previous batch and adds more.
+    const merged = [...new Map([...(state.memes.created.items || []), ...data.items].map((i) => [i.url, i])).values()];
+    state.memes.created.items = merged.slice(-30);
+    const usedNow = [...new Set([...used, ...data.items.map((i) => i.template)])].slice(-120);
+    localStorage.setItem("used_meme_templates", JSON.stringify(usedNow));
+    notify(`+${data.items.length} memes nuevos (${state.memes.created.items.length} en total, sin repetir plantilla).`);
+    renderShell();
+  }
+
+  // Browse community memes by curated category: fast Giphy-only search.
+  async function browseMemeCategory(label, giphyQuery) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    state.memes = { ...state.memes, query: label, busy: true, memePost: null };
+    renderShell();
+    const gifs = await invokeEdge("reddit-search", { query: giphyQuery, mode: "memes", count: 12 });
+    state.memes.busy = false;
+    state.memes.info = null;
+    state.memes.gifs = gifs.data?.items || [];
+    state.memes.gifsError = gifs.data?.error || "";
+    if (state.memes.gifsError) notify(state.memes.gifsError, true);
+    else notify(`${state.memes.gifs.length} memes de ${label}.`);
+    renderShell();
+  }
+
+  // Caption a chosen meme for X, WhatsApp and Instagram.
+  function generateMemePost(index) {
+    return memePostFor(state.memes.gifs[index]);
+  }
+
+  function generateCreatedMemePost(index) {
+    return memePostFor(state.memes.created?.items?.[index]);
+  }
+
+  async function memePostFor(gif) {
+    if (!gif) return;
+    const lang = await askLang();
+    if (!lang) return;
+    state.memes.memePost = { title: gif.title, url: gif.url, posts: null, busy: true };
+    renderShell();
+    const { data, error } = await invokeEdge("generate-article", {
+      format: "meme_post",
+      tema: state.memes.query,
+      meme_title: gif.title,
+      caption: gif.caption || "",
+      lang,
+    });
+    if (error || data?.error) {
+      state.memes.memePost = null;
+      notify(data?.error || "No se pudo generar el post del meme.", true);
+      return renderShell();
+    }
+    state.memes.memePost = { title: gif.title, url: gif.url, posts: data.posts, busy: false };
+    renderShell();
+    document.querySelector("#main")?.scrollTo?.(0, 0);
+  }
+
+  // Tiny safe Markdown renderer: text is HTML-escaped first, then headers,
+  // bold, italics, lists, links, rules and fenced code blocks are applied.
+  // Enough for articles/guides without pulling in a Markdown library.
+  function mdToHtml(md) {
+    const inline = (s) => s
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>")
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    let html = "";
+    let inList = false;
+    let inCode = false;
+    let codeLang = "";
+    let codeLines = [];
+    const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
+    const flushCode = () => {
+      // The lines were already HTML-escaped by esc(md) below, so the same
+      // escaped text is safe to reuse verbatim as the copy button's attribute
+      // value — the browser decodes entities back to the original code on read.
+      const code = codeLines.join("\n");
+      html += `<div class="code-block"><div class="code-head"><span>${codeLang || "code"}</span><button type="button" class="code-copy" data-copy-code="${code}">${icon("copy")} Copiar</button></div><pre><code>${code}</code></pre></div>`;
+      inCode = false; codeLang = ""; codeLines = [];
+    };
+    for (const raw of esc(md).split("\n")) {
+      const fence = raw.trim().match(/^```([a-zA-Z0-9_+-]*)\s*$/);
+      if (fence) {
+        if (inCode) flushCode();
+        else { closeList(); inCode = true; codeLang = fence[1]; codeLines = []; }
+        continue;
+      }
+      if (inCode) { codeLines.push(raw); continue; }
+      const t = raw.trim();
+      const heading = t.match(/^(#{1,6}) (.*)$/);
+      if (heading) { closeList(); const level = heading[1].length; html += `<h${level}>${inline(heading[2])}</h${level}>`; }
+      else if (/^(-{3,}|\*{3,}|_{3,})$/.test(t)) { closeList(); html += "<hr />"; }
+      else if (/^[*-] /.test(t)) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${inline(t.replace(/^[*-] /, ""))}</li>`; }
+      else if (t === "") { closeList(); }
+      else { closeList(); html += `<p>${inline(t)}</p>`; }
+    }
+    if (inCode) flushCode();
+    closeList();
+    return html;
+  }
+
+  function draftToMarkdown(draft) {
+    const body = draft.body_md || "";
+    // New-style articles already ARE the full Markdown (title included).
+    if (body.trimStart().startsWith("# ")) {
+      const lines = [body];
+      if (draft.sources?.length && !/SOURCES|## (Sources|Fuentes)/i.test(body)) {
+        lines.push("", "**SOURCES**", "", ...draft.sources.map((s) => `* [${s.title}](${s.url})`));
+      }
+      return lines.join("\n").trim();
+    }
+    const lines = [`# ${draft.title}`, "", `_${draft.subtitle}_`, ""];
+    if (draft.summary?.length) { lines.push("## Resumen", ...draft.summary.map((s) => `- ${s}`), ""); }
+    lines.push(body, "");
+    if (draft.sources?.length) { lines.push("## Sources", ...draft.sources.map((s) => `- [${s.title}](${s.url})`)); }
+    return lines.join("\n").trim();
+  }
+
+  // The full-text copy keeps the model's own SOURCES tail (useful verbatim
+  // for Beehiiv), but the on-screen view renders sources as their own block
+  // instead, so this strips that tail before handing text to mdToHtml.
+  function stripSourcesSection(md) {
+    return md.replace(/\n(?:-{3,}\s*\n)?\s*(?:\*\*SOURCES\*\*|##\s*Sources|##\s*Fuentes)[\s\S]*$/i, "").trimEnd();
+  }
+
+  // Shared shell for the article/guide "view full content" popup: backdrop +
+  // centered panel, closed by the × button, a backdrop click, or Escape.
+  function modalShell(headHtml, bodyHtml) {
+    return `<div class="modal-overlay" data-modal-overlay>
+      <section class="card modal-panel">
+        <div class="modal-head">${headHtml}</div>
+        <div class="modal-body">${bodyHtml}</div>
+      </section>
+    </div>`;
+  }
+
+  function sourcesBlock(sources) {
+    if (!sources?.length) return "";
+    return `<div class="sources-block"><h3>Fuentes (${sources.length})</h3><ol>${sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title || s.url)}</a></li>`).join("")}</ol></div>`;
+  }
+
+  function imagesGallery(images) {
+    if (!images?.length) return "";
+    return `<div class="modal-gallery">${images.map((img) => `<a href="${esc(img.page || img.url)}" target="_blank" rel="noopener"><img src="${esc(img.thumbnail || img.url)}" alt="" loading="lazy" /></a>`).join("")}</div>`;
+  }
+
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); notify("Copiado al portapapeles."); }
+    catch { notify("No se pudo copiar.", true); }
+  }
+
+  function wireArticles() {
+    document.querySelector("#art-prompt")?.addEventListener("change", (e) => {
+      state.articleForm.prompt_key = e.target.value;
+      state.articleForm.prompt_md = "";
+      renderShell();
+    });
+    document.querySelector("#art-count")?.addEventListener("change", (e) => { state.articleForm.count = Number(e.target.value); });
+    document.querySelector("#art-promptmd")?.addEventListener("input", (e) => { state.articleForm.prompt_md = e.target.value; });
+
+    document.querySelector("#art-save-prompt")?.addEventListener("click", async () => {
+      if (state.preview) return notify("La vista previa es de solo lectura.", true);
+      const prompt = currentPrompt();
+      if (!prompt) return;
+      const text = state.articleForm.prompt_md || prompt.prompt_md;
+      const { error } = await supabase.from("article_prompts").update({ prompt_md: text }).eq("id", prompt.id);
+      if (error) return notify("No se pudo guardar la plantilla.", true);
+      prompt.prompt_md = text;
+      state.articleForm.prompt_md = "";
+      notify("Plantilla guardada.");
+      renderShell();
+    });
+
+    document.querySelector("#art-generate")?.addEventListener("click", generateArticles);
+    document.querySelector("#rewrite-form")?.addEventListener("submit", rewriteArticleFromSource);
+    document.querySelector("#rewrite-source")?.addEventListener("input", (e) => { state.rewrite.source = e.target.value; });
+    [["brief-audience", "audience"], ["brief-level", "level"], ["brief-platform", "platform"], ["brief-maxwords", "maxWords"], ["brief-objective", "objective"], ["brief-outcome", "readerOutcome"]]
+      .forEach(([id, key]) => document.querySelector(`#${id}`)?.addEventListener("input", (e) => { state.brief[key] = e.target.value; }));
+    document.querySelector("#art-tweet-reply-form")?.addEventListener("submit", generateTweetReply);
+    document.querySelectorAll("[data-copy-text]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyText)));
+
+    document.querySelectorAll("[data-save-draft]").forEach((button) => button.addEventListener("click", () => saveDraft(Number(button.dataset.saveDraft))));
+    document.querySelectorAll("[data-copy-draft]").forEach((button) => button.addEventListener("click", () => copyText(draftToMarkdown(state.drafts[Number(button.dataset.copyDraft)]))));
+    document.querySelectorAll("[data-discard-draft]").forEach((button) => button.addEventListener("click", () => {
+      state.drafts.splice(Number(button.dataset.discardDraft), 1);
+      renderShell();
+    }));
+
+    document.querySelectorAll("[data-copy-article]").forEach((button) => button.addEventListener("click", () => {
+      const article = state.articles.find((a) => a.id === button.dataset.copyArticle);
+      if (article) copyText(draftToMarkdown(article));
+    }));
+    document.querySelectorAll("[data-draft-posts]").forEach((button) => button.addEventListener("click", () => generateDraftPosts(Number(button.dataset.draftPosts))));
+    document.querySelectorAll("[data-open-article]").forEach((button) => button.addEventListener("click", () => {
+      state.articleView = button.dataset.openArticle;
+      renderShell();
+    }));
+    document.querySelector("#close-article")?.addEventListener("click", () => { state.articleView = null; renderShell(); });
+    document.querySelectorAll("[data-open-social]").forEach((button) => button.addEventListener("click", () => {
+      const article = state.articles.find((a) => a.id === button.dataset.openSocial);
+      if (article?.social_posts) viewSocialPosts(article.id);
+      else generateSocialPosts(button.dataset.openSocial);
+    }));
+    document.querySelectorAll("[data-regen-social]").forEach((button) => button.addEventListener("click", () => generateSocialPosts(button.dataset.regenSocial)));
+    document.querySelector("#close-social")?.addEventListener("click", () => { state.socialPosts = null; renderShell(); });
+    document.querySelectorAll("[data-copy-social]").forEach((button) => button.addEventListener("click", () => {
+      const post = state.socialPosts?.posts?.[button.dataset.copySocial];
+      if (post) copyText(post);
+    }));
+    document.querySelectorAll("[data-article-status]").forEach((select) => select.addEventListener("change", async () => {
+      const { error } = await supabase.from("articles").update({ status: select.value }).eq("id", select.dataset.articleStatus);
+      if (error) return notify("No se pudo actualizar el estado.", true);
+      const article = state.articles.find((a) => a.id === select.dataset.articleStatus);
+      if (article) article.status = select.value;
+      renderShell();
+    }));
+    document.querySelector("#art-filter-status")?.addEventListener("change", (e) => { state.articleFilters.status = e.target.value; state.articlePage = 0; renderShell(); });
+    document.querySelector("#art-filter-template")?.addEventListener("change", (e) => { state.articleFilters.template = e.target.value; state.articlePage = 0; renderShell(); });
+    document.querySelector("#art-filter-search")?.addEventListener("input", (e) => {
+      state.articleFilters.search = e.target.value;
+      state.articlePage = 0;
+      clearTimeout(wireArticles._t); wireArticles._t = setTimeout(renderShell, 350);
+    });
+    document.querySelectorAll("[data-article-page]").forEach((button) => button.addEventListener("click", () => {
+      state.articlePage = Math.max(0, Number(button.dataset.articlePage) || 0);
+      renderShell();
+    }));
+  }
+
+  async function generateArticles() {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const lang = await askLang();
+    if (!lang) return;
+    state.articleBusy = true;
+    renderShell();
+    const progress = createProgress(state.articleForm.count > 1 ? `Generando ${state.articleForm.count} artículos` : "Generando artículo");
+    progress.auto([
+      "Leyendo tu plantilla editorial…",
+      "Buscando las noticias de ayer con Google…",
+      "Verificando fuentes reales…",
+      "Escribiendo con la voz de Tellus…",
+      "Enlazando cada proyecto mencionado…",
+    ], 6500);
+    const { data, error } = await invokeEdge("generate-article", {
+      prompt_key: state.articleForm.prompt_key,
+      prompt_md: state.articleForm.prompt_md || undefined,
+      count: state.articleForm.count,
+      brief: briefPayload(),
+      lang,
+    });
+    state.articleBusy = false;
+    if (error || data?.error) {
+      progress.fail(data?.error || "No se pudo generar. Revisá que Gemini esté configurado.");
+      return renderShell();
+    }
+    // Tag each draft with the template that produced it at creation time, not
+    // whatever happens to be selected in the dropdown when it's later saved.
+    const promptKey = state.articleForm.prompt_key;
+    state.drafts = (data.drafts || []).map((d) => ({ ...d, prompt_key: promptKey }));
+    const failed = (data.errors || []).length;
+    progress.done(`${data.generated} de ${data.requested} listos${failed ? ` (${failed} fallaron)` : ""} — revisalos abajo`);
+    renderShell();
+  }
+
+  async function rewriteArticleFromSource(event) {
+    event.preventDefault();
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const source = String(new FormData(event.target).get("source") || "").trim();
+    if (!source) return;
+    const lang = await askLang();
+    if (!lang) return;
+    state.rewrite = { source, busy: true };
+    renderShell();
+    const { data, error } = await invokeEdge("generate-article", {
+      format: "rewrite_article",
+      source_text: source,
+      prompt_key: state.articleForm.prompt_key,
+      prompt_md: state.articleForm.prompt_md || undefined,
+      brief: briefPayload(),
+      lang,
+    });
+    state.rewrite.busy = false;
+    if (error || data?.error) {
+      notify(data?.error || "No se pudo reescribir el artículo.", true);
+      return renderShell();
+    }
+    const rewritten = (data.drafts || []).map((d) => ({ ...d, prompt_key: "reescrito" }));
+    state.drafts = [...rewritten, ...state.drafts];
+    state.rewrite = { source: "", busy: false };
+    notify("Artículo reescrito con la voz de Tellus. Revísalo abajo.");
+    renderShell();
+  }
+
+  async function generateSocialPosts(articleId) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const article = state.articles.find((a) => a.id === articleId);
+    if (!article) return;
+    const answer = window.prompt("Link de Beehiiv (opcional — deja vacío y dale OK para seguir sin link):", article.social_link || state.socialPosts?.link || "");
+    if (answer === null) return;
+    const link = answer.trim();
+    const lang = await askLang();
+    if (!lang) return;
+    state.socialPosts = { articleId, title: article.title, link, posts: null, busy: true };
+    renderShell();
+    const { data, error } = await invokeEdge("generate-article", {
+      format: "social_posts",
+      link,
+      article: { title: article.title, subtitle: article.subtitle, summary: article.summary || [] },
+      lang,
+    });
+    if (error || data?.error) {
+      state.socialPosts = null;
+      notify(data?.error || "No se pudieron generar los posts.", true);
+      return renderShell();
+    }
+    state.socialPosts = { articleId, title: article.title, link, posts: data.posts, imageProposal: data.imageProposal, quotableLines: data.quotableLines, busy: false };
+    // Persist with the article so "Ver posts" works after a reload.
+    const { error: saveError } = await supabase.from("articles")
+      .update({ social_posts: data.posts, social_link: link || null })
+      .eq("id", articleId);
+    if (saveError) notify("Posts generados, pero no se pudieron guardar.", true);
+    else {
+      article.social_posts = data.posts;
+      article.social_link = link;
+      notify("Posts generados y guardados.");
+    }
+    renderShell();
+  }
+
+  // Same generation for a just-created draft (not saved yet, nothing persisted).
+  async function generateDraftPosts(index) {
+    if (state.preview) return notify("La vista previa es de solo lectura.", true);
+    const draft = state.drafts[index];
+    if (!draft) return;
+    const answer = window.prompt("Link de Beehiiv (opcional — deja vacío y dale OK para seguir sin link):", state.socialPosts?.link || "");
+    if (answer === null) return;
+    const link = answer.trim();
+    const lang = await askLang();
+    if (!lang) return;
+    state.socialPosts = { articleId: null, title: draft.title, link, posts: null, busy: true };
+    renderShell();
+    const { data, error } = await invokeEdge("generate-article", {
+      format: "social_posts",
+      link,
+      article: { title: draft.title, subtitle: draft.subtitle, summary: draft.summary || [] },
+      lang,
+    });
+    if (error || data?.error) {
+      state.socialPosts = null;
+      notify(data?.error || "No se pudieron generar los posts.", true);
+      return renderShell();
+    }
+    state.socialPosts = { articleId: null, title: draft.title, link, posts: data.posts, imageProposal: data.imageProposal, quotableLines: data.quotableLines, busy: false };
+    notify("Posts generados (guarda el artículo si quieres conservarlos).");
+    renderShell();
+  }
+
+  function viewSocialPosts(articleId) {
+    const article = state.articles.find((a) => a.id === articleId);
+    if (!article?.social_posts) return;
+    state.socialPosts = { articleId, title: article.title, link: article.social_link || "", posts: article.social_posts, busy: false };
+    renderShell();
+  }
+
+  async function saveDraft(index) {
+    const draft = state.drafts[index];
+    if (!draft) return;
+    const row = {
+      organization_id: state.org.id,
+      prompt_key: draft.prompt_key || state.articleForm.prompt_key,
+      title: draft.title,
+      subtitle: draft.subtitle,
+      summary: draft.summary || [],
+      body_md: draft.body_md,
+      sources: draft.sources || [],
+      model: draft.model,
+      status: "draft",
+      created_by: state.session?.user?.id || null,
+    };
+    const { data, error } = await supabase.from("articles").insert(row).select().single();
+    if (error) return notify("No se pudo guardar el artículo.", true);
+    state.articles.unshift(data);
+    state.drafts.splice(index, 1);
+    notify("Artículo guardado como borrador.");
+    renderShell();
+  }
+
+  // ---------- boot ----------
+
+  async function boot() {
+    renderLoading();
+    if (state.preview) {
+      loadPreviewData();
+      renderShell();
+      return;
+    }
+    const { data } = await supabase.auth.getSession();
+    state.session = data.session;
+    if (!state.session) return renderAuth();
+    try {
+      await loadLiveData();
+      renderShell();
+    } catch (error) {
+      console.error(error);
+      notify("No pudimos cargar los datos. Verificá tu acceso.", true);
+      renderAuth();
+    }
+  }
+
+  supabase.auth.onAuthStateChange((_event, session) => { state.session = session; });
+  // Escape closes whichever article/guide/repo-post popup is open. Bound
+  // once, not on every render, since it never needs to change.
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (state.langPrompt) return state.langPrompt(null);
+    if (!state.articleView && !state.guideView && !state.repoPostDraft && !state.followView && !state.listView) return;
+    state.articleView = null;
+    state.guideView = null;
+    state.repoPostDraft = null;
+    state.followView = null;
+    state.listView = null;
+    renderShell();
+  });
+  boot();
+})();

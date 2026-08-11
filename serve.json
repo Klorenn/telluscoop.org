@@ -1,0 +1,8 @@
+{
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/brand", "destination": "/brand.html" },
+    { "source": "/resources", "destination": "/resources/index.html" },
+    { "source": "/resources/tools/:slug", "destination": "/resources/tool.html" }
+  ]
+}

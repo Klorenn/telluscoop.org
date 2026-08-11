@@ -2,3 +2,7 @@ node_modules
 .DS_Store
 *.log
 .vercel
+.env.local
+scraper/.venv
+__pycache__
+*.pyc

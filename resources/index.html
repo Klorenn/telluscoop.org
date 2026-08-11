@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tellus Resources — The Free Part of the Internet</title>
+
+  <!-- SEO -->
+  <meta name="description" content="A curated catalog of 100+ developer tools with genuinely useful free tiers: hosting, backend, AI, auth, email, monitoring, CI/CD, analytics, APIs, design, security, productivity, CMS, and storage." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://telluscoop.org/resources" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://telluscoop.org/resources" />
+  <meta property="og:site_name" content="Tellus Cooperative" />
+  <meta property="og:title" content="Tellus Resources — The Free Part of the Internet" />
+  <meta property="og:description" content="A catalog curated by Tellus Cooperative of 100+ developer tools with genuinely useful free tiers: hosting, AI, auth, databases, and more." />
+  <meta property="og:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
+  <meta property="og:image:width" content="1774" />
+  <meta property="og:image:height" content="887" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="es_LA" />
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@TellusCoop" />
+  <meta name="twitter:creator" content="@TellusCoop" />
+  <meta name="twitter:title" content="Tellus Resources — The Free Part of the Internet" />
+  <meta name="twitter:description" content="A catalog curated by Tellus Cooperative of 100+ developer tools with genuinely useful free tiers." />
+  <meta name="twitter:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
+
+  <link rel="icon" type="image/png" href="../uploads/TellusCooperative%20ICON.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --sand: #ECE0CC;
+      --sand-soft: #F5EDDD;
+      --sand-muted: #D4C8B5;
+      --teal: #3F8487;
+      --teal-deep: #2A5A5C;
+      --teal-ink: #1F3536;
+      --clay: #C75A2A;
+      --clay-deep: #9E441F;
+      --cream-90: rgba(236,224,204,0.90);
+      --cream-70: rgba(236,224,204,0.70);
+      --serif: 'Fraunces', 'Instrument Serif', Georgia, serif;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+      /* Real, JS-measured heights of the sticky nav/controls bars (synced by syncHeaderOffsets()
+         below) — these fallbacks only apply for the first paint before JS runs. Previously
+         .dv-controls/.dv-sidebar hardcoded top:65px/top:150px as a guess at nav height, which
+         didn't match the real rendered height (63px), leaving cards' top edge tucked flush
+         against the sticky search bar with no clearance while scrolling. */
+      --dv-nav-h: 65px;
+      --dv-controls-h: 81px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { background: var(--sand); color: var(--teal-ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+    body { line-height: 1.55; }
+    img { display: block; max-width: 100%; }
+    button { font-family: inherit; cursor: pointer; }
+    a { color: inherit; }
+
+    .eyebrow {
+      font-family: var(--sans); font-size: 11px; font-weight: 500;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal-deep);
+    }
+
+    /* Scroll reveal — same primitive as the main site (foundation.css .reveal) */
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 700ms cubic-bezier(.2,.7,.2,1), transform 700ms cubic-bezier(.2,.7,.2,1);
+      will-change: opacity, transform;
+    }
+    .reveal.is-in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
+
+    /* Scroll progress, same treatment as .fs-scroll-bar */
+    .dv-scroll-bar {
+      position: fixed; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--clay); z-index: 70; transform-origin: left center;
+      transform: scaleX(0); transition: transform 80ms linear;
+    }
+
+    /* Nav */
+    .dv-nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(236,224,204,0.9); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--sand-muted);
+    }
+    .dv-nav-inner {
+      max-width: 1320px; margin: 0 auto; padding: 14px 48px;
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    }
+    .dv-nav-home { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+    .dv-nav-home img { height: 34px; width: auto; }
+    .dv-nav-home span { font-family: var(--serif); font-size: 16px; letter-spacing: -0.02em; color: var(--teal-deep); }
+    .dv-nav-right { display: flex; align-items: center; gap: 16px; }
+    .dv-nav-meta { font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; color: var(--teal-deep); opacity: 0.75; }
+    .dv-nav-meta a { text-decoration: none; color: var(--teal); }
+    .dv-nav-meta a:hover { color: var(--clay); }
+
+    .dv-lang-switcher { position: relative; }
+    .dv-lang-trigger {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 999px; border: 1px solid var(--sand-muted);
+      background: var(--sand-soft); font-family: var(--mono); font-size: 11px; font-weight: 600;
+      letter-spacing: 0.06em; color: var(--teal-deep); transition: border-color 180ms ease;
+    }
+    .dv-lang-trigger:hover { border-color: var(--teal); }
+    .dv-lang-trigger svg { width: 13px; height: 13px; }
+    .dv-lang-dropdown {
+      position: absolute; right: 0; top: calc(100% + 6px); z-index: 60;
+      background: var(--sand-soft); border: 1px solid var(--sand-muted); border-radius: 10px;
+      padding: 4px; display: flex; flex-direction: column; gap: 2px; min-width: 130px;
+      box-shadow: 0 12px 28px -12px rgba(31,53,54,0.3);
+    }
+    .dv-lang-option {
+      display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 7px;
+      font-size: 13px; color: var(--teal-ink); text-align: left; background: none;
+    }
+    .dv-lang-option:hover { background: color-mix(in srgb, var(--teal-ink) 6%, transparent); }
+    .dv-lang-option.is-on { background: color-mix(in srgb, var(--teal) 12%, transparent); }
+    .dv-lang-code { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--teal); letter-spacing: 0.06em; min-width: 22px; }
+
+    /* Hero */
+    /* Hero — was a bare centered text stack on flat --sand with no depth. Ported the main
+       site's own "pulsing dot eyebrow" language (foundation.css .fs-hero-eye/.fs-eye-dot,
+       same fs-pulse keyframe idea) plus a soft teal/clay radial glow + faint dev-grid texture
+       behind the headline (same trick as foundation.css's .fs-slab-bg radial-gradient combo,
+       adapted to the light sand background and this hero's narrower centered layout). */
+    .dv-hero { max-width: 1000px; margin: 0 auto; padding: 96px 48px 40px; text-align: center; position: relative; }
+    .dv-hero-bg {
+      position: absolute; left: 50%; top: -24px; transform: translateX(-50%);
+      width: 920px; max-width: 140%; height: 460px; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(420px 300px at 50% 20%, rgba(63,132,135,0.18), transparent 68%),
+        radial-gradient(320px 240px at 86% 60%, rgba(199,90,42,0.12), transparent 65%),
+        radial-gradient(rgba(31,53,54,0.06) 1px, transparent 1.5px);
+      background-size: 100% 100%, 100% 100%, 22px 22px;
+      background-repeat: no-repeat, no-repeat, repeat;
+      mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+      -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+    }
+    .dv-hero-content { position: relative; z-index: 1; }
+    .dv-hero-eye { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .dv-eye-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--clay); position: relative; }
+    .dv-eye-dot::after {
+      content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid var(--clay);
+      animation: dv-pulse 2s ease-out infinite;
+    }
+    @keyframes dv-pulse { 0% { opacity: 0.6; transform: scale(0.6); } 100% { opacity: 0; transform: scale(1.6); } }
+    .dv-h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(38px, 5.4vw, 76px); line-height: 1.03; letter-spacing: -0.025em; }
+    .dv-h1 em { font-style: italic; color: var(--teal); }
+    .dv-lede { font-size: 18px; color: var(--teal-ink); opacity: 0.78; max-width: 640px; margin: 18px auto 0; }
+
+    /* On-load entrance (not scroll-triggered — this content is visible immediately above the
+       fold, so it fades/slides in once on first paint instead of waiting on IntersectionObserver
+       like .reveal does for below-the-fold cards). */
+    .dv-hero-in {
+      opacity: 0; transform: translateY(14px);
+      animation: dv-hero-in 620ms cubic-bezier(.2,.7,.2,1) forwards;
+      animation-delay: var(--dv-in-delay, 0ms);
+    }
+    @keyframes dv-hero-in { to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .dv-hero-in { opacity: 1; transform: none; animation: none; }
+    }
+
+    .dv-stats {
+      display: flex; justify-content: center; margin: 36px auto 0; max-width: 620px;
+      border: 1px solid var(--sand-muted); border-radius: 18px; overflow: hidden;
+      background: rgba(245,237,221,0.55);
+    }
+    .dv-stat { flex: 1; padding: 20px 14px; position: relative; text-align: center; border-right: 1px solid var(--sand-muted); }
+    .dv-stat:last-child { border-right: none; }
+    .dv-stat::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+      background: var(--clay); transform: scaleX(0); transform-origin: left;
+      transition: transform 500ms cubic-bezier(.2,.7,.2,1);
+    }
+    .dv-stat:hover::before { transform: scaleX(1); }
+    .dv-stat strong { display: block; font-family: var(--serif); font-size: 28px; color: var(--teal-deep); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+    .dv-stat span { font-size: 10.5px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--teal-deep); opacity: 0.65; }
+
+    /* Controls */
+    .dv-controls {
+      max-width: 1320px; margin: 0 auto; padding: 24px 48px 10px; position: sticky; top: var(--dv-nav-h); z-index: 40;
+      background: var(--sand); box-shadow: 0 10px 18px -14px rgba(31,53,54,0.28);
+    }
+    .dv-search-row { display: flex; gap: 10px; align-items: center; }
+    .dv-search-wrap { position: relative; flex: 1; }
+    .dv-search {
+      width: 100%; padding: 14px 18px 14px 44px; border-radius: 999px;
+      border: 1px solid var(--sand-muted); background: var(--sand-soft);
+      font-family: var(--sans); font-size: 15px; color: var(--teal-ink);
+      outline: none; transition: border-color 180ms ease, box-shadow 180ms ease;
+    }
+    .dv-search:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(63,132,135,0.15), 0 10px 24px -16px rgba(31,53,54,0.35); }
+    .dv-search::placeholder { color: var(--teal-deep); opacity: 0.5; }
+    .dv-search-icon {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px; color: var(--teal-deep); opacity: 0.55; pointer-events: none;
+    }
+    .dv-search-icon svg { width: 100%; height: 100%; }
+
+    .dv-recommended-toggle {
+      flex-shrink: 0; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.03em;
+      padding: 12px 16px; border-radius: 999px; border: 1px solid var(--clay);
+      background: var(--sand-soft); color: var(--clay-deep); white-space: nowrap;
+      transition: all 180ms ease;
+    }
+    .dv-recommended-toggle:hover { background: color-mix(in srgb, var(--clay) 10%, var(--sand-soft)); }
+    .dv-recommended-toggle.active { background: var(--clay); border-color: var(--clay); color: var(--sand); }
+
+    /* Two-column layout: sidebar + content */
+    .dv-main { max-width: 1320px; margin: 0 auto; padding: 24px 48px 96px; }
+    .dv-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 36px; align-items: start; }
+
+    .dv-sidebar { position: sticky; top: calc(var(--dv-nav-h) + var(--dv-controls-h)); display: flex; flex-direction: column; gap: 4px; }
+    .dv-sidebar-label {
+      font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--teal-deep); opacity: 0.65; padding: 0 4px 10px;
+    }
+    .dv-cat-list { display: flex; flex-direction: column; gap: 2px; }
+    .dv-cat-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px;
+      font-size: 13.5px; color: var(--teal-ink); opacity: 0.8; background: none; border: none;
+      text-align: left; width: 100%;
+      transition: background 220ms ease, opacity 220ms ease, transform 220ms cubic-bezier(.2,.7,.2,1);
+    }
+    .dv-cat-item:hover { background: color-mix(in srgb, var(--teal-ink) 6%, transparent); opacity: 1; transform: translateX(2px); }
+    .dv-cat-item.active { background: var(--teal); color: var(--sand); opacity: 1; box-shadow: 0 8px 20px -12px rgba(31,53,54,0.5); }
+    .dv-cat-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 18px; height: 18px; }
+    .dv-cat-icon svg { display: block; }
+    .dv-cat-name { flex: 1; }
+    .dv-cat-count { font-family: var(--mono); font-size: 11px; opacity: 0.6; }
+    .dv-cat-item.active .dv-cat-count { opacity: 0.85; }
+
+    .dv-sidebar-cta {
+      margin-top: 18px; padding: 16px; border-radius: 12px;
+      background: var(--sand-soft); border: 1px dashed var(--sand-muted);
+    }
+    .dv-sidebar-cta-tag {
+      display: inline-block; font-family: var(--mono); font-size: 10px; font-weight: 700;
+      letter-spacing: 0.08em; color: var(--clay-deep); background: color-mix(in srgb, var(--clay) 14%, transparent);
+      padding: 3px 8px; border-radius: 999px; margin-bottom: 10px;
+    }
+    .dv-sidebar-cta p { font-size: 12.5px; line-height: 1.5; color: var(--teal-ink); opacity: 0.78; margin-bottom: 10px; }
+    .dv-sidebar-cta a {
+      font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--teal); text-decoration: none;
+    }
+    .dv-sidebar-cta a:hover { color: var(--clay); }
+
+    .dv-content { min-width: 0; }
+    .dv-results-meta { font-family: var(--mono); font-size: 12px; color: var(--teal-deep); opacity: 0.7; margin-bottom: 18px; letter-spacing: 0.03em; }
+    .dv-grid {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;
+    }
+    .dv-card {
+      position: relative;
+      background: var(--sand-soft); border: 1px solid var(--sand-muted); border-radius: 14px;
+      padding: 20px; display: flex; flex-direction: column; text-decoration: none; color: inherit;
+      transition: border-color 280ms ease, box-shadow 280ms ease, transform 280ms cubic-bezier(.2,.7,.2,1);
+    }
+    .dv-card:hover { border-color: var(--teal-deep); box-shadow: 0 18px 40px -24px rgba(31,53,54,0.32); transform: translateY(-3px); }
+    .dv-card.is-recommended { border-color: var(--clay); }
+    .dv-recommended-corner {
+      position: absolute; top: -1px; right: 14px; font-size: 13px; color: var(--sand);
+      background: var(--clay); padding: 3px 8px; border-radius: 0 0 6px 6px; line-height: 1;
+    }
+    .dv-card-topline { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .dv-favicon {
+      width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+      background: var(--sand); display: grid; place-items: center; overflow: hidden;
+      border: 1px solid var(--sand-muted);
+    }
+    .dv-favicon img { width: 18px; height: 18px; object-fit: contain; }
+    .dv-card-name { font-family: var(--serif); font-size: 17px; letter-spacing: -0.01em; color: var(--teal-ink); flex: 1; min-width: 0; }
+    .dv-card-arrow {
+      font-family: var(--mono); font-size: 13px; color: var(--teal-deep); opacity: 0.45; flex-shrink: 0;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+    .dv-card:hover .dv-card-arrow { opacity: 1; transform: translate(1px, -1px); }
+    .dv-card-desc { font-size: 13.5px; color: var(--teal-ink); opacity: 0.75; line-height: 1.5; }
+    .dv-card-divider { height: 1px; background: var(--sand-muted); margin: 14px 0 12px; }
+    .dv-badge {
+      display: inline-block; align-self: flex-start;
+      font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.05em;
+      text-transform: uppercase; padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+      margin-bottom: 8px;
+    }
+    .dv-badge.free { background: var(--teal-ink); color: var(--sand); }
+    .dv-badge.limited { background: var(--clay); color: var(--sand); }
+    .dv-card-free-detail { font-size: 12px; color: var(--teal-deep); opacity: 0.68; line-height: 1.5; }
+    .dv-card-foot { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+    .dv-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .dv-tag {
+      font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.03em;
+      padding: 3px 9px; border-radius: 999px; background: var(--cream-90);
+      color: var(--teal-deep); border: 1px solid var(--sand-muted);
+    }
+
+    .dv-empty { text-align: center; padding: 64px 24px; color: var(--teal-deep); opacity: 0.7; font-family: var(--mono); font-size: 14px; }
+
+    /* FAQ — accordion */
+    .dv-faq { max-width: 820px; margin: 0 auto; padding: 24px 48px 96px; border-top: 1px solid var(--sand-muted); }
+    .dv-faq-head { text-align: center; padding-top: 64px; margin-bottom: 40px; }
+    .dv-h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(28px, 3.2vw, 44px); letter-spacing: -0.02em; }
+    .dv-faq-item { border-bottom: 1px solid var(--sand-muted); }
+    .dv-faq-item:last-child { border-bottom: none; }
+    .dv-faq-q {
+      width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+      background: none; border: none; text-align: left; cursor: pointer; padding: 22px 0;
+      font-family: var(--serif); font-size: 18px; letter-spacing: -0.01em; color: var(--teal-deep);
+      transition: color 220ms ease;
+    }
+    .dv-faq-q:hover { color: var(--clay); }
+    .dv-faq-q:focus-visible { outline: 2px solid var(--teal); outline-offset: 4px; border-radius: 4px; }
+    .dv-faq-chevron {
+      flex-shrink: 0; width: 18px; height: 18px; color: var(--clay);
+      transition: transform 320ms cubic-bezier(.2,.7,.2,1);
+    }
+    .dv-faq-item.is-open .dv-faq-chevron { transform: rotate(180deg); }
+    .dv-faq-a-wrap {
+      display: grid; grid-template-rows: 0fr; opacity: 0;
+      transition: grid-template-rows 320ms cubic-bezier(.2,.7,.2,1), opacity 260ms ease;
+    }
+    .dv-faq-item.is-open .dv-faq-a-wrap { grid-template-rows: 1fr; opacity: 1; }
+    .dv-faq-a-inner { overflow: hidden; min-height: 0; }
+    .dv-faq-a { font-size: 14.5px; opacity: 0.78; line-height: 1.6; padding-bottom: 22px; }
+
+    /* Footer — ported from foundation.jsx's <footer className="fs-footer"> / foundation.css .fs-footer* */
+    .dv-footer {
+      border-top: 1px solid var(--sand-muted);
+      background: var(--sand-soft);
+      padding: 64px 48px 32px;
+    }
+    .dv-footer-grid {
+      max-width: 1320px; margin: 0 auto 48px;
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 64px;
+    }
+    .dv-footer-mark { display: inline-block; text-decoration: none; line-height: 0; }
+    .dv-footer-mark-img { display: block; height: 44px; width: auto; transition: opacity 200ms ease; }
+    .dv-footer-mark:hover .dv-footer-mark-img { opacity: 0.82; }
+    .dv-footer-brand p {
+      margin: 16px 0; font-size: 14px; line-height: 1.55; color: var(--teal-ink); opacity: 0.7; max-width: 320px;
+    }
+    .dv-footer-grid ul { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 10px; }
+    .dv-footer-grid ul a {
+      font-size: 14px; color: var(--teal-ink); opacity: 0.75; text-decoration: none;
+      transition: opacity 200ms ease, color 200ms ease;
+    }
+    .dv-footer-grid ul a:hover { opacity: 1; color: var(--teal-deep); }
+    .dv-footer-icon-link { display: inline-flex; align-items: center; gap: 7px; }
+    .dv-footer-base {
+      max-width: 1320px; margin: 0 auto; padding-top: 24px; border-top: 1px solid var(--sand-muted);
+      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+      font-family: var(--mono); font-size: 11px; color: var(--teal-deep); letter-spacing: 0.05em;
+    }
+    .dv-footer-brandguide {
+      font-size: 11px; opacity: 0.55; font-family: var(--mono); letter-spacing: 0.05em;
+      text-decoration: none; color: var(--teal-deep);
+    }
+    .dv-footer-backlink {
+      display: inline-block; margin-top: 12px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em;
+      color: var(--teal); text-decoration: none; transition: color 180ms ease;
+    }
+    .dv-footer-backlink:hover { color: var(--clay); }
+
+    @media (max-width: 960px) {
+      .dv-nav-inner { padding: 12px 22px; }
+      .dv-nav-meta { display: none; }
+      .dv-hero { padding: 56px 22px 32px; }
+      .dv-controls { padding: 20px 22px 10px; }
+      .dv-main { padding: 20px 22px 72px; }
+      .dv-faq { padding: 24px 22px 72px; }
+      .dv-footer { padding: 48px 22px 24px; }
+      .dv-footer-grid { grid-template-columns: 1fr 1fr; gap: 40px; }
+      .dv-footer-brand { grid-column: span 2; }
+      .dv-footer-base { flex-direction: column; gap: 8px; text-align: center; }
+      .dv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 860px) {
+      .dv-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+      .dv-sidebar { position: static; min-width: 0; }
+      .dv-sidebar-label { padding-left: 0; }
+      .dv-cat-list {
+        flex-direction: row; overflow-x: auto; gap: 8px; padding-bottom: 6px;
+        -webkit-overflow-scrolling: touch; scrollbar-width: none;
+      }
+      .dv-cat-list::-webkit-scrollbar { display: none; }
+      .dv-cat-item {
+        flex-direction: row; width: auto; flex-shrink: 0; white-space: nowrap;
+        border: 1px solid var(--sand-muted); background: var(--sand-soft); padding: 8px 14px;
+      }
+      .dv-cat-item.active { border-color: var(--teal); }
+      .dv-sidebar-cta { display: none; }
+    }
+    @media (max-width: 640px) {
+      .dv-search-row { flex-direction: column; align-items: stretch; }
+      .dv-recommended-toggle { align-self: center; }
+    }
+    @media (max-width: 640px) {
+      .dv-footer { padding: 40px 18px 24px; }
+      .dv-footer-grid { grid-template-columns: 1fr; gap: 32px; }
+      .dv-footer-brand { grid-column: span 1; }
+    }
+    @media (max-width: 560px) {
+      .dv-grid { grid-template-columns: minmax(0, 1fr); }
+      .dv-stats { display: grid; grid-template-columns: repeat(2, 1fr); border-radius: 14px; }
+      .dv-stat { border-right: 1px solid var(--sand-muted); border-bottom: 1px solid var(--sand-muted); }
+      .dv-stat:nth-child(2n) { border-right: none; }
+      .dv-stat:nth-child(3), .dv-stat:nth-child(4) { border-bottom: none; }
+      .dv-stat strong { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="dv-scroll-bar" id="dv-scroll-bar"></div>
+
+<nav class="dv-nav">
+  <div class="dv-nav-inner">
+    <a class="dv-nav-home" href="../index.html">
+      <img src="../uploads/TellusCooperative%20ICON.png" alt="Tellus Cooperative" />
+      <span>Tellus Resources</span>
+    </a>
+    <div class="dv-nav-right">
+      <div class="dv-nav-meta"><a href="../index.html" id="dv-back-link">← telluscoop.org</a></div>
+      <div class="dv-lang-switcher" id="dv-lang-switcher">
+        <button class="dv-lang-trigger" id="dv-lang-trigger" aria-label="Select language">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          <span id="dv-lang-code">ES</span>
+        </button>
+        <div class="dv-lang-dropdown" id="dv-lang-dropdown" style="display:none;">
+          <button class="dv-lang-option" data-lang="es"><span class="dv-lang-code">ES</span><span>Español</span></button>
+          <button class="dv-lang-option" data-lang="en"><span class="dv-lang-code">EN</span><span>English</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<section class="dv-hero">
+  <div class="dv-hero-bg" aria-hidden="true"></div>
+  <div class="dv-hero-content">
+    <div class="dv-hero-eye dv-hero-in" style="--dv-in-delay:0ms;">
+      <span class="dv-eye-dot" aria-hidden="true"></span>
+      <span class="eyebrow" id="dv-eyebrow"></span>
+    </div>
+    <h1 class="dv-h1 dv-hero-in" id="dv-h1" style="--dv-in-delay:90ms;"></h1>
+    <p class="dv-lede dv-hero-in" id="dv-lede" style="--dv-in-delay:180ms;"></p>
+    <div class="dv-stats dv-hero-in" id="dv-stats" style="--dv-in-delay:270ms;">
+      <div class="dv-stat"><strong id="stat-tools" data-count="0">0</strong><span id="stat-tools-label"></span></div>
+      <div class="dv-stat"><strong id="stat-cats" data-count="0">0</strong><span id="stat-cats-label"></span></div>
+      <div class="dv-stat"><strong id="stat-recommended" data-count="0">0</strong><span id="stat-recommended-label"></span></div>
+      <div class="dv-stat"><strong id="stat-nocard" data-count="0">0</strong><span id="stat-nocard-label"></span></div>
+    </div>
+  </div>
+</section>
+
+<div class="dv-controls">
+  <div class="dv-search-row">
+    <div class="dv-search-wrap">
+      <span class="dv-search-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      </span>
+      <input class="dv-search" id="dv-search" type="text" autocomplete="off" />
+    </div>
+    <button class="dv-recommended-toggle" id="dv-recommended-toggle"></button>
+  </div>
+</div>
+
+<main class="dv-main">
+  <div class="dv-layout">
+    <aside class="dv-sidebar">
+      <div class="dv-sidebar-label" id="dv-sidebar-label"></div>
+      <nav class="dv-cat-list" id="dv-cat-list"></nav>
+      <div class="dv-sidebar-cta">
+        <span class="dv-sidebar-cta-tag">TELLUS</span>
+        <p id="dv-sidebar-cta-text"></p>
+        <a href="mailto:hello@telluscoop.org" id="dv-sidebar-cta-link"></a>
+      </div>
+    </aside>
+    <div class="dv-content">
+      <div class="dv-results-meta" id="dv-results-meta"></div>
+      <div class="dv-grid" id="dv-grid"></div>
+      <div class="dv-empty" id="dv-empty" style="display:none;"></div>
+    </div>
+  </div>
+</main>
+
+<section class="dv-faq">
+  <div class="dv-faq-head">
+    <div class="eyebrow" style="margin-bottom:12px;" id="dv-faq-eyebrow"></div>
+    <h2 class="dv-h2" id="dv-faq-title"></h2>
+  </div>
+  <div id="dv-faq-list"></div>
+</section>
+
+<footer class="dv-footer">
+  <div class="dv-footer-grid">
+    <div class="dv-footer-brand">
+      <a class="dv-footer-mark" href="../index.html">
+        <img src="../uploads/tellus.svg" alt="Tellus Cooperative" class="dv-footer-mark-img" />
+      </a>
+      <p id="dv-footer-brand-text"></p>
+      <a class="dv-footer-backlink" href="../index.html" id="dv-footer-back"></a>
+    </div>
+    <div>
+      <div class="eyebrow" id="dv-footer-programs-label"></div>
+      <ul>
+        <li><a href="/#programs" id="dv-footer-edu"></a></li>
+        <li><a href="/#programs" id="dv-footer-inc"></a></li>
+        <li><a href="/#programs" id="dv-footer-pub"></a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="eyebrow" id="dv-footer-community-label"></div>
+      <ul>
+        <li><a href="https://chat.whatsapp.com/FsNIUPsmNCl2YJkQi5r4p4" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg><span id="dv-footer-wa-label"></span></a></li>
+        <li><a href="https://telluscoop.beehiiv.com" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg><span id="dv-footer-newsletter-label"></span></a></li>
+        <li><a href="https://www.youtube.com/@telluscoop" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg><span id="dv-footer-yt-label"></span></a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="eyebrow" id="dv-footer-follow-label"></div>
+      <ul>
+        <li><a href="https://x.com/TellusCoop" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>X / Twitter</a></li>
+        <li><a href="https://www.instagram.com/telluscoop/" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>Instagram</a></li>
+        <li><a href="https://www.linkedin.com/company/tellus-cooperative/" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>LinkedIn</a></li>
+        <li><a href="https://github.com/Tellus-Cooperative/" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>GitHub</a></li>
+        <li><a href="https://discord.gg/Fy2SgR3XRu" target="_blank" rel="noopener noreferrer" class="dv-footer-icon-link"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028 14.09 14.09 0 001.226-1.994.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>Discord</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="dv-footer-base">
+    <span id="dv-footer-copyright"></span>
+    <a href="/brand" rel="noopener noreferrer" class="dv-footer-brandguide">Brand Guide</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var UI = {
+    es: {
+      title: "Tellus Resources — La parte gratis de internet",
+      eyebrowHero: "Directorio para developers",
+      h1: "La parte <em>gratis</em><br>de internet",
+      lede: "Construí más. Gastá menos. Catálogo curado por Tellus Cooperative de productos con planes gratuitos genuinamente útiles para developers, makers y equipos pequeños.",
+      statTools: "Recursos",
+      statCats: "Categorías",
+      statRecommended: "Recomendados",
+      statNoCard: "Sin tarjeta",
+      searchPlaceholder: "Buscar por nombre, tag o categoría…",
+      chipAll: "Todos los recursos",
+      onlyRecommended: "✦ Solo recomendados",
+      resultOne: "resultado",
+      resultMany: "resultados",
+      emptyState: "No encontramos herramientas con esa búsqueda. Probá con otro término.",
+      visit: "Visitar →",
+      sidebarLabel: "Explora por categoría",
+      ctaText: "¿Conocés una herramienta con un plan gratuito genuino que deberíamos sumar? Contanos y la evaluamos.",
+      ctaLink: "Sugerir herramienta →",
+      faqEyebrow: "Preguntas frecuentes",
+      faqTitle: "Antes de que preguntes",
+      faq: [
+        { q: "¿Todas estas herramientas son completamente gratis?", a: "Todos los productos ofrecen una capa gratuita útil, aunque puede tener límites de uso, almacenamiento o equipo. No es lo mismo que un producto gratuito sin límites." },
+        { q: "¿Cómo elegimos qué aparece en el listado?", a: "Priorizamos herramientas fiables con un plan gratuito que sea realmente útil para construir, aprender o lanzar un proyecto real." },
+        { q: "¿Puedo usar estos servicios en producción?", a: "A menudo sí, especialmente en aplicaciones pequeñas. Comprobá límites, soporte, ubicación de datos y costes de ampliación antes de depender de un plan gratuito." },
+        { q: "¿Cada cuánto se revisa el directorio?", a: "Revisamos el catálogo regularmente, agregamos descubrimientos útiles y retiramos productos cuya oferta gratuita deja de ser relevante." },
+        { q: "¿Por qué está en dos idiomas?", a: "Las buenas herramientas para developers deberían ser fáciles de descubrir en inglés y en español. Este directorio es un aporte de Tellus Cooperative a la comunidad de builders." },
+      ],
+      backHome: "← Volver a telluscoop.org",
+      footer: "© 2026 Tellus Cooperative Foundation · Directorio inspirado en la comunidad de builders de internet.",
+      navBack: "← telluscoop.org",
+      footerBrand: "Una cooperativa blockchain latinoamericana para la educación, la incubación y el conocimiento abierto.",
+      footerPrograms: "Programas", footerCommunity: "Comunidad", footerFollow: "Seguir",
+      footerEdu: "Educación cooperativa", footerInc: "Incubación de proyectos", footerPub: "Recursos públicos",
+      footerNewsletter: "Newsletter", footerYt: "Cursos en YouTube",
+      footerWa: "WhatsApp · 300+ miembros",
+      footerCopyright: "© 2026 Tellus Cooperative Foundation · New York, NY",
+    },
+    en: {
+      title: "Tellus Resources — The free part of the internet",
+      eyebrowHero: "Directory for developers",
+      h1: "The <em>free</em><br>part of the internet",
+      lede: "Build more. Spend less. A curated catalog by Tellus Cooperative of products with genuinely useful free tiers for developers, makers and small teams.",
+      statTools: "Resources",
+      statCats: "Categories",
+      statRecommended: "Recommended",
+      statNoCard: "No card needed",
+      searchPlaceholder: "Search by name, tag or category…",
+      chipAll: "All resources",
+      onlyRecommended: "✦ Recommended only",
+      resultOne: "result",
+      resultMany: "results",
+      emptyState: "We couldn't find any tools for that search. Try another term.",
+      visit: "Visit →",
+      sidebarLabel: "Explore by category",
+      ctaText: "Know a tool with a genuinely useful free tier we should add? Tell us and we'll take a look.",
+      ctaLink: "Suggest a tool →",
+      faqEyebrow: "Frequently asked questions",
+      faqTitle: "Before you ask",
+      faq: [
+        { q: "Are all these tools completely free?", a: "Every product listed offers a useful free tier, but it may include usage, storage or team limits. It is not the same as an unlimited free product." },
+        { q: "How do you choose what gets listed?", a: "We prioritize reliable tools with a free plan that is genuinely useful for building, learning or launching a real project." },
+        { q: "Can I use these services in production?", a: "Often yes, especially for small apps. Check current limits, support, data location and upgrade costs with the provider before making a production decision." },
+        { q: "How often is the directory reviewed?", a: "We review the catalog regularly, add useful discoveries and remove products whose free offer is no longer relevant." },
+        { q: "Why is this available in two languages?", a: "Great developer tools should be easy to discover in both English and Spanish. This directory is Tellus Cooperative's contribution to the builder community." },
+      ],
+      backHome: "← Back to telluscoop.org",
+      footer: "© 2026 Tellus Cooperative Foundation · A directory inspired by the internet's builder community.",
+      navBack: "← telluscoop.org",
+      footerBrand: "A Latin American blockchain cooperative for education, incubation, and open knowledge.",
+      footerPrograms: "Programs", footerCommunity: "Community", footerFollow: "Follow",
+      footerEdu: "Cooperative education", footerInc: "Project incubation", footerPub: "Public resources",
+      footerNewsletter: "Newsletter", footerYt: "YouTube courses",
+      footerWa: "WhatsApp · 300+ members",
+      footerCopyright: "© 2026 Tellus Cooperative Foundation · New York, NY",
+    },
+  };
+
+  var state = { query: "", category: "all", onlyRecommended: false, data: null, lang: "en", faqOpen: {} };
+
+  /* Scroll-reveal + count-up — ports foundation.jsx's useReveal/useCountUp to vanilla JS,
+     same threshold/rootMargin/easing so it feels identical to the main site. */
+  var prefersReducedMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  var revealObserver = (!prefersReducedMotion && "IntersectionObserver" in window)
+    ? new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-in");
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: "0px 0px -8% 0px" })
+    : null;
+
+  function observeReveal(container) {
+    if (!revealObserver) return;
+    Array.prototype.forEach.call(container.querySelectorAll(".reveal:not(.is-in)"), function (el) {
+      revealObserver.observe(el);
+    });
+  }
+
+  function animateCountUp(el, target, duration) {
+    if (prefersReducedMotion || !window.requestAnimationFrame) {
+      el.textContent = target;
+      return;
+    }
+    var t0 = null;
+    function step(ts) {
+      if (t0 === null) t0 = ts;
+      var k = Math.min(1, (ts - t0) / duration);
+      var eased = 1 - Math.pow(1 - k, 3);
+      el.textContent = Math.round(target * eased);
+      if (k < 1) requestAnimationFrame(step);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(step);
+  }
+
+  var statsRevealed = false;
+  function startStatsCountUp() {
+    if (statsRevealed) return;
+    statsRevealed = true;
+    ["stat-tools", "stat-cats", "stat-recommended", "stat-nocard"].forEach(function (id) {
+      var el = document.getElementById(id);
+      var target = parseInt(el.getAttribute("data-count"), 10) || 0;
+      animateCountUp(el, target, 1400);
+    });
+  }
+
+  function setupStatsReveal() {
+    var el = document.getElementById("dv-stats");
+    if (!el) return;
+    if (prefersReducedMotion || !("IntersectionObserver" in window)) {
+      startStatsCountUp();
+      return;
+    }
+    var statsObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          startStatsCountUp();
+          statsObserver.disconnect();
+        }
+      });
+    }, { threshold: 0.15, rootMargin: "0px 0px -8% 0px" });
+    statsObserver.observe(el);
+  }
+
+  // Clean monochrome line icons (Tabler Icons, MIT), matching itsfree.dev's sidebar exactly —
+  // stroke="currentColor" so they inherit the item's teal/sand tint automatically on hover/active.
+  function catIcon(paths) {
+    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
+  }
+  var CATEGORY_ICONS = {
+    all: catIcon('<path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-4"></path><path d="M14 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-4"></path><path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-4"></path><path d="M14 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-4"></path>'),
+    hosting: catIcon('<path d="M6.657 16c-2.572 0 -4.657 -2.007 -4.657 -4.483c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927 -1.551 3.487 -3.465 3.487h-11.878"></path><path d="M12 16v5"></path><path d="M16 16v4a1 1 0 0 0 1 1h4"></path><path d="M8 16v4a1 1 0 0 1 -1 1h-4"></path>'),
+    data: catIcon('<path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"></path><path d="M4 6v6a8 3 0 0 0 16 0v-6"></path><path d="M4 12v6a8 3 0 0 0 16 0v-6"></path>'),
+    ai: catIcon('<path d="M15.5 13a3.5 3.5 0 0 0 -3.5 3.5v1a3.5 3.5 0 0 0 7 0v-1.8"></path><path d="M8.5 13a3.5 3.5 0 0 1 3.5 3.5v1a3.5 3.5 0 0 1 -7 0v-1.8"></path><path d="M17.5 16a3.5 3.5 0 0 0 0 -7h-.5"></path><path d="M19 9.3v-2.8a3.5 3.5 0 0 0 -7 0"></path><path d="M6.5 16a3.5 3.5 0 0 1 0 -7h.5"></path><path d="M5 9.3v-2.8a3.5 3.5 0 0 1 7 0v10"></path>'),
+    auth: catIcon('<path d="M18.9 7a8 8 0 0 1 1.1 5v1a6 6 0 0 0 .8 3"></path><path d="M8 11a4 4 0 0 1 8 0v1a10 10 0 0 0 2 6"></path><path d="M12 11v2a14 14 0 0 0 2.5 8"></path><path d="M8 15a18 18 0 0 0 1.8 6"></path><path d="M4.9 19a22 22 0 0 1 -.9 -7v-1a8 8 0 0 1 12 -6.95"></path>'),
+    email: catIcon('<path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10"></path><path d="M3 7l9 6l9 -6"></path>'),
+    observability: catIcon('<path d="M3 12h4.5l1.5 -6l4 12l2 -9l1.5 3h4.5"></path>'),
+    ci: catIcon('<path d="M5 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path><path d="M5 6a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path><path d="M15 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path><path d="M7 8v8"></path><path d="M7 8a4 4 0 0 0 4 4h4"></path>'),
+    analytics: catIcon('<path d="M3 3v18h18"></path><path d="M20 18v3"></path><path d="M16 16v5"></path><path d="M12 13v8"></path><path d="M8 16v5"></path><path d="M3 11c6 0 5 -5 9 -5s3 5 9 5"></path>'),
+    api: catIcon('<path d="M4 13h5"></path><path d="M12 16v-8h3a2 2 0 0 1 2 2v1a2 2 0 0 1 -2 2h-3"></path><path d="M20 8v8"></path><path d="M9 16v-5.5a2.5 2.5 0 0 0 -5 0v5.5"></path>'),
+    design: catIcon('<path d="M12 21a9 9 0 0 1 0 -18c4.97 0 9 3.582 9 8c0 1.06 -.474 2.078 -1.318 2.828c-.844 .75 -1.989 1.172 -3.182 1.172h-2.5a2 2 0 0 0 -1 3.75a1.3 1.3 0 0 1 -1 2.25"></path><path d="M7.5 10.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path><path d="M11.5 7.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path><path d="M15.5 10.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path>'),
+    security: catIcon('<path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3"></path><path d="M11 11a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path><path d="M12 12v2.5"></path>'),
+    collaboration: catIcon('<path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path><path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1"></path><path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path><path d="M17 10h2a2 2 0 0 1 2 2v1"></path><path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path><path d="M3 13v-1a2 2 0 0 1 2 -2h2"></path>'),
+    cms: catIcon('<path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2"></path><path d="M9 9h1"></path><path d="M9 13h6"></path><path d="M9 17h6"></path>'),
+    media: catIcon('<path d="M15 8h.01"></path><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12"></path><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"></path><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"></path>'),
+  };
+
+  function loadLang() {
+    var stored = null;
+    try { stored = localStorage.getItem("tellus-lang"); } catch (e) {}
+    if (stored === "es" || stored === "en") return stored;
+    return "en";
+  }
+
+  function saveLang(l) {
+    try { localStorage.setItem("tellus-lang", l); } catch (e) {}
+  }
+
+  function t(key) {
+    return UI[state.lang][key];
+  }
+
+  function faviconUrl(url) {
+    try {
+      var host = new URL(url).hostname;
+      return "https://www.google.com/s2/favicons?sz=64&domain=" + host;
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
+    });
+  }
+
+  function toolDesc(tool) {
+    return state.lang === "en" ? tool.description_en : tool.description_es;
+  }
+  function toolFreeNote(tool) {
+    return state.lang === "en" ? tool.free_tier_note_en : tool.free_tier_note_es;
+  }
+  function toolFreeDetail(tool) {
+    return state.lang === "en" ? tool.free_tier_detail_en : tool.free_tier_detail_es;
+  }
+  function categoryLabel(cat) {
+    return state.lang === "en" ? cat.label_en : cat.label_es;
+  }
+
+  function matches(tool, query) {
+    if (!query) return true;
+    var haystack = [
+      tool.name,
+      tool.description_es,
+      tool.description_en,
+      tool.category,
+      (tool.tags || []).join(" "),
+    ].join(" ").toLowerCase();
+    return haystack.indexOf(query) !== -1;
+  }
+
+  function renderStaticText() {
+    document.documentElement.lang = state.lang;
+    document.title = t("title");
+    document.getElementById("dv-eyebrow").textContent = t("eyebrowHero");
+    document.getElementById("dv-h1").innerHTML = t("h1");
+    document.getElementById("dv-lede").textContent = t("lede");
+    document.getElementById("stat-tools-label").textContent = t("statTools");
+    document.getElementById("stat-cats-label").textContent = t("statCats");
+    document.getElementById("stat-recommended-label").textContent = t("statRecommended");
+    document.getElementById("stat-nocard-label").textContent = t("statNoCard");
+    document.getElementById("dv-search").placeholder = t("searchPlaceholder");
+    document.getElementById("dv-recommended-toggle").textContent = t("onlyRecommended");
+    document.getElementById("dv-recommended-toggle").classList.toggle("active", state.onlyRecommended);
+    document.getElementById("dv-back-link").textContent = t("navBack");
+    document.getElementById("dv-sidebar-label").textContent = t("sidebarLabel");
+    document.getElementById("dv-sidebar-cta-text").textContent = t("ctaText");
+    document.getElementById("dv-sidebar-cta-link").textContent = t("ctaLink");
+    document.getElementById("dv-faq-eyebrow").textContent = t("faqEyebrow");
+    document.getElementById("dv-faq-title").textContent = t("faqTitle");
+    document.getElementById("dv-footer-back").textContent = t("backHome");
+    document.getElementById("dv-footer-brand-text").textContent = t("footerBrand");
+    document.getElementById("dv-footer-programs-label").textContent = t("footerPrograms");
+    document.getElementById("dv-footer-edu").textContent = t("footerEdu");
+    document.getElementById("dv-footer-inc").textContent = t("footerInc");
+    document.getElementById("dv-footer-pub").textContent = t("footerPub");
+    document.getElementById("dv-footer-community-label").textContent = t("footerCommunity");
+    document.getElementById("dv-footer-wa-label").textContent = t("footerWa");
+    document.getElementById("dv-footer-newsletter-label").textContent = t("footerNewsletter");
+    document.getElementById("dv-footer-yt-label").textContent = t("footerYt");
+    document.getElementById("dv-footer-follow-label").textContent = t("footerFollow");
+    document.getElementById("dv-footer-copyright").textContent = t("footerCopyright");
+    document.getElementById("dv-empty").textContent = t("emptyState");
+    document.getElementById("dv-lang-code").textContent = state.lang.toUpperCase();
+
+    var faqList = document.getElementById("dv-faq-list");
+    faqList.innerHTML = t("faq").map(function (item, idx) {
+      var isOpen = !!state.faqOpen[idx];
+      var qid = "faq-q-" + idx;
+      var aid = "faq-a-" + idx;
+      return (
+        '<div class="dv-faq-item' + (isOpen ? " is-open" : "") + '" data-faq-idx="' + idx + '">' +
+          '<button class="dv-faq-q" id="' + qid + '" aria-expanded="' + isOpen + '" aria-controls="' + aid + '">' +
+            '<span>' + escapeHtml(item.q) + '</span>' +
+            '<svg class="dv-faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6l6 -6"></path></svg>' +
+          '</button>' +
+          '<div class="dv-faq-a-wrap" id="' + aid + '" role="region" aria-labelledby="' + qid + '"' + (isOpen ? "" : ' aria-hidden="true"') + '>' +
+            '<div class="dv-faq-a-inner"><p class="dv-faq-a">' + escapeHtml(item.a) + '</p></div>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join("");
+
+    Array.prototype.forEach.call(faqList.querySelectorAll(".dv-faq-q"), function (btn) {
+      btn.addEventListener("click", function () {
+        var item = btn.closest(".dv-faq-item");
+        var idx = item.getAttribute("data-faq-idx");
+        var wrap = item.querySelector(".dv-faq-a-wrap");
+        var nowOpen = !item.classList.contains("is-open");
+        item.classList.toggle("is-open", nowOpen);
+        btn.setAttribute("aria-expanded", String(nowOpen));
+        if (nowOpen) wrap.removeAttribute("aria-hidden");
+        else wrap.setAttribute("aria-hidden", "true");
+        state.faqOpen[idx] = nowOpen;
+      });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll(".dv-lang-option"), function (btn) {
+      btn.classList.toggle("is-on", btn.getAttribute("data-lang") === state.lang);
+    });
+  }
+
+  function renderSidebar() {
+    var list = document.getElementById("dv-cat-list");
+    var counts = { all: state.data.tools.length };
+    state.data.tools.forEach(function (tool) {
+      counts[tool.category] = (counts[tool.category] || 0) + 1;
+    });
+
+    var items = [{ id: "all", label_es: t("chipAll"), label_en: t("chipAll") }].concat(state.data.categories);
+    list.innerHTML = items.map(function (c) {
+      var active = c.id === state.category ? " active" : "";
+      var count = counts[c.id] || 0;
+      var label = c.id === "all" ? t("chipAll") : categoryLabel(c);
+      var icon = CATEGORY_ICONS[c.id] || "•";
+      return '<button class="dv-cat-item' + active + '" data-cat="' + c.id + '">' +
+        '<span class="dv-cat-icon">' + icon + '</span>' +
+        '<span class="dv-cat-name">' + escapeHtml(label) + '</span>' +
+        '<span class="dv-cat-count">' + count + '</span></button>';
+    }).join("");
+
+    Array.prototype.forEach.call(list.querySelectorAll(".dv-cat-item"), function (btn) {
+      btn.addEventListener("click", function () {
+        state.category = btn.getAttribute("data-cat");
+        render();
+      });
+    });
+  }
+
+  function renderGrid() {
+    var grid = document.getElementById("dv-grid");
+    var empty = document.getElementById("dv-empty");
+    var meta = document.getElementById("dv-results-meta");
+    var query = state.query.trim().toLowerCase();
+
+    var filtered = state.data.tools.filter(function (tool) {
+      var catOk = state.category === "all" || tool.category === state.category;
+      var recOk = !state.onlyRecommended || tool.recommended;
+      return catOk && recOk && matches(tool, query);
+    });
+
+    meta.textContent = filtered.length + " " + (filtered.length === 1 ? t("resultOne") : t("resultMany"));
+
+    if (filtered.length === 0) {
+      grid.innerHTML = "";
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+
+    grid.innerHTML = filtered.map(function (tool, idx) {
+      var badgeClass = tool.no_card ? "free" : "limited";
+      var cardClass = tool.recommended ? "dv-card is-recommended" : "dv-card";
+      var corner = tool.recommended ? '<span class="dv-recommended-corner" title="Editor\'s pick">✦</span>' : "";
+      var tags = (tool.tags || []).map(function (tag) {
+        return '<span class="dv-tag">' + escapeHtml(tag) + '</span>';
+      }).join("");
+      var detailHref = "/resources/tools/" + encodeURIComponent(tool.slug || "");
+      // Stagger only the batch that scrolls into view together (capped at 9 = 3 grid rows);
+      // otherwise 110 cards would accumulate an ever-growing, janky cumulative delay.
+      var revealAttrs = "";
+      if (!prefersReducedMotion) {
+        var delayMs = Math.min(idx % 9, 8) * 40;
+        cardClass += " reveal";
+        revealAttrs = ' style="transition-delay:' + delayMs + 'ms"';
+      }
+      return (
+        '<a class="' + cardClass + '" href="' + escapeHtml(detailHref) + '"' + revealAttrs + '>' +
+          corner +
+          '<div class="dv-card-topline">' +
+            '<span class="dv-favicon"><img src="' + faviconUrl(tool.url) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'" /></span>' +
+            '<span class="dv-card-name">' + escapeHtml(tool.name) + '</span>' +
+            '<span class="dv-card-arrow">→</span>' +
+          '</div>' +
+          '<p class="dv-card-desc">' + escapeHtml(toolDesc(tool)) + '</p>' +
+          '<div class="dv-card-divider"></div>' +
+          '<span class="dv-badge ' + badgeClass + '">' + escapeHtml(toolFreeNote(tool)) + '</span>' +
+          '<p class="dv-card-free-detail">' + escapeHtml(toolFreeDetail(tool)) + '</p>' +
+          '<div class="dv-card-foot"><div class="dv-tags">' + tags + '</div></div>' +
+        '</a>'
+      );
+    }).join("");
+
+    observeReveal(grid);
+  }
+
+  function renderStats() {
+    var nocardCount = state.data.tools.filter(function (t) { return t.no_card; }).length;
+    document.getElementById("stat-tools").setAttribute("data-count", state.data.meta.total_tools);
+    document.getElementById("stat-cats").setAttribute("data-count", state.data.meta.total_categories);
+    document.getElementById("stat-recommended").setAttribute("data-count", state.data.meta.recommended_count);
+    document.getElementById("stat-nocard").setAttribute("data-count", nocardCount);
+    setupStatsReveal();
+  }
+
+  function render() {
+    renderStaticText();
+    renderSidebar();
+    renderGrid();
+  }
+
+  state.lang = loadLang();
+
+  try {
+    var initialCategory = new URLSearchParams(location.search).get("category");
+    if (initialCategory) state.category = initialCategory;
+  } catch (e) {}
+
+  fetch("/resources/tools.json")
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      state.data = data;
+      renderStats();
+      render();
+    })
+    .catch(function (err) {
+      document.getElementById("dv-grid").innerHTML =
+        '<div class="dv-empty" style="grid-column:1/-1;">Could not load the catalog. Please reload.</div>';
+      console.error("Failed to load tools.json", err);
+    });
+
+  // Debounced so fast typing doesn't rebuild + re-trigger the card reveal on every keystroke.
+  var searchDebounceTimer = null;
+  document.getElementById("dv-search").addEventListener("input", function (e) {
+    state.query = e.target.value;
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(function () {
+      if (state.data) renderGrid();
+    }, 160);
+  });
+
+  // Keeps .dv-controls'/.dv-sidebar's sticky "top" offsets locked to the REAL rendered height
+  // of the nav/controls bars via CSS custom properties, instead of guessed hardcoded px values
+  // (which drifted from the actual height — 65px assumed vs 63px real — leaving a seam where
+  // scrolled content could tuck flush under the sticky search bar with no clearance). Re-synced
+  // on load, on resize (nav height changes across the 960px breakpoint), and once webfonts swap
+  // in (Fraunces/Inter can nudge line-height enough to change nav height by a px or two).
+  function syncHeaderOffsets() {
+    var nav = document.querySelector(".dv-nav");
+    var controls = document.querySelector(".dv-controls");
+    if (!nav || !controls) return;
+    document.documentElement.style.setProperty("--dv-nav-h", nav.offsetHeight + "px");
+    document.documentElement.style.setProperty("--dv-controls-h", controls.offsetHeight + "px");
+  }
+  syncHeaderOffsets();
+  var headerSyncTimer = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(headerSyncTimer);
+    headerSyncTimer = setTimeout(syncHeaderOffsets, 120);
+  });
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(syncHeaderOffsets);
+  }
+
+  // Scroll progress bar (same idea as foundation.jsx's useScrollProgress + .fs-scroll-bar)
+  (function () {
+    var bar = document.getElementById("dv-scroll-bar");
+    if (!bar) return;
+    var ticking = false;
+    function update() {
+      var h = document.documentElement;
+      var max = h.scrollHeight - h.clientHeight;
+      var p = max > 0 ? Math.min(1, h.scrollTop / max) : 0;
+      bar.style.transform = "scaleX(" + p + ")";
+      ticking = false;
+    }
+    update();
+    window.addEventListener("scroll", function () {
+      if (!ticking) {
+        window.requestAnimationFrame(update);
+        ticking = true;
+      }
+    }, { passive: true });
+  })();
+
+  document.getElementById("dv-recommended-toggle").addEventListener("click", function () {
+    state.onlyRecommended = !state.onlyRecommended;
+    if (state.data) render();
+  });
+
+  var langTrigger = document.getElementById("dv-lang-trigger");
+  var langDropdown = document.getElementById("dv-lang-dropdown");
+  langTrigger.addEventListener("click", function (e) {
+    e.stopPropagation();
+    langDropdown.style.display = langDropdown.style.display === "none" ? "flex" : "none";
+  });
+  document.addEventListener("click", function (e) {
+    if (!document.getElementById("dv-lang-switcher").contains(e.target)) {
+      langDropdown.style.display = "none";
+    }
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".dv-lang-option"), function (btn) {
+    btn.addEventListener("click", function () {
+      state.lang = btn.getAttribute("data-lang");
+      saveLang(state.lang);
+      langDropdown.style.display = "none";
+      if (state.data) render();
+      else renderStaticText();
+    });
+  });
+
+  renderStaticText();
+})();
+</script>
+
+</body>
+</html>
