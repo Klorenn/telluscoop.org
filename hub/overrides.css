@@ -9,6 +9,13 @@
 /* Nothing should ever scroll the page sideways */
 html, body { overflow-x: clip; }
 
+/* Mobile: the map initializes at 300px tall before CSS settles and
+   min-height stretches the shell to 440px, leaving a gap under the
+   canvas. Match the shell to the canvas so the map renders clean. */
+@media (max-width: 767px) {
+  .tellus-map-tint { height: 300px; min-height: 300px; }
+}
+
 /* --- Image treatment: hero + footer --- */
 div:has(> img[src="/hub/images/academy-hero.jpg"]),
 div:has(> img[src="/hub/images/footer-barrio.jpg"]) {
