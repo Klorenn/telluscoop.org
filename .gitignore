@@ -7,3 +7,20 @@ scraper/.venv
 __pycache__
 *.pyc
 .env*
+
+# Local-only material — not for the repo
+.playwright-mcp/
+/clonner/
+/Hubs/
+
+# Verification screenshots (repo root)
+/*-check.png
+/footer-*.png
+/hero-*.png
+/mapbox-*.png
+/mobile-*.png
+/page-*.png
+/participar-*.png
+/spaces-logos*.png
+/tellus-*.png
+/workscape-*.png
