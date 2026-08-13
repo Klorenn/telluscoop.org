@@ -19,6 +19,9 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  const apiKey = process.env.BEEHIIV_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'Server misconfigured: missing BEEHIIV_API_KEY' });
+
   const parsed = await parseBody(req);
   console.log('[subscribe] parsed body:', JSON.stringify(parsed));
   const { email } = parsed;
@@ -33,7 +36,7 @@ module.exports = async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer M8oDjuGHryuvp0reiO24RAwiWJ8cx73AfZQo4ijYruPeAfK3cansSvhHVsVEynk8',
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Length': Buffer.byteLength(body),
       },
     };

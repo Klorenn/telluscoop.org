@@ -91,10 +91,10 @@
     .hub-hero { padding: 0; text-align: left; border-bottom: 1px solid var(--sand-muted); }
     .hub-hero-grid {
       max-width: 1320px; margin: 0 auto; padding: 64px 48px;
-      display: grid; grid-template-columns: 58% 1fr; gap: 56px; align-items: center;
+      display: grid; grid-template-columns: 58% 1fr; gap: 56px; align-items: stretch;
     }
     .hub-hero-gallery {
-      position: relative; aspect-ratio: 4 / 3; border-radius: 20px; overflow: hidden;
+      position: relative; border-radius: 20px; overflow: hidden; height: 100%; min-height: 460px;
       background: var(--sand-soft); border: 1px solid var(--sand-muted);
     }
     .hub-gallery-track { display: flex; height: 100%; transition: transform 420ms ease; }
@@ -129,24 +129,29 @@
     .hub-form-status { font-size: 13px; margin-top: 4px; min-height: 18px; }
     .hub-form-status.ok { color: var(--teal-deep); }
 
-    /* Carousel */
-    .hub-carousel {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+    /* Stages */
+    .hub-stages { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: stretch; }
+    .hub-stages-list { display: flex; flex-direction: column; }
+    .hub-stage {
+      display: flex; gap: 20px; align-items: flex-start; padding: 26px 0; border-top: 1px solid var(--sand-muted);
+      opacity: 0; transform: translateY(16px);
+      transition: opacity 560ms ease, transform 560ms ease;
     }
-    .hub-card {
+    .hub-stage:last-child { border-bottom: 1px solid var(--sand-muted); }
+    .hub-stage.in-view { opacity: 1; transform: translateY(0); }
+    .hub-stage:nth-child(2).in-view { transition-delay: 80ms; }
+    .hub-stage:nth-child(3).in-view { transition-delay: 160ms; }
+    .hub-stage:nth-child(4).in-view { transition-delay: 240ms; }
+    .hub-stage-icon {
+      flex-shrink: 0; width: 42px; height: 42px; border-radius: 12px;
       background: var(--sand-soft); border: 1px solid var(--sand-muted);
-      border-radius: 16px; padding: 28px;
-      opacity: 0; transform: translateY(20px);
-      transition: opacity 560ms ease, transform 560ms ease, border-color 220ms ease, box-shadow 220ms ease;
+      display: flex; align-items: center; justify-content: center; color: var(--teal-deep);
     }
-    .hub-card.in-view { opacity: 1; transform: translateY(0); }
-    .hub-card:nth-child(2).in-view { transition-delay: 80ms; }
-    .hub-card:nth-child(3).in-view { transition-delay: 160ms; }
-    .hub-card:nth-child(4).in-view { transition-delay: 240ms; }
-    .hub-card:hover { transform: translateY(-6px); border-color: var(--teal); box-shadow: 0 16px 32px rgba(31,53,54,0.08); }
-    .hub-card-index { font-family: var(--mono); font-size: 12px; color: var(--teal); opacity: 0.65; letter-spacing: 0.04em; margin-bottom: 18px; }
-    .hub-card h3 { font-family: var(--serif); font-size: 20px; font-weight: 400; margin-bottom: 8px; letter-spacing: -0.01em; }
-    .hub-card p { font-size: 13.5px; opacity: 0.75; line-height: 1.6; }
+    .hub-stage-icon svg { width: 20px; height: 20px; }
+    .hub-stage h3 { font-family: var(--serif); font-size: 19px; font-weight: 400; margin-bottom: 6px; letter-spacing: -0.01em; }
+    .hub-stage p { font-size: 13.5px; opacity: 0.75; line-height: 1.6; max-width: 42ch; }
+    .hub-stages-photo { border-radius: 20px; overflow: hidden; border: 1px solid var(--sand-muted); background: var(--sand-soft); }
+    .hub-stages-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
     /* Map */
     .hub-map-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
@@ -173,12 +178,15 @@
     .hub-barrio-cta { margin-top: 24px; }
     .hub-barrio .hub-btn { border-color: var(--sand); color: var(--sand); }
     .hub-barrio .hub-btn:hover { background: var(--sand); color: var(--teal-deep); }
-    .hub-barrio-mark {
-      width: 128px; height: 128px; flex-shrink: 0; border-radius: 20px;
-      background: rgba(236,224,204,0.08); border: 1px solid rgba(236,224,204,0.14);
-      display: flex; align-items: center; justify-content: center; padding: 26px;
+    .hub-barrio-gallery {
+      display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1.4fr 1fr;
+      gap: 12px; width: 380px; height: 380px; flex-shrink: 0;
     }
-    .hub-barrio-mark img { width: 100%; height: 100%; object-fit: contain; }
+    .hub-barrio-gallery div:first-child { grid-column: 1 / 3; }
+    .hub-barrio-gallery div { overflow: hidden; border-radius: 16px; box-shadow: 0 12px 28px rgba(0,0,0,0.18); }
+    .hub-academy .hub-barrio-gallery div { box-shadow: 0 12px 28px rgba(31,53,54,0.12); }
+    .hub-barrio-gallery img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 500ms ease; }
+    .hub-barrio-gallery div:hover img { transform: scale(1.06); }
 
     /* Stellar Academy — inverted palette to distinguish from Barrio */
     .hub-academy { background: var(--sand-soft); border: 1px solid var(--sand-muted); color: var(--teal-ink); }
@@ -189,7 +197,6 @@
     .hub-academy .hub-barrio-addr { color: var(--teal-deep); opacity: 0.75; }
     .hub-academy .hub-btn { border-color: var(--teal-deep); color: var(--teal-deep); }
     .hub-academy .hub-btn:hover { background: var(--teal-deep); color: var(--sand); }
-    .hub-academy .hub-barrio-mark { background: var(--sand); border-color: var(--sand-muted); }
 
     /* Luma events */
     #events .hub-section-head { margin-left: auto; margin-right: auto; text-align: center; }
@@ -219,18 +226,20 @@
 
     @media (max-width: 860px) {
       .hub-hero-grid { grid-template-columns: 1fr; padding: 40px 48px; }
-      .hub-carousel { grid-template-columns: repeat(2, 1fr); }
+      .hub-hero-gallery { min-height: 320px; }
+      .hub-stages { grid-template-columns: 1fr; gap: 32px; }
+      .hub-stages-photo { order: -1; aspect-ratio: 16 / 10; }
       .hub-map-grid { grid-template-columns: 1fr; }
       .hub-barrio { grid-template-columns: 1fr; }
-      .hub-barrio-mark { order: -1; }
+      .hub-barrio-gallery { order: -1; width: 100%; height: 280px; }
     }
     @media (max-width: 640px) {
       .hub-nav-inner { padding: 12px 20px; }
       .hub-nav-links { display: none; }
       .hub-section { padding: 48px 20px; }
       .hub-hero-grid { padding: 32px 20px; gap: 32px; }
-      .hub-carousel { grid-template-columns: 1fr; }
       .hub-barrio { padding: 28px; }
+      .hub-barrio-gallery { height: 260px; gap: 8px; }
     }
   </style>
 </head>
@@ -257,10 +266,14 @@
   <div class="hub-hero-grid">
     <div class="hub-hero-gallery">
       <div class="hub-gallery-track" id="hub-gallery-track">
-        <img src="uploads/Stellar Academy Foto.png" alt="Actividad en el Hub" />
-        <img src="uploads/EDUCACION COOPERATIVA.jpg" alt="Educación cooperativa" />
-        <img src="uploads/project incubation.jpg" alt="Incubación de proyectos" />
-        <img src="uploads/cooperative education.jpg" alt="Comunidad" />
+        <img src="uploads/hub/academy-main.jpg" alt="Grupo Stellar Academy en el Hub" />
+        <img src="uploads/hub/barrio-1.jpg" alt="Comunidad Stellar Barrio" />
+        <img src="uploads/hub/coworking.jpg" alt="Coworking en el Hub" />
+        <img src="uploads/hub/academy-2.jpg" alt="Clase Stellar Academy" />
+        <img src="uploads/hub/barrio-4.jpg" alt="Stellar Barrio en el barrio" />
+        <img src="uploads/hub/academy-7.jpg" alt="Comunidad reunida en Stellar Academy" />
+        <img src="uploads/hub/academy-4.jpg" alt="Estudiantes Stellar Academy" />
+        <img src="uploads/hub/academy-1.jpg" alt="Grupo Stellar Academy" />
       </div>
       <button class="hub-gallery-arrow hub-gallery-prev" id="hub-gallery-prev" aria-label="Foto anterior">‹</button>
       <button class="hub-gallery-arrow hub-gallery-next" id="hub-gallery-next" aria-label="Foto siguiente">›</button>
@@ -334,33 +347,54 @@
   </div>
 </section>
 
-<!-- Carousel -->
+<!-- Stages -->
 <section class="hub-section" id="carousel">
   <div class="hub-section-head">
     <div class="eyebrow">Qué hay adentro</div>
     <h2 class="hub-h2">Un espacio para cada etapa</h2>
     <p class="hub-lede">Desde tu primera clase de blockchain hasta el lanzamiento de tu proyecto.</p>
   </div>
-  <div class="hub-carousel">
-    <div class="hub-card">
-      <div class="hub-card-index">01</div>
-      <h3>Educación</h3>
-      <p>Talleres y clases abiertas sobre blockchain, Stellar y desarrollo Web3, dictadas por la comunidad.</p>
+  <div class="hub-stages">
+    <div class="hub-stages-list">
+      <div class="hub-stage">
+        <span class="hub-stage-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </span>
+        <div>
+          <h3>Educación</h3>
+          <p>Talleres y clases abiertas sobre blockchain, Stellar y desarrollo Web3, dictadas por la comunidad.</p>
+        </div>
+      </div>
+      <div class="hub-stage">
+        <span class="hub-stage-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </span>
+        <div>
+          <h3>Coworking</h3>
+          <p>Puestos de trabajo abiertos para builders, con wifi, mentoría técnica y acompañamiento de pares.</p>
+        </div>
+      </div>
+      <div class="hub-stage">
+        <span class="hub-stage-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c2.5 2 4 5.5 4 9 0 2-.5 3.8-1.2 5.3L12 19l-2.8-2.7C8.5 14.8 8 13 8 11c0-3.5 1.5-7 4-9z"/><circle cx="12" cy="10" r="1.6"/><path d="M9 16l-2.3 2.3M15 16l2.3 2.3M10.3 19l-.6 2M13.7 19l.6 2"/></svg>
+        </span>
+        <div>
+          <h3>Incubación</h3>
+          <p>Soporte para proyectos en etapa temprana: de la idea al prototipo, con la red de Tellus detrás.</p>
+        </div>
+      </div>
+      <div class="hub-stage">
+        <span class="hub-stage-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </span>
+        <div>
+          <h3>Comunidad</h3>
+          <p>Meetups, demo days y eventos que conectan a la comunidad blockchain local.</p>
+        </div>
+      </div>
     </div>
-    <div class="hub-card">
-      <div class="hub-card-index">02</div>
-      <h3>Coworking</h3>
-      <p>Puestos de trabajo abiertos para builders, con wifi, mentoría técnica y acompañamiento de pares.</p>
-    </div>
-    <div class="hub-card">
-      <div class="hub-card-index">03</div>
-      <h3>Incubación</h3>
-      <p>Soporte para proyectos en etapa temprana: de la idea al prototipo, con la red de Tellus detrás.</p>
-    </div>
-    <div class="hub-card">
-      <div class="hub-card-index">04</div>
-      <h3>Comunidad</h3>
-      <p>Meetups, demo days y eventos que conectan a la comunidad blockchain local.</p>
+    <div class="hub-stages-photo">
+      <img src="uploads/hub/hub-signage.jpg" alt="Letrero Stellar Barrio en el Hub" />
     </div>
   </div>
 </section>
@@ -377,8 +411,10 @@
         <a class="hub-btn" href="stellar/index.html">Conocer Stellar Barrio</a>
       </div>
     </div>
-    <div class="hub-barrio-mark">
-      <img src="uploads/Stellar.svg" alt="Stellar" />
+    <div class="hub-barrio-gallery">
+      <div><img src="uploads/hub/barrio-1.jpg" alt="Comunidad Stellar Barrio" /></div>
+      <div><img src="uploads/hub/barrio-2.jpg" alt="Stellar Barrio en el barrio" /></div>
+      <div><img src="uploads/hub/barrio-3.jpg" alt="Evento Stellar Barrio" /></div>
     </div>
   </div>
 </section>
@@ -396,8 +432,10 @@
         <a class="hub-btn" href="https://www.google.com/maps?daddr=Uruguay+1695,+Temuco,+Araucan%C3%ADa" target="_blank" rel="noopener noreferrer">Cómo llegar</a>
       </div>
     </div>
-    <div class="hub-barrio-mark">
-      <img src="uploads/IdeaUfro.svg" alt="iDEAUFRO" />
+    <div class="hub-barrio-gallery">
+      <div><img src="uploads/hub/academy-5.jpg" alt="Grupo Stellar Academy con la señal Stellar en pantalla" /></div>
+      <div><img src="uploads/hub/academy-3.jpg" alt="Clase Stellar Academy" /></div>
+      <div><img src="uploads/hub/academy-6.jpg" alt="Estudiantes de Stellar Academy sonriendo" /></div>
     </div>
   </div>
 </section>
@@ -502,7 +540,7 @@
   })();
 
   (function () {
-    const cards = document.querySelectorAll('.hub-card, .hub-barrio');
+    const cards = document.querySelectorAll('.hub-stage, .hub-barrio');
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
