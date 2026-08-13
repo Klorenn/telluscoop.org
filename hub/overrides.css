@@ -1,0 +1,54 @@
+/* ============================================================
+   Tellus /hub — local overrides (loaded AFTER the built CSS)
+   1. Hero + footer imagery: soft opacity over deep-teal backdrop
+   2. Tablet band (768–1023px): the built stylesheet jumps from
+      mobile to full desktop layout at md=768px; these rules keep
+      sections stacked until lg=1024px where they have room.
+   ============================================================ */
+
+/* Nothing should ever scroll the page sideways */
+html, body { overflow-x: clip; }
+
+/* --- Image treatment: hero + footer --- */
+div:has(> img[src="/hub/images/academy-hero.jpg"]),
+div:has(> img[src="/hub/images/footer-barrio.jpg"]) {
+  background: #1a2f2d; /* deep teal-ink behind the photo */
+}
+img[src="/hub/images/academy-hero.jpg"],
+img[src="/hub/images/footer-barrio.jpg"] {
+  opacity: 0.8;
+}
+
+/* --- Tablet band: 768–1023px --- */
+@media (min-width: 768px) and (max-width: 1023px) {
+
+  /* Pillars: 3 cramped columns -> stacked */
+  .md\:grid-cols-3 { grid-template-columns: 1fr; }
+
+  /* Espacios: 2 cramped cards -> stacked */
+  .md\:grid-cols-2 { grid-template-columns: 1fr; }
+}
+
+/* --- Wide band: 768–1279px (desktop layout needs ~1280px) --- */
+@media (min-width: 768px) and (max-width: 1279px) {
+
+  /* Hero: taller canvas, text block full-width, type sized down */
+  header .md\:h-\[646px\] { height: 820px; }
+  header .md\:right-\[455px\] { top: 110px; right: 24px; bottom: auto; left: 24px; }
+  header .md\:text-\[80px\] { font-size: 56px; line-height: 62px; }
+  header .text-\[80px\] { font-size: 56px; line-height: 62px; }
+
+  /* Hero: swap the floating desktop card for the full-width one */
+  header .hidden.md\:block { display: none; }
+  header .absolute.md\:hidden { display: block; }
+
+  /* Participar: sidebar map layout -> stacked, map full width */
+  .md\:grid-cols-\[1fr_420px\] { grid-template-columns: 1fr; }
+
+  /* Footer: side-by-side -> stacked, image full width */
+  footer .md\:flex { display: block; }
+  footer .md\:mt-0 { margin-top: 40px; }
+  footer .md\:w-\[790px\] { width: 100%; }
+  footer .md\:h-\[577px\] { height: 420px; }
+  footer .absolute.md\:h-\[577px\] { height: 100%; }
+}
