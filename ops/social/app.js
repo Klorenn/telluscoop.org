@@ -2140,12 +2140,12 @@
     document.querySelector("#guide-form")?.addEventListener("submit", generateGuide);
 
     document.querySelectorAll("[data-save-guide-draft]").forEach((b) => b.addEventListener("click", () => saveGuideDraft(Number(b.dataset.saveGuideDraft))));
-    document.querySelectorAll("[data-copy-draft-guide]").forEach((b) => b.addEventListener("click", () => copyText(draftToMarkdown(state.guideDrafts[Number(b.dataset.copyDraftGuide)]))));
+    document.querySelectorAll("[data-copy-draft-guide]").forEach((b) => b.addEventListener("click", () => copyMarkdown(draftToMarkdown(state.guideDrafts[Number(b.dataset.copyDraftGuide)]))));
     document.querySelectorAll("[data-discard-guide-draft]").forEach((b) => b.addEventListener("click", () => { state.guideDrafts.splice(Number(b.dataset.discardGuideDraft), 1); renderShell(); }));
 
     document.querySelectorAll("[data-copy-guide]").forEach((b) => b.addEventListener("click", () => {
       const guide = state.guides.find((g) => g.id === b.dataset.copyGuide);
-      if (guide) copyText(draftToMarkdown(guide));
+      if (guide) copyMarkdown(draftToMarkdown(guide));
     }));
     document.querySelectorAll("[data-open-guide]").forEach((b) => b.addEventListener("click", () => {
       state.guideView = b.dataset.openGuide;
@@ -2525,10 +2525,23 @@
     return `<div class="modal-gallery">${images.map((img) => `<a href="${esc(img.page || img.url)}" target="_blank" rel="noopener"><img src="${esc(img.thumbnail || img.url)}" alt="" loading="lazy" /></a>`).join("")}</div>`;
   }
 
-  async function copyText(text) {
-    try { await navigator.clipboard.writeText(text); notify("Copiado al portapapeles."); }
-    catch { notify("No se pudo copiar.", true); }
+  async function copyText(text, html) {
+    try {
+      if (html && navigator.clipboard.write && window.ClipboardItem) {
+        await navigator.clipboard.write([new ClipboardItem({
+          "text/plain": new Blob([text], { type: "text/plain" }),
+          "text/html": new Blob([html], { type: "text/html" }),
+        })]);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
+      notify("Copiado al portapapeles.");
+    } catch { notify("No se pudo copiar.", true); }
   }
+
+  // Copies Markdown as real rich text (headings, bold, lists, links) so it
+  // pastes formatted into Docs/Notion/Gmail instead of showing literal # and **.
+  function copyMarkdown(md) { return copyText(md, mdToHtml(md)); }
 
   function wireArticles() {
     document.querySelector("#art-prompt")?.addEventListener("change", (e) => {
@@ -2561,7 +2574,7 @@
     document.querySelectorAll("[data-copy-text]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyText)));
 
     document.querySelectorAll("[data-save-draft]").forEach((button) => button.addEventListener("click", () => saveDraft(Number(button.dataset.saveDraft))));
-    document.querySelectorAll("[data-copy-draft]").forEach((button) => button.addEventListener("click", () => copyText(draftToMarkdown(state.drafts[Number(button.dataset.copyDraft)]))));
+    document.querySelectorAll("[data-copy-draft]").forEach((button) => button.addEventListener("click", () => copyMarkdown(draftToMarkdown(state.drafts[Number(button.dataset.copyDraft)]))));
     document.querySelectorAll("[data-discard-draft]").forEach((button) => button.addEventListener("click", () => {
       state.drafts.splice(Number(button.dataset.discardDraft), 1);
       renderShell();
@@ -2569,7 +2582,7 @@
 
     document.querySelectorAll("[data-copy-article]").forEach((button) => button.addEventListener("click", () => {
       const article = state.articles.find((a) => a.id === button.dataset.copyArticle);
-      if (article) copyText(draftToMarkdown(article));
+      if (article) copyMarkdown(draftToMarkdown(article));
     }));
     document.querySelectorAll("[data-draft-posts]").forEach((button) => button.addEventListener("click", () => generateDraftPosts(Number(button.dataset.draftPosts))));
     document.querySelectorAll("[data-open-article]").forEach((button) => button.addEventListener("click", () => {
