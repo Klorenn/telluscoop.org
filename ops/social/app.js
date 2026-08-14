@@ -2439,6 +2439,52 @@
   // Tiny safe Markdown renderer: text is HTML-escaped first, then headers,
   // bold, italics, lists, links, rules and fenced code blocks are applied.
   // Enough for articles/guides without pulling in a Markdown library.
+  // Maps ASCII letters/digits to Unicode "Mathematical Alphanumeric" bold/italic
+  // codepoints so headings/bold read as styled text even in plain-text-only
+  // paste targets (X posts, X Articles, terminals) that ignore text/html.
+  function styleChar(ch, mode) {
+    const code = ch.charCodeAt(0);
+    if (mode === "bold") {
+      if (code >= 65 && code <= 90) return String.fromCodePoint(0x1D400 + (code - 65));
+      if (code >= 97 && code <= 122) return String.fromCodePoint(0x1D41A + (code - 97));
+      if (code >= 48 && code <= 57) return String.fromCodePoint(0x1D7CE + (code - 48));
+    } else if (mode === "italic") {
+      if (code >= 65 && code <= 90) return String.fromCodePoint(0x1D434 + (code - 65));
+      if (code >= 97 && code <= 122) return ch === "h" ? "ℎ" : String.fromCodePoint(0x1D44E + (code - 97));
+    }
+    return ch;
+  }
+  const styleText = (s, mode) => [...s].map((c) => styleChar(c, mode)).join("");
+
+  // Plain-text Markdown render for targets that drop text/html on paste
+  // (X posts, X Articles): headings/bold become Unicode bold, links keep
+  // their URL inline, so the copy still reads as formatted, not raw `#`/`**`.
+  function mdToStyledText(md) {
+    const stripInline = (s) => s
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1$2")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, (_, t, u) => (t === u ? u : `${t} (${u})`));
+    const styleInline = (s) => s
+      .replace(/\*\*([^*]+)\*\*/g, (_, t) => styleText(t, "bold"))
+      .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, (_, pre, t) => pre + styleText(t, "italic"))
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, (_, t, u) => (t === u ? u : `${t} (${u})`));
+    const lines = [];
+    let inCode = false;
+    for (const raw of md.split("\n")) {
+      if (/^```/.test(raw.trim())) { inCode = !inCode; continue; }
+      if (inCode) { lines.push(raw); continue; }
+      const t = raw.trim();
+      const heading = t.match(/^(#{1,6}) (.*)$/);
+      if (heading) { lines.push(styleText(stripInline(heading[2]), "bold")); }
+      else if (/^(-{3,}|\*{3,}|_{3,})$/.test(t)) { lines.push("───────────"); }
+      else if (/^[*-] /.test(t)) { lines.push(`• ${styleInline(t.replace(/^[*-] /, ""))}`); }
+      else { lines.push(styleInline(raw)); }
+    }
+    return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  }
+
   function mdToHtml(md) {
     const inline = (s) => s
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
@@ -2539,9 +2585,10 @@
     } catch { notify("No se pudo copiar.", true); }
   }
 
-  // Copies Markdown as real rich text (headings, bold, lists, links) so it
-  // pastes formatted into Docs/Notion/Gmail instead of showing literal # and **.
-  function copyMarkdown(md) { return copyText(md, mdToHtml(md)); }
+  // Copies Markdown as real rich text (text/html) for Docs/Notion/Gmail, and
+  // as Unicode-bold plain text (text/plain) for targets that drop text/html
+  // on paste — X posts, X Articles, terminals — so it never shows raw #/**.
+  function copyMarkdown(md) { return copyText(mdToStyledText(md), mdToHtml(md)); }
 
   function wireArticles() {
     document.querySelector("#art-prompt")?.addEventListener("change", (e) => {
