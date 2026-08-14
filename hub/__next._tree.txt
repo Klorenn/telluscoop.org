@@ -1,4 +1,4 @@
-:HL["/hub/_next/static/chunks/2putmp_vxrf4u.css","style"]
+:HL["/hub/_next/static/chunks/00oa-ivuow7af.css","style"]
 :HL["/hub/_next/static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/hub/_next/static/media/051742360c26797e-s.p.1bkzbscqrt8rl.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/hub/_next/static/media/83afe278b6a6bb3c-s.p.2bn3s6zvc0dyp.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
@@ -9,4 +9,4 @@
 :HL["/hub/logos/stellar-barrio.svg","image"]
 :HL["/hub/images/footer-barrio.jpg","image"]
 :HL["/hub/logos/tellus-logo-mini.svg","image"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}},"staleTime":300,"buildId":"1kVkdRdst7-NO2Is_cgKc"}
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}},"staleTime":300,"buildId":"DroUXeWQd93tL2yfeXjNL"}
