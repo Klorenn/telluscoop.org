@@ -24,7 +24,7 @@
   ];
   const state = {
     session: null, membership: null, organization: null, periods: [], selectedPeriod: null,
-    metrics: [], updates: [], initiatives: [], deliverables: [], payments: [], funds: [], members: [], programs: [], contacts: [], participants: [], budgets: [], resources: [], evidence: [], audit: [], socialTopics: [], socialPosts: [], selectedProgram:"global", importRows:[],
+    metrics: [], updates: [], initiatives: [], deliverables: [], payments: [], funds: [], members: [], programs: [], contacts: [], participants: [], budgets: [], resources: [], evidence: [], audit: [], socialTopics: [], socialPosts: [], repoPicks: [], selectedProgram:"global", importRows:[],
     view: "dashboard", preview: PREVIEW,
     participantFilters: { search:"", rank:"all", city:"all", country:"all", from:"", to:"" },
     participantPage: 1,
