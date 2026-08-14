@@ -264,7 +264,7 @@
     state.membership = membership;
     state.organization = membership.organizations;
     const orgId = membership.organization_id;
-    const [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, participants, budgets, resources, evidence, audit, socialTopics, socialPosts] = await Promise.all([
+    const [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, participants, budgets, resources, evidence, audit, socialTopics, socialPosts, repoPicks] = await Promise.all([
       supabase.from("reporting_periods").select("*").eq("organization_id", orgId).order("starts_on"),
       supabase.from("metric_definitions").select("*").eq("organization_id", orgId).order("sort_order"),
       supabase.from("metric_updates").select("*").eq("organization_id", orgId),
@@ -282,10 +282,11 @@
       supabase.from("audit_log").select("id,program_id,actor_user_id,action,entity_table,entity_id,entity_label,created_at").eq("organization_id", orgId).order("created_at", { ascending:false }).limit(200),
       supabase.from("social_topics").select("*").eq("organization_id", orgId).order("label"),
       supabase.from("social_posts").select("*").eq("organization_id", orgId).order("posted_at", { ascending:false }).limit(100),
+      supabase.from("repo_picks").select("*").eq("organization_id", orgId).neq("status", "discarded").order("created_at", { ascending:false }).limit(50),
     ]);
-    const failed = [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, participants, budgets, resources, evidence, audit, socialTopics, socialPosts].find((r) => r.error);
+    const failed = [periods, metrics, updates, initiatives, deliverables, payments, funds, members, programs, contacts, participants, budgets, resources, evidence, audit, socialTopics, socialPosts, repoPicks].find((r) => r.error);
     if (failed) throw failed.error;
-    Object.assign(state, { periods:periods.data, metrics:metrics.data, updates:updates.data, initiatives:initiatives.data, deliverables:deliverables.data, payments:payments.data, funds:funds.data, members:members.data, programs:programs.data, contacts:contacts.data, participants:participants.data, budgets:budgets.data, resources:resources.data, evidence:evidence.data, audit:audit.data, socialTopics:socialTopics.data||[], socialPosts:socialPosts.data||[] });
+    Object.assign(state, { periods:periods.data, metrics:metrics.data, updates:updates.data, initiatives:initiatives.data, deliverables:deliverables.data, payments:payments.data, funds:funds.data, members:members.data, programs:programs.data, contacts:contacts.data, participants:participants.data, budgets:budgets.data, resources:resources.data, evidence:evidence.data, audit:audit.data, socialTopics:socialTopics.data||[], socialPosts:socialPosts.data||[], repoPicks:repoPicks.data||[] });
     state.selectedPeriod ||= state.periods.find((p) => new Date(p.starts_on) <= new Date() && new Date(p.ends_on) >= new Date())?.id || state.periods[0]?.id;
     return true;
   }
@@ -315,6 +316,10 @@
     state.socialPosts = [
       { id:"sp-1", author_handle:"midudev", content:"Stellar Soroban ya soporta contratos inteligentes en Rust. El ecosistema crece rápido.", url:"https://x.com/midudev/status/123", posted_at:"2026-07-17T13:00:00Z", likes:142, reposts:38, replies:12, views:8400 },
       { id:"sp-2", author_handle:"paukoh", content:"Arrancamos con los primeros repositorios de la comunidad Tellus. Indie hacking + Stellar = combo.", url:"https://x.com/paukoh/status/456", posted_at:"2026-07-17T10:15:00Z", likes:67, reposts:14, replies:8, views:3200 },
+    ];
+    state.repoPicks = [
+      { id:"rp-1", repo_full_name:"anthropics/claude-agent-sdk", url:"https://github.com/anthropics/claude-agent-sdk", description:"SDK oficial para construir agentes con Claude.", stars:2400, language:"TypeScript", topics:["ai-agent","claude","sdk"], status:"shared", created_at:"2026-08-10T09:00:00Z" },
+      { id:"rp-2", repo_full_name:"openai/codex", url:"https://github.com/openai/codex", description:"CLI de OpenAI para programar con agentes en la terminal.", stars:5100, language:"Rust", topics:["ai-coding","cli"], status:"reviewed", created_at:"2026-08-09T15:30:00Z" },
     ];
   }
 
@@ -369,7 +374,7 @@
           <div class="sidebar-head"><div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Stellar Ops</div></div>
           <div class="program-switcher"><label for="program-scope">Espacio operativo</label><select id="program-scope"><option value="global" ${state.selectedProgram === "global" ? "selected" : ""}>Toda la operación</option>${state.programs.map((program) => `<option value="${esc(program.id)}" ${state.selectedProgram === program.id ? "selected" : ""}>${esc(program.name)}</option>`).join("")}</select></div>
           <nav class="nav" aria-label="Principal">
-            ${navButton("dashboard","layout-dashboard",state.selectedProgram === "global" ? "Resumen global" : "Resumen")}${navButton("program_metrics","gauge","Métricas")}${navButton("initiatives","calendar-days","Eventos")}${navButton("finance","circle-dollar-sign","Gastos")}${navButton("resources","table-properties","Planillas")}${navButton("participants","users","Participantes")}${navButton("evidence","folder-check","Evidencias")}${navButton("deliverables","file-check-2","Entregables")}${navButton("feed","rss","Feed social")}${navButton("activity","history","Actividad")}
+            ${navButton("dashboard","layout-dashboard",state.selectedProgram === "global" ? "Resumen global" : "Resumen")}${navButton("program_metrics","gauge","Métricas")}${navButton("initiatives","calendar-days","Eventos")}${navButton("finance","circle-dollar-sign","Gastos")}${navButton("resources","table-properties","Planillas")}${navButton("participants","users","Participantes")}${navButton("evidence","folder-check","Evidencias")}${navButton("deliverables","file-check-2","Entregables")}${navButton("feed","rss","Feed social")}${navButton("news","newspaper","Noticias")}${navButton("activity","history","Actividad")}
           </nav>
           <div class="sidebar-footer"><div class="user-meta" title="${esc(state.preview?"Vista previa":state.session?.user?.email||"")}"><strong>${esc(userIdentity.name)}</strong><span>${esc(userIdentity.responsibility)}</span></div>${state.preview ? `<a class="button button-ghost" href="./">${icon("log-in")} Ir al acceso</a>` : `<button class="button button-ghost" id="signout">${icon("log-out")} Cerrar sesión</button>`}</div>
         </aside>
@@ -382,7 +387,7 @@
   }
 
   function navButton(view, iconName, label) { return `<button data-view="${view}" class="${state.view === view ? "active" : ""}">${icon(iconName)} ${label}</button>`; }
-  function renderView() { return state.view === "dashboard" ? dashboardView() : state.view === "program_metrics" ? metricsView() : state.view === "initiatives" ? initiativesView() : state.view === "deliverables" ? deliverablesView() : state.view === "finance" ? financeView() : state.view === "resources" ? resourcesView() : state.view === "participants" ? participantsView() : state.view === "feed" ? feedView() : state.view === "activity" ? activityView() : evidenceView(); }
+  function renderView() { return state.view === "dashboard" ? dashboardView() : state.view === "program_metrics" ? metricsView() : state.view === "initiatives" ? initiativesView() : state.view === "deliverables" ? deliverablesView() : state.view === "finance" ? financeView() : state.view === "resources" ? resourcesView() : state.view === "participants" ? participantsView() : state.view === "feed" ? feedView() : state.view === "news" ? newsView() : state.view === "activity" ? activityView() : evidenceView(); }
 
   function dashboardView() {
     if (state.selectedProgram === "global") return globalDashboardView();
@@ -505,6 +510,15 @@
       return `<article class="feed-post"><div class="feed-post-head"><span class="feed-handle">@${esc(p.author_handle)}</span><span class="muted-copy">${when} ${time}</span></div><p class="feed-post-content">${esc(p.content)}</p><div class="feed-post-metrics"><span>${icon("heart")} ${fmtNum(p.likes)}</span><span>${icon("repeat")} ${fmtNum(p.reposts)}</span><span>${icon("message-circle")} ${fmtNum(p.replies)}</span><span>${icon("eye")} ${fmtNum(p.views)}</span>${p.url ? `<a class="table-link" href="${esc(p.url)}" target="_blank" rel="noopener">${icon("external-link")} Ver</a>` : ""}</div></article>`;
     }).join("") : `<div class="empty">${icon("inbox")}<div>No hay posts en el feed. Buscá un tema o importá posts manualmente.</div></div>`;
     return `<div class="toolbar"><div><span class="eyebrow">Social</span><h2>Feed y temas de búsqueda</h2></div><button class="button button-primary" id="add-topic">${icon("plus")} Nuevo tema</button></div><article class="card section-card feed-topics-card"><div class="section-head"><div><h2>Temas de búsqueda</h2><p>Busca posts en X por consulta. El cron los trae automáticamente.</p></div></div><div class="feed-topic-list">${topicRows}</div></article><article class="card section-card feed-posts-card"><div class="section-head"><div><h2>Posts recientes</h2><p>${posts.length} posts capturados.</p></div></div><div class="feed-post-list">${postRows}</div></article>`;
+  }
+
+  function newsView() {
+    const repos = state.repoPicks;
+    const rows = repos.length ? repos.map((r) => {
+      const topics = (r.topics || []).slice(0, 4).map((t) => `<span>${icon("hash")} ${esc(t)}</span>`).join("");
+      return `<article class="feed-post"><div class="feed-post-head"><span class="feed-handle">${esc(r.repo_full_name)}</span><span class="muted-copy">${timeAgo(r.created_at)}</span></div>${r.description ? `<p class="feed-post-content">${esc(r.description)}</p>` : ""}<div class="feed-post-metrics"><span>${icon("star")} ${fmtNum(r.stars)}</span>${r.language ? `<span>${icon("code")} ${esc(r.language)}</span>` : ""}${topics}<a class="table-link" href="${esc(r.url)}" target="_blank" rel="noopener">${icon("external-link")} Ver repo</a></div></article>`;
+    }).join("") : `<div class="empty">${icon("newspaper")}<div>No hay noticias todavía. Se agregan y curan desde Ops/Social.</div></div>`;
+    return `<div class="toolbar"><div><span class="eyebrow">Noticias</span><h2>Repos y novedades del ecosistema</h2></div></div><article class="card section-card feed-posts-card"><div class="section-head"><div><h2>Últimos repos guardados</h2><p>${repos.length} repos guardados desde Ops/Social.</p></div></div><div class="feed-post-list">${rows}</div></article>`;
   }
 
   function timeAgo(dateString) {
