@@ -70,12 +70,17 @@
 
     /* Logo showcase */
     .bn-logos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 48px; }
+    .bn-hub-logos > :last-child { grid-column: 2; }
     .bn-logo-card {
       background: var(--sand-soft); border: 1px solid var(--sand-muted); border-radius: 14px;
       padding: 40px 24px 28px; display: flex; flex-direction: column; align-items: center; gap: 20px;
       transition: border-color 280ms ease, box-shadow 280ms ease;
     }
     .bn-logo-card:hover { border-color: var(--teal-deep); box-shadow: 0 12px 32px -16px rgba(31,53,54,0.22); }
+    .bn-logo-card.is-dark {
+      background: var(--teal-ink); border-color: var(--teal-ink); color: var(--sand);
+    }
+    .bn-logo-card.is-dark:hover { border-color: var(--teal); box-shadow: 0 12px 32px -16px rgba(31,53,54,0.35); }
     .bn-logo-preview {
       width: 100%; height: 160px; border-radius: 10px;
       display: grid; place-items: center; padding: 24px;
@@ -85,6 +90,8 @@
     .bn-logo-preview.bg-teal { background: var(--teal); }
     .bn-logo-preview img { max-width: 100%; max-height: 100%; height: auto; width: auto; }
     .bn-logo-name { font-family: var(--serif); font-size: 17px; letter-spacing: -0.01em; color: var(--teal-ink); }
+    .bn-logo-card.is-dark .bn-logo-name { color: var(--sand); }
+    .bn-logo-card.is-dark .bn-logo-description { color: var(--cream-70); }
     .bn-logo-downloads { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
     /* Buttons */
@@ -176,6 +183,7 @@
       .bn-section { padding: 56px 24px; }
       .bn-hero { padding: 64px 24px 48px; }
       .bn-logos { grid-template-columns: 1fr; gap: 20px; }
+      .bn-hub-logos > :last-child { grid-column: auto; }
       .bn-guidelines { grid-template-columns: 1fr; }
       .bn-matrix { font-size: 12px; }
     }
@@ -199,6 +207,7 @@
     </a>
     <div class="bn-nav-links">
       <a href="#logos">Logos</a>
+      <a href="#hub-logos">Hub Logos</a>
       <a href="#colors">Colors</a>
       <a href="#contrast">Contrast</a>
       <a href="#guidelines">Guidelines</a>
@@ -272,6 +281,61 @@
     </div>
   </div>
   </p>
+</section>
+
+<!-- Hub Logos -->
+<section class="bn-section" id="hub-logos">
+  <div class="bn-section-head">
+    <div class="eyebrow">Brand Assets</div>
+    <h2 class="bn-h2">Hub &amp; program logos</h2>
+    <p class="bn-lede">Lockups for Stellar Academy and Stellar Barrio. Use these only in materials for those specific programs — never as a substitute for the main Tellus logo.</p>
+  </div>
+  <div class="bn-logos bn-hub-logos">
+    <!-- Stellar Academy full color -->
+    <div class="bn-logo-card">
+      <div class="bn-logo-preview bg-sand">
+        <img src="Hubs/Stellar%20Academy%20Full%20Color.svg" alt="Stellar Academy logo, full color" />
+      </div>
+      <div class="bn-logo-name">Stellar Academy</div>
+      <p style="font-size:12px;color:var(--teal-deep);opacity:0.7;text-align:center;">For light and sand backgrounds.</p>
+      <div class="bn-logo-downloads">
+        <a class="bn-btn bn-btn-accent" href="Hubs/Stellar%20Academy%20Full%20Color.svg" download>SVG</a>
+      </div>
+    </div>
+    <!-- Stellar Academy white -->
+    <div class="bn-logo-card is-dark">
+      <div class="bn-logo-preview">
+        <img src="Hubs/Stellar%20Academy%20White.svg" alt="Stellar Academy logo, white" />
+      </div>
+      <div class="bn-logo-name">Stellar Academy</div>
+      <p class="bn-logo-description" style="font-size:12px;text-align:center;">For dark backgrounds.</p>
+      <div class="bn-logo-downloads">
+        <a class="bn-btn bn-btn-accent" href="Hubs/Stellar%20Academy%20White.svg" download>SVG</a>
+      </div>
+    </div>
+    <!-- Stellar Barrio white -->
+    <div class="bn-logo-card is-dark">
+      <div class="bn-logo-preview">
+        <img src="Hubs/Stellar%20Barrio%20White.svg" alt="Stellar Barrio logo, white" />
+      </div>
+      <div class="bn-logo-name">Stellar Barrio</div>
+      <p class="bn-logo-description" style="font-size:12px;text-align:center;">For dark backgrounds.</p>
+      <div class="bn-logo-downloads">
+        <a class="bn-btn bn-btn-accent" href="Hubs/Stellar%20Barrio%20White.svg" download>SVG</a>
+      </div>
+    </div>
+    <!-- Stellar Barrio full color -->
+    <div class="bn-logo-card">
+      <div class="bn-logo-preview bg-sand">
+        <img src="Hubs/Stellar%20Barrio%20Full%20Color.svg" alt="Stellar Barrio logo, full color" />
+      </div>
+      <div class="bn-logo-name">Stellar Barrio</div>
+      <p style="font-size:12px;color:var(--teal-deep);opacity:0.7;text-align:center;">For light and sand backgrounds.</p>
+      <div class="bn-logo-downloads">
+        <a class="bn-btn bn-btn-accent" href="Hubs/Stellar%20Barrio%20Full%20Color.svg" download>SVG</a>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- Colors -->
