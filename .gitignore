@@ -11,7 +11,11 @@ __pycache__
 # Local-only material — not for the repo
 .playwright-mcp/
 /clonner/
-/Hubs/
+/Hubs/*
+!/Hubs/Stellar Academy Full Color.svg
+!/Hubs/Stellar Academy White.svg
+!/Hubs/Stellar Barrio Full Color.svg
+!/Hubs/Stellar Barrio White.svg
 
 # Verification screenshots (repo root)
 /*-check.png
