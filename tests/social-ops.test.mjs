@@ -18,6 +18,7 @@ const xFollowersEdge = await readFile(new URL("../supabase/functions/x-followers
 const growthMigration = await readFile(new URL("../supabase/migrations/20260721050000_monthly_growth_goal_and_cron.sql", import.meta.url), "utf8");
 const refreshAllMigration = await readFile(new URL("../supabase/migrations/20260721060000_refresh_all_default_goals_meme_picks.sql", import.meta.url), "utf8");
 const followTargetsMigration = await readFile(new URL("../supabase/migrations/20260721070000_follow_targets.sql", import.meta.url), "utf8");
+const qrCodesMigration = await readFile(new URL("../supabase/migrations/20260819090000_create_qr_codes.sql", import.meta.url), "utf8");
 const githubSearchEdge = await readFile(new URL("../supabase/functions/github-search/index.ts", import.meta.url), "utf8");
 
 test("production cache versions match", () => {
@@ -425,6 +426,23 @@ test("meme bank: top-of-day reddit memes can be saved, used, and discarded", () 
 test("meme_picks table is RLS-scoped like the rest", () => {
   assert.match(refreshAllMigration, /alter table public\.meme_picks enable row level security/);
   assert.match(refreshAllMigration, /meme_picks_member_all[\s\S]*?m\.role <> 'viewer'/);
+});
+
+test("qr_codes table is RLS-scoped like the rest", () => {
+  assert.match(qrCodesMigration, /create table public\.qr_codes/);
+  assert.match(qrCodesMigration, /alter table public\.qr_codes enable row level security/);
+  assert.match(qrCodesMigration, /qr_codes_member_all[\s\S]*?m\.role <> 'viewer'/);
+});
+
+test("QR bank: codes are generated client-side, saved, downloaded, and deleted", () => {
+  assert.match(app, /function qrView/);
+  assert.match(app, /function wireQr/);
+  assert.match(app, /navButton\("qr"/);
+  assert.match(app, /window\.QRCode\.toCanvas/);
+  assert.match(app, /supabase\.from\("qr_codes"\)/);
+  assert.match(app, /data-qr-download/);
+  assert.match(app, /data-qr-delete/);
+  assert.match(page, /qrcode@[\d.]+\/build\/qrcode\.min\.js/);
 });
 
 test("articles hyperlink every mentioned entity to its official site, in both generate and rewrite flows", () => {

@@ -42,6 +42,7 @@
     guideView: null, guideSocialPosts: null,
     metrics: [], goals: [], summaryBusy: false,
     followView: null, followTargets: [], listView: null,
+    qrcodes: [], qrForm: { label: "", content: "" }, qrPreview: null,
   };
 
   const CHAINS = [
@@ -231,12 +232,14 @@
       safe(supabase.from("social_metrics").select("*").order("captured_at", { ascending: false }).limit(400)),
       safe(supabase.from("social_goals").select("*")),
     ]);
-    const [memePicks, followTargets] = await Promise.all([
+    const [memePicks, followTargets, qrCodes] = await Promise.all([
       safe(supabase.from("meme_picks").select("*").neq("status", "discarded").order("created_at", { ascending: false }).limit(60)),
       safe(supabase.from("follow_targets").select("*").order("created_at", { ascending: false }).limit(1000)),
+      safe(supabase.from("qr_codes").select("*").order("created_at", { ascending: false }).limit(300)),
     ]);
     state.memePicks = memePicks.data || [];
     state.followTargets = followTargets.data || [];
+    state.qrcodes = qrCodes.data || [];
     const critical = [orgs, accounts, posts].find((r) => r.error);
     if (critical) throw critical.error;
     state.org = orgs.data[0] || null;
@@ -363,6 +366,7 @@
             ${navButton("articles", "newspaper", "Artículos")}
             ${navButton("memes", "image", "Memes")}
             ${navButton("guides", "book-open", "Guías")}
+            ${navButton("qr", "qr-code", "QR")}
           </nav>
           <div class="sidebar-foot">
             <span>${esc(state.preview ? "Vista previa" : state.session?.user?.email || "")}</span>
@@ -409,6 +413,7 @@
       : state.view === "articles" ? articlesView()
       : state.view === "memes" ? memesView()
       : state.view === "guides" ? guidesView()
+      : state.view === "qr" ? qrView()
       : feedView();
   }
 
@@ -441,6 +446,7 @@
     if (state.view === "articles") wireArticles();
     if (state.view === "memes") wireMemes();
     if (state.view === "guides") wireGuides();
+    if (state.view === "qr") wireQr();
   }
 
   // ---------- summary ----------
@@ -2824,6 +2830,98 @@
     state.drafts.splice(index, 1);
     notify("Artículo guardado como borrador.");
     renderShell();
+  }
+
+  // ---------- qr ----------
+
+  function qrView() {
+    const preview = state.qrPreview;
+    return `
+      <div class="toolbar"><div><span class="eyebrow">${esc(state.org?.name || "")}</span><h2>Códigos QR</h2></div></div>
+      <section class="card" style="margin-bottom:1.2rem">
+        <h3>Generar un código QR</h3>
+        <p style="color:var(--muted);margin:.2rem 0 .8rem">Escribí el link o texto a codificar. Se genera al instante y podés guardarlo en el banco para reusarlo.</p>
+        <form id="qr-form" class="form-grid">
+          <div class="field"><label for="qr-label">Nombre</label><input id="qr-label" name="label" placeholder="ej: Bio link, Flyer evento" value="${esc(state.qrForm.label)}" /></div>
+          <div class="field span-all"><label for="qr-content">Link o texto</label><input id="qr-content" name="content" placeholder="https://…" required value="${esc(state.qrForm.content)}" /></div>
+          <div class="form-foot span-all"><button class="button button-primary" type="submit" ${state.preview ? "disabled" : ""}>${icon("qr-code")} Generar</button></div>
+        </form>
+      </section>
+      ${preview ? `<section class="card" style="margin-bottom:1.2rem">
+        <h3>Vista previa${preview.label ? `: ${esc(preview.label)}` : ""}</h3>
+        <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-top:.6rem">
+          <canvas class="qr-canvas" data-qr-content="${esc(preview.content)}" style="border-radius:8px;background:#fff;padding:8px"></canvas>
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            <span style="color:var(--muted);font-size:.85rem;max-width:260px;word-break:break-all">${esc(preview.content)}</span>
+            <div class="form-foot" style="justify-content:start">
+              <button class="button button-secondary" type="button" data-copy-text="${esc(preview.content)}">Copiar enlace</button>
+              <button class="button button-secondary" type="button" data-qr-download>${icon("download")} Descargar PNG</button>
+              ${state.preview ? "" : `<button class="button button-primary" type="button" id="qr-save">${icon("save")} Guardar en el banco</button>`}
+            </div>
+          </div>
+        </div>
+      </section>` : ""}
+      ${state.qrcodes.length ? `<div class="toolbar"><div><span class="eyebrow">Tu banco</span><h2>Códigos guardados</h2></div></div>
+        <div class="grid grid-3" style="margin-bottom:1.4rem">${state.qrcodes.map((q) => `<article class="card">
+          <canvas class="qr-canvas" data-qr-content="${esc(q.content)}" style="border-radius:8px;background:#fff;padding:8px;width:100%;max-width:180px"></canvas>
+          <p style="margin:.6rem 0 .2rem;font-weight:600">${esc(q.label || "Sin nombre")}</p>
+          <p style="margin:0 0 .5rem;color:var(--muted);font-size:.8rem;word-break:break-all">${esc(q.content)}</p>
+          <div class="form-foot" style="justify-content:start">
+            <button class="table-link" data-copy-text="${esc(q.content)}">Copiar</button>
+            <button class="table-link" data-qr-download>${icon("download")} PNG</button>
+            ${state.preview ? "" : `<button class="table-link" data-qr-delete="${esc(q.id)}" style="color:var(--red)">Borrar</button>`}
+          </div>
+        </article>`).join("")}</div>` : `<div class="empty">Todavía no guardaste códigos QR.</div>`}`;
+  }
+
+  function wireQr() {
+    document.querySelectorAll(".qr-canvas").forEach((canvas) => {
+      const content = canvas.dataset.qrContent;
+      if (!content) return;
+      window.QRCode.toCanvas(canvas, content, { width: 180, margin: 1 }, (err) => { if (err) console.error(err); });
+    });
+    document.querySelector("#qr-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (state.preview) return notify("La vista previa es de solo lectura.", true);
+      const form = new FormData(event.target);
+      const label = String(form.get("label") || "").trim();
+      const content = String(form.get("content") || "").trim();
+      if (!content) return;
+      state.qrForm = { label, content };
+      state.qrPreview = { label, content };
+      renderShell();
+    });
+    document.querySelector("#qr-save")?.addEventListener("click", async () => {
+      if (state.preview || !state.qrPreview) return;
+      const { label, content } = state.qrPreview;
+      const { data, error } = await supabase.from("qr_codes")
+        .insert({ organization_id: state.org.id, label: label || null, content })
+        .select().single();
+      if (error) return notify("No se pudo guardar el código QR.", true);
+      state.qrcodes.unshift(data);
+      state.qrPreview = null;
+      state.qrForm = { label: "", content: "" };
+      notify("Código QR guardado.");
+      renderShell();
+    });
+    document.querySelectorAll("[data-qr-delete]").forEach((button) => button.addEventListener("click", async () => {
+      if (!confirm("¿Borrar este código QR?")) return;
+      const id = button.dataset.qrDelete;
+      const { error } = await supabase.from("qr_codes").delete().eq("id", id);
+      if (error) return notify("No se pudo borrar.", true);
+      state.qrcodes = state.qrcodes.filter((q) => q.id !== id);
+      notify("Código QR borrado.");
+      renderShell();
+    }));
+    document.querySelectorAll("[data-qr-download]").forEach((button) => button.addEventListener("click", () => {
+      const canvas = button.closest("section, article")?.querySelector(".qr-canvas");
+      if (!canvas) return;
+      const a = document.createElement("a");
+      a.href = canvas.toDataURL("image/png");
+      a.download = "qr.png";
+      a.click();
+    }));
+    document.querySelectorAll("[data-copy-text]").forEach((button) => button.addEventListener("click", () => copyText(button.dataset.copyText)));
   }
 
   // ---------- boot ----------
