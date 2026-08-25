@@ -53,3 +53,25 @@ test("points formula matches the tested pure function (10/6/3/1)", () => {
   assert.match(fn, /placement = 3 then 3/);
   assert.match(fn, /else 1/);
 });
+
+const edge = await readFile(
+  new URL("../supabase/functions/discord-verify/index.ts", import.meta.url),
+  "utf8",
+);
+
+test("discord-verify requires a session and never trusts client-supplied membership", () => {
+  assert.match(edge, /Sesión requerida/);
+  assert.match(edge, /auth\.getUser\(\)/);
+  assert.match(edge, /Deno\.env\.get\("DISCORD_BOT_TOKEN"\)/);
+  assert.match(edge, /Deno\.env\.get\("DISCORD_GUILD_ID"\)/);
+  assert.match(edge, /Deno\.env\.get\("SUPABASE_SERVICE_ROLE_KEY"\)/);
+});
+
+test("discord-verify never hardcodes a bot token or guild id", () => {
+  assert.doesNotMatch(edge, /discord\.com\/api\/v10\/guilds\/\d+/);
+});
+
+test("discord-verify caches the verification result to survive rate limits", () => {
+  assert.match(edge, /VERIFY_TTL_MS/);
+  assert.match(edge, /discord_verified_at/);
+});
