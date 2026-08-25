@@ -25,7 +25,7 @@
 
   function notify(message, isError) {
     const el = document.createElement("div");
-    el.className = `toast${isError ? " toast-error" : ""}`;
+    el.className = `toast${isError ? " error" : ""}`;
     el.textContent = message;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 3200);
