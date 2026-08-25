@@ -31,7 +31,8 @@ Deno.serve(async (request) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) return json({ error: "Sesión inválida" }, 401);
 
-    const discordId = user.user_metadata?.provider_id ?? user.user_metadata?.sub;
+    const discordIdentity = user.identities?.find((i: { provider: string }) => i.provider === "discord");
+    const discordId = discordIdentity?.identity_data?.provider_id ?? discordIdentity?.identity_data?.sub;
     if (!discordId) return json({ error: "Sesión sin identidad de Discord" }, 400);
 
     const admin = createClient(
