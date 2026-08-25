@@ -73,17 +73,32 @@
     el.innerHTML = `<ul>${data.map((r) => `<li>${esc(r.display_name || "—")} — ${esc(r.description)}</li>`).join("")}</ul>`;
   }
 
+  async function checkDiscordMembership(session) {
+    const statusEl = document.querySelector("#lb-discord-status");
+    if (!statusEl) return;
+    statusEl.textContent = "…";
+    const { data, error } = await supabase.functions.invoke("discord-verify", {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (error || !data?.verified) {
+      statusEl.innerHTML = `<span class="lb-not-verified">${lang === "es" ? "No verificado" : "Not verified"}</span> <button id="lb-retry-verify">${lang === "es" ? "Reintentar" : "Retry"}</button>`;
+      document.querySelector("#lb-retry-verify")?.addEventListener("click", () => checkDiscordMembership(session));
+      return;
+    }
+    statusEl.textContent = lang === "es" ? "✓ Discord verificado" : "✓ Discord verified";
+  }
+
   function renderAuth(session) {
     const el = document.querySelector("#lb-auth");
     if (!session) {
       el.innerHTML = `<button id="lb-discord-login">${t("loginDiscord")}</button>`;
       document.querySelector("#lb-discord-login").addEventListener("click", () => {
-        supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: "https://telluscoop.org/leaderboard" } });
+        supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: `${location.origin}/leaderboard` } });
       });
       return;
     }
-    el.innerHTML = `<span>${t("loginedAs")} ${esc(session.user.user_metadata?.full_name || session.user.email)}</span>`;
-    supabase.functions.invoke("discord-verify", { headers: { Authorization: `Bearer ${session.access_token}` } });
+    el.innerHTML = `<span>${t("loginedAs")} ${esc(session.user.user_metadata?.full_name || session.user.email)}</span> <span id="lb-discord-status"></span>`;
+    checkDiscordMembership(session);
   }
 
   async function initAuth() {

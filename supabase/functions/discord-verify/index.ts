@@ -45,8 +45,8 @@ Deno.serve(async (request) => {
       .upsert(
         {
           discord_id: discordId,
-          display_name: user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
-          avatar_url: user.user_metadata?.avatar_url ?? null,
+          display_name: discordIdentity?.identity_data?.full_name ?? discordIdentity?.identity_data?.name ?? null,
+          avatar_url: discordIdentity?.identity_data?.avatar_url ?? null,
         },
         { onConflict: "discord_id" },
       )

@@ -238,13 +238,14 @@
           <div class="match-card" data-id="${m.id}">
             <strong>Partida ${m.round ?? ""} — ${m.status}</strong>
             <ul>${(m.gaming_match_participants ?? []).map((p) => `<li>${esc(p.gaming_players?.display_name ?? p.player_id)} — puesto ${p.placement}</li>`).join("")}</ul>
+            ${m.status !== "confirmed" ? `
             <form class="participant-form" data-match="${m.id}">
               <input name="discord_id" placeholder="Discord ID" required />
               <input name="display_name" placeholder="Nombre" />
               <input name="placement" type="number" min="1" placeholder="Puesto" required oninput="this.nextElementSibling.textContent = window.calculatePoints ? window.calculatePoints(Number(this.value)) + ' pts' : ''" />
               <output></output>
               <button type="submit">Agregar</button>
-            </form>
+            </form>` : ""}
             ${m.status !== "confirmed" ? `<button class="confirm-match" data-id="${m.id}">Confirmar</button>` : "✅ confirmada"}
           </div>`).join("")}`;
       document.querySelector("#new-match").addEventListener("click", () => createMatch(state.activeTournamentId));

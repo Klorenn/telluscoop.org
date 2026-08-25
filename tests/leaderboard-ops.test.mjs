@@ -76,6 +76,12 @@ test("discord-verify caches the verification result to survive rate limits", () 
   assert.match(edge, /discord_verified_at/);
 });
 
+test("discord-verify never writes client-controlled user_metadata into gaming_players", () => {
+  assert.doesNotMatch(edge, /user_metadata/);
+  assert.match(edge, /discordIdentity\?\.identity_data\?\.full_name/);
+  assert.match(edge, /discordIdentity\?\.identity_data\?\.avatar_url/);
+});
+
 const app = await readFile(new URL("../ops/leaderboard/app.js", import.meta.url), "utf8");
 const page = await readFile(new URL("../ops/leaderboard/index.html", import.meta.url), "utf8");
 
