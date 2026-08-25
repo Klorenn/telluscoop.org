@@ -46,6 +46,11 @@ window.LANG_TRANSLATIONS = {
     modalSuccessSub: 'Confirm your subscription in the tab that just opened. Then join the community:',
     modalDone: 'Done',
     modalError: 'Could not subscribe. Visit blog.telluscoop.com/subscribe to sign up directly.',
+    lbTitle: 'Tellus Gaming Leaderboard', lbSubtitle: 'Cumulative ranking across every Tellus gaming event.',
+    lbRank: 'Rank', lbPlayer: 'Player', lbPoints: 'Points',
+    lbBracketTitle: 'Latest event', lbRewardsTitle: 'Winners & rewards',
+    lbLoginDiscord: 'Sign in with Discord', lbLoginedAs: 'Signed in as',
+    lbEmpty: 'No results yet.',
   },
   es: {
     navPrograms: 'Programas', navArticles: 'Artículos', navCourses: 'Cursos', navAbout: 'Nosotros',
@@ -94,6 +99,11 @@ window.LANG_TRANSLATIONS = {
     modalSuccessSub: 'Confirmá tu suscripción en la pestaña que se abrió. Luego unite a la comunidad:',
     modalDone: 'Listo',
     modalError: 'No se pudo suscribir. Visitá blog.telluscoop.com/subscribe para registrarte directamente.',
+    lbTitle: 'Leaderboard Gaming Tellus', lbSubtitle: 'Ranking acumulado cruzando todos los eventos gaming de Tellus.',
+    lbRank: 'Puesto', lbPlayer: 'Jugador', lbPoints: 'Puntos',
+    lbBracketTitle: 'Último evento', lbRewardsTitle: 'Ganadores y premios',
+    lbLoginDiscord: 'Iniciar sesión con Discord', lbLoginedAs: 'Sesión iniciada como',
+    lbEmpty: 'Todavía no hay resultados.',
   },
   pt: {
     navPrograms: 'Programas', navArticles: 'Artigos', navCourses: 'Cursos', navAbout: 'Sobre nós',
