@@ -1,213 +1,236 @@
-# Gaming Leaderboard — Design
+# Leaderboard Gaming — Diseño
 
-Status: approved, pending implementation plan
-Date: 2026-08-24
+Estado: aprobado, pendiente plan de implementación
+Fecha: 2026-08-24
 
-## Problem
+## Problema
 
-Tellus bought a console and runs Mario Kart / Smash-style tournaments at
-in-person Web2 + Web3 events, with prizes (Ledger, hoodies, etc). There's
-no way to track a running leaderboard across events, verify a player is a
-member of the Tellus Discord, or give the results a tamper-evident record.
-Everything today is ad hoc (someone remembers who won).
+Tellus compró una consola y corre torneos estilo Mario Kart / Smash en
+eventos presenciales Web2 + Web3, con premios (Ledger, poleras, etc).
+Hoy no hay forma de llevar un leaderboard que cruce eventos, verificar
+que un jugador sea miembro del Discord de Tellus, ni dejar un registro
+a prueba de manipulación de los resultados. Todo es a mano (alguien se
+acuerda de quién ganó).
 
-## Goals
+## Objetivos
 
-- Public `/leaderboard` page: cross-event cumulative ranking, not just a
-  single tournament's bracket.
-- Discord login gates participation-linked features; membership in the
-  Tellus Discord guild is verified server-side.
-- Staff can run a tournament from a tablet at the event (walk-in
-  registration) and players can also opt to pre-register online.
-- Admin can record match results (elimination rounds or multi-racer
-  heats) and the cumulative leaderboard updates automatically.
-- Rewards (prizes) are tracked per player/tournament.
-- Later: results get anchored on-chain (Stellar, Tellus-custodied) as a
-  verifiable public record, and standings post to a Discord channel.
+- Página pública `/leaderboard`: ranking acumulado cruzando eventos, no
+  solo el bracket de un torneo suelto.
+- El login con Discord habilita las funciones ligadas a participación;
+  la membresía en el guild de Discord de Tellus se verifica del lado
+  servidor.
+- El staff puede correr un torneo desde una tablet en el evento
+  (inscripción walk-in) y los jugadores también pueden pre-inscribirse
+  online si quieren.
+- El admin puede cargar resultados de partidas (rondas de eliminación o
+  heats multi-jugador) y el leaderboard acumulado se actualiza solo.
+- Los premios (rewards) se trackean por jugador/torneo.
+- Más adelante: los resultados quedan anclados on-chain (Stellar,
+  custodiado por Tellus) como registro público verificable, y el
+  standing se postea a un canal de Discord.
 
-## Non-goals (this phase)
+## No-objetivos (esta fase)
 
-- No player wallets. On-chain anchoring (phase 3) is custodial — no
-  player ever needs to hold or connect a Stellar wallet.
-- No persistent Discord bot process. This repo is 100% static +
-  serverless (Vercel); nothing here runs a 24/7 gateway connection. Where
-  the ask implies "a bot", it's implemented as a Discord Application's
-  bot token used only for outbound REST calls from a Supabase Edge
-  Function — never a running client.
-- No points-redemption shop. Rewards are admin-assigned per tournament
-  result, not purchased with accumulated points.
-- No slash commands / in-Discord interactions in this phase. Could be
-  added later as a stateless Interactions-endpoint function; out of
-  scope now.
+- Sin wallets de jugador. El anclaje on-chain (fase 3) es custodiado —
+  ningún jugador necesita tener ni conectar una wallet Stellar.
+- Sin bot de Discord con proceso persistente. Este repo es 100%
+  estático + serverless (Vercel); nada acá corre una conexión de
+  gateway 24/7. Donde el pedido original habla de "un bot", se
+  implementa como el bot token de una Discord Application usado solo
+  para llamadas REST salientes desde una Supabase Edge Function —
+  nunca un cliente corriendo.
+- Sin tienda de canje de puntos. Los premios los asigna el admin por
+  resultado de torneo, no se compran con puntos acumulados.
+- Sin slash commands / interacciones dentro de Discord en esta fase.
+  Se podría sumar después como una función stateless de Interactions
+  endpoint; fuera de alcance ahora.
 
-## Phasing
+## Fases
 
-1. **Core** (this spec, full detail): data model, public leaderboard,
-   admin dashboard, Discord login + membership gate.
-2. Discord webhook posts (live standings to a channel) + rewards
-   tracking UI polish. Own spec when phase 1 ships.
-3. On-chain anchoring (Stellar, custodial). Own spec when phase 2 ships.
+1. **Core** (este spec, detalle completo): modelo de datos, leaderboard
+   público, panel admin, login Discord + verificación de membresía.
+2. Posts del bot a Discord (standings en vivo a un canal) + pulido de
+   UI de premios. Spec propio cuando la fase 1 esté en producción.
+3. Anclaje on-chain (Stellar, custodiado). Spec propio cuando la fase 2
+   esté en producción.
 
-Each phase is independently shippable. Phase 1's schema is designed so
-2 and 3 add columns/tables rather than reshaping existing ones.
+Cada fase se puede shippear sola. El esquema de la fase 1 está pensado
+para que 2 y 3 sumen columnas/tablas en vez de reformar las que ya
+existen.
 
-## Data model
+## Modelo de datos
 
-New Supabase tables, same project (`rhzanxzoqmbxptvxgnfj`), same RLS
-shape the repo already uses (`organization_members`-scoped admin writes,
-see `supabase/migrations/20260716220000_add_program_participants.sql`
-and `20260819090000_create_qr_codes.sql`). The public page needs
-anonymous reads, which none of the existing tables allow — that's new
-for this feature, done via a scoped public view rather than opening the
-base tables to `anon`.
+Tablas nuevas en Supabase, mismo proyecto (`rhzanxzoqmbxptvxgnfj`),
+mismo esquema de RLS que ya usa el repo (escritura de admin acotada por
+`organization_members`, ver
+`supabase/migrations/20260716220000_add_program_participants.sql` y
+`20260819090000_create_qr_codes.sql`). La página pública necesita
+lectura anónima, algo que ninguna tabla existente permite hoy — eso es
+nuevo para esta feature, resuelto con una vista pública acotada en vez
+de abrir las tablas base a `anon`.
 
 - `gaming_players`
-  - `id uuid pk`, `discord_id text unique not null`, `display_name text`,
-    `avatar_url text`, `stellar_address text null` (unused until phase
-    3), `created_at`, `updated_at`
-  - Row is created/updated on first Discord login (upsert keyed on
-    `discord_id`).
+  - `id uuid pk`, `discord_id text unique not null`, `display_name
+    text`, `avatar_url text`, `stellar_address text null` (sin uso
+    hasta la fase 3), `created_at`, `updated_at`
+  - La fila se crea/actualiza (upsert por `discord_id`) en el primer
+    login con Discord.
 - `gaming_events`
   - `id uuid pk`, `organization_id`, `name text`, `event_date date`,
     `location text`, `created_at`
 - `gaming_tournaments`
-  - `id uuid pk`, `event_id fk`, `game text` (e.g. "Mario Kart 8"),
+  - `id uuid pk`, `event_id fk`, `game text` (ej. "Mario Kart 8"),
     `format text check in ('elimination','heats')`, `status text check
     in ('draft','live','completed')`, `created_at`
 - `gaming_matches`
-  - `id uuid pk`, `tournament_id fk`, `round int null` (elimination
-    only), `next_match_id uuid null fk self` (elimination only — winner
-    auto-slots here), `status text check in ('pending','live',
-    'confirmed')`, `confirmed_by uuid fk auth.users`, `confirmed_at`
+  - `id uuid pk`, `tournament_id fk`, `round int null` (solo
+    eliminación), `next_match_id uuid null fk self` (solo eliminación —
+    el ganador pasa solo a esta ranura), `status text check in
+    ('pending','live','confirmed')`, `confirmed_by uuid fk
+    auth.users`, `confirmed_at`
 - `gaming_match_participants`
   - `id uuid pk`, `match_id fk`, `player_id fk`, `placement int not
-    null` (1 = winner/1st place, works for both a 2-player elimination
-    match and an 8-racer heat), `points_awarded int not null default 0`
+    null` (1 = ganador/1er puesto, sirve tanto para una partida 1v1 de
+    eliminación como para un heat de 8 corredores), `points_awarded
+    int not null default 0`
   - unique (`match_id`, `player_id`)
 - `gaming_scores`
   - `player_id fk pk`, `total_points int not null default 0`,
     `updated_at`
-  - Not hand-edited. Recomputed by a trigger when a match's status flips
-    to `confirmed`, same pattern as `apply_ambassador_rank()` /
-    `sync_event_attendance_to_participant()` in
-    `20260716225500_automate_ambassador_ranks.sql` — a
-    `security definer`, `set search_path = ''` trigger function that
-    sums `points_awarded` from confirmed matches into `gaming_scores`.
-    Default formula (admin-configurable later, hardcoded constant for
-    phase 1): placement 1 → 10 pts, 2 → 6, 3 → 3, participation → 1.
+  - No se edita a mano. Se recalcula con un trigger cuando una partida
+    pasa a `confirmed`, mismo patrón que `apply_ambassador_rank()` /
+    `sync_event_attendance_to_participant()` en
+    `20260716225500_automate_ambassador_ranks.sql` — una función
+    trigger `security definer`, `set search_path = ''` que suma
+    `points_awarded` de las partidas confirmadas dentro de
+    `gaming_scores`. Fórmula default (configurable por admin más
+    adelante, constante fija en la fase 1): puesto 1 → 10 pts, 2 → 6,
+    3 → 3, participación → 1.
 - `gaming_rewards`
-  - `id uuid pk`, `player_id fk`, `tournament_id fk`, `description text`
-    (e.g. "Ledger Nano", "Poleron Tellus"), `fulfilled bool not null
-    default false`, `fulfilled_at`, `created_by uuid fk auth.users`
+  - `id uuid pk`, `player_id fk`, `tournament_id fk`, `description
+    text` (ej. "Ledger Nano", "Poleron Tellus"), `fulfilled bool not
+    null default false`, `fulfilled_at`, `created_by uuid fk
+    auth.users`
 
 RLS:
-- Base tables: `select`/`all` restricted to `authenticated` members of
-  the org via `organization_members`, same as existing ops tables — this
-  is where admin dashboard reads/writes go.
-- `public.leaderboard_public_view` (and `event_bracket_public_view`):
-  `security_invoker = off` view exposing only `display_name`,
-  `avatar_url`, `total_points`, tournament/match placements — no
-  `discord_id`, no email, no internal ids beyond what's needed to link.
-  `grant select on these views to anon, authenticated`. This is the only
-  anonymous-read surface; base tables stay closed to `anon`.
+- Tablas base: `select`/`all` restringido a miembros `authenticated` de
+  la org vía `organization_members`, igual que las tablas de ops que ya
+  existen — ahí es donde lee/escribe el panel admin.
+- `public.leaderboard_public_view` (y `event_bracket_public_view`):
+  vista que solo expone `display_name`, `avatar_url`, `total_points`,
+  posiciones de torneo/partida — sin `discord_id`, sin email, sin ids
+  internos más allá de lo necesario para linkear. `grant select on
+  estas vistas to anon, authenticated`. Es la única superficie de
+  lectura anónima — las tablas base quedan cerradas a `anon`.
 
-## Public page — `/leaderboard`
+## Página pública — `/leaderboard`
 
-New `leaderboard/index.html`, rewrite added to `vercel.json` (same shape
-as `/hub`). No login required to view. Sections:
-- Overall cross-event ranking (from `leaderboard_public_view`).
-- Current/most recent event's live bracket or heat standings.
-- Past winners + prizes gallery (from `gaming_rewards` joined to public
-  view).
-- "Iniciar sesión con Discord" — only gates seeing your own linked
-  history; viewing the leaderboard itself never requires it.
-- Bilingual via existing `i18n.js` dictionary (`en`/`es`), consistent
-  with the rest of the marketing site.
+`leaderboard/index.html` nuevo, con su rewrite agregado a
+`vercel.json` (mismo esquema que `/hub`). No requiere login para ver.
+Secciones:
+- Ranking general cruzando eventos (desde `leaderboard_public_view`).
+- Bracket o standings en vivo del evento actual/más reciente.
+- Galería de ganadores + premios entregados (desde `gaming_rewards`
+  cruzado con la vista pública).
+- "Iniciar sesión con Discord" — solo habilita ver tu propio historial
+  vinculado; ver el leaderboard en sí nunca lo requiere.
+- Bilingüe vía el diccionario existente `i18n.js` (`en`/`es`),
+  consistente con el resto del sitio.
 
 ## Admin — `ops/leaderboard/`
 
-Same shape as `ops/stellar/` and `ops/social/`: vanilla JS IIFE,
-`supabase-js` from CDN, same master-admin allowlist / first-access
-convention, own `config.js` with the public Supabase URL + publishable
-key, cache-busted `?v=YYYYMMDD-NN` on `app.js`/`styles.css` (tests
-enforce the two versions match, same as `tests/stellar-ops.test.mjs`).
+Mismo molde que `ops/stellar/` y `ops/social/`: JS vanilla IIFE,
+`supabase-js` desde CDN, mismo allowlist de master admins / convención
+de first-access, su propio `config.js` con la URL pública de Supabase +
+publishable key, cache-busting `?v=YYYYMMDD-NN` en
+`app.js`/`styles.css` (los tests exigen que ambas versiones coincidan,
+igual que `tests/stellar-ops.test.mjs`).
 
-Capabilities: create events/tournaments, register walk-in or
-pre-registered players into a tournament, run matches (confirm
-placements — this flips `gaming_matches.status` to `confirmed` and the
-scores trigger recomputes `gaming_scores`), assign/mark rewards
-fulfilled.
+Capacidades: crear eventos/torneos, anotar jugadores walk-in o
+pre-inscriptos en un torneo, correr partidas (confirmar posiciones —
+esto pasa `gaming_matches.status` a `confirmed` y el trigger de
+puntajes recalcula `gaming_scores`), asignar/marcar premios como
+entregados.
 
-## Discord integration
+## Integración con Discord
 
-- **Login**: Supabase Auth's built-in Discord OAuth provider (enabled in
-  the Supabase dashboard, not code) — same mechanic already documented
-  for redirect-URL allowlisting in `ops/stellar/README.md`. Add
-  `https://telluscoop.org/leaderboard` to the redirect allow list.
-  On first login, upsert `gaming_players` from the Discord profile.
-- **Membership check**: a new Supabase Edge Function
-  (`supabase/functions/discord-verify`, sibling to `luma-events`) holds
-  `DISCORD_BOT_TOKEN` and `DISCORD_GUILD_ID` as Supabase secrets — never
-  in frontend code. It calls `GET /guilds/{guild_id}/members/{user_id}`
-  with the bot token server-side and returns a boolean. This requires
-  registering a Discord Application with a bot added to the Tellus
-  guild (bot never connects to the gateway — it's a credential holder
-  for REST calls only).
-- **"Bot shows who's winning"**: when admin confirms a match (phase 2,
-  not phase 1), the same or a sibling Edge Function `POST`s an embed to
-  a Discord Incoming Webhook URL (`DISCORD_WEBHOOK_URL` secret) with
-  current top-N standings. No bot process, no gateway, just an outbound
-  webhook call triggered by the admin action.
+- **Login**: proveedor Discord OAuth nativo de Supabase Auth
+  (habilitado desde el dashboard de Supabase, no en código) — mismo
+  mecanismo ya documentado para el allowlist de redirect URLs en
+  `ops/stellar/README.md`. Agregar
+  `https://telluscoop.org/leaderboard` a la lista de redirects
+  permitidos. En el primer login, se hace upsert de `gaming_players`
+  con el perfil de Discord.
+- **Verificación de membresía**: una Supabase Edge Function nueva
+  (`supabase/functions/discord-verify`, hermana de `luma-events`)
+  guarda `DISCORD_BOT_TOKEN` y `DISCORD_GUILD_ID` como secrets de
+  Supabase — nunca en código frontend. Llama a `GET
+  /guilds/{guild_id}/members/{user_id}` con el bot token del lado
+  servidor y devuelve un booleano. Esto requiere registrar una Discord
+  Application con un bot agregado al guild de Tellus (el bot nunca se
+  conecta al gateway — es solo un credential para llamadas REST).
+- **"El bot muestra quién va ganando"**: cuando el admin confirma una
+  partida (fase 2, no fase 1), la misma Edge Function o una hermana
+  hace un `POST` con un embed a un Incoming Webhook de Discord
+  (secret `DISCORD_WEBHOOK_URL`) con el top-N actual. Sin proceso de
+  bot, sin gateway, solo una llamada de webhook saliente disparada por
+  la acción del admin.
 
-## On-chain anchoring (phase 3 sketch)
+## Anclaje on-chain (boceto fase 3)
 
-Tellus-custodied Stellar account. When admin confirms a match result,
-after phase-1/2 land, a server-side call writes a compact record
-(tournament id, match id, placements hash) either as a `manageData`
-entry or via a minimal Soroban registry contract — TBD in that phase's
-own design doc once phase 1/2 are live and we know real transaction
-volume. Public page gets a "verificado on-chain ✅" link to the Stellar
-Explorer per confirmed result. No player wallet involved at any point.
+Cuenta Stellar custodiada por Tellus. Cuando el admin confirma un
+resultado, ya con fase 1/2 en producción, una llamada del lado
+servidor escribe un registro compacto (id de torneo, id de partida,
+hash de las posiciones) ya sea como entrada `manageData` o vía un
+contrato Soroban mínimo de registro — a definir en el spec propio de
+esa fase, una vez que 1/2 estén corriendo y se conozca el volumen real
+de transacciones. La página pública muestra un link "verificado
+on-chain ✅" al Stellar Explorer por cada resultado confirmado. Ningún
+jugador necesita wallet en ningún momento.
 
 ## Testing
 
-Following repo convention (static assertions against source, not
-runtime tests — see `tests/stellar-ops.test.mjs`,
+Siguiendo la convención del repo (asserts estáticos contra el código
+fuente, no tests de runtime — ver `tests/stellar-ops.test.mjs`,
 `tests/social-ops.test.mjs`):
-- `tests/leaderboard-ops.test.mjs` — asserts `ops/leaderboard/app.js`
-  and `index.html` cache-bust versions match, key admin flows exist in
-  source.
-- `tests/leaderboard-public.test.mjs` — asserts the public page renders
-  the expected sections, `vercel.json` has the `/leaderboard` rewrite.
-- A plain `node:test` unit test for the points formula (pure function,
-  no Supabase needed) — the one piece of real logic worth testing in
-  isolation.
+- `tests/leaderboard-ops.test.mjs` — verifica que las versiones de
+  cache-busting de `ops/leaderboard/app.js` e `index.html` coincidan,
+  y que los flujos clave de admin existan en el código fuente.
+- `tests/leaderboard-public.test.mjs` — verifica que la página pública
+  renderice las secciones esperadas y que `vercel.json` tenga el
+  rewrite de `/leaderboard`.
+- Un test unitario plano con `node:test` para la fórmula de puntos
+  (función pura, no necesita Supabase) — la única lógica real que vale
+  la pena testear aislada.
 
-## Error handling
+## Manejo de errores
 
-- Discord membership check fails/rate-limits → treat as "not verified",
-  show a retry CTA, never silently grant access.
-- Match confirmation is the single write that fans out (score trigger,
-  later: webhook post, on-chain anchor) — each fan-out step must be
-  independently retryable / idempotent (unique constraints prevent
-  double-scoring the same match; webhook/anchor calls keyed by match id
-  so a retry doesn't double-post or double-anchor).
-- Admin dashboard writes are RLS-enforced same as `ops/stellar` — a
-  revoked/viewer-role account gets a 403 from Postgres, not a silent
-  no-op.
+- Si la verificación de membresía de Discord falla o pega rate limit →
+  se trata como "no verificado", se muestra un CTA de reintentar,
+  nunca se otorga acceso en silencio.
+- Confirmar una partida es la única escritura que dispara varias cosas
+  (trigger de puntaje, más adelante: post a webhook, anclaje
+  on-chain) — cada paso debe ser reintentable/idempotente de forma
+  independiente (constraints unique evitan puntuar dos veces la misma
+  partida; las llamadas de webhook/anclaje se indexan por id de
+  partida para que un reintento no duplique el post ni el anclaje).
+- Las escrituras del panel admin quedan forzadas por RLS igual que en
+  `ops/stellar` — una cuenta con rol `viewer` o revocada recibe un 403
+  de Postgres, no un no-op silencioso.
 
-## Secrets (Supabase Edge Function secrets only — never frontend/env in git)
+## Secrets (solo como secrets de Supabase Edge Functions — nunca en frontend/env dentro del repo)
 
 - `DISCORD_BOT_TOKEN`
 - `DISCORD_GUILD_ID`
-- `DISCORD_WEBHOOK_URL` (phase 2)
-- Stellar custodial signing key (phase 3)
+- `DISCORD_WEBHOOK_URL` (fase 2)
+- Clave de firma custodiada de Stellar (fase 3)
 
-## Open risks
+## Riesgos abiertos
 
-- Discord API rate limits on the membership-check endpoint under event-
-  day traffic spikes — mitigate with short-TTL caching of the
-  verification result in `gaming_players`.
-- Default point formula is a guess; needs a real value from Tellus
-  before this feels "final" — shipped as an admin-adjustable constant so
-  it isn't a blocker.
+- Rate limits de la API de Discord en el endpoint de verificación de
+  membresía durante picos de tráfico el día del evento — mitigar con
+  un caché de TTL corto del resultado de verificación en
+  `gaming_players`.
+- La fórmula de puntos default es una estimación; hace falta un valor
+  real de Tellus antes de que se sienta "definitiva" — se shippea como
+  constante ajustable por admin para que no sea un bloqueante.
