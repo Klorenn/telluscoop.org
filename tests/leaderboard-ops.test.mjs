@@ -75,3 +75,33 @@ test("discord-verify caches the verification result to survive rate limits", () 
   assert.match(edge, /VERIFY_TTL_MS/);
   assert.match(edge, /discord_verified_at/);
 });
+
+const app = await readFile(new URL("../ops/leaderboard/app.js", import.meta.url), "utf8");
+const page = await readFile(new URL("../ops/leaderboard/index.html", import.meta.url), "utf8");
+
+test("admin ops app never embeds secrets", () => {
+  assert.doesNotMatch(app, /service[_-]?role/i);
+  assert.doesNotMatch(app, /DISCORD_BOT_TOKEN/);
+  assert.doesNotMatch(app, /eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\./);
+});
+
+test("admin cache-busting versions match", () => {
+  const cssVersion = page.match(/styles\.css\?v=([^"']+)/)?.[1];
+  const jsVersion = page.match(/app\.js\?v=([^"']+)/)?.[1];
+  assert.ok(cssVersion);
+  assert.equal(jsVersion, cssVersion);
+});
+
+test("admin page is not indexable", () => {
+  assert.match(page, /noindex,nofollow/);
+});
+
+test("admin app implements the core tournament flow", () => {
+  for (const name of ["createEvent", "createTournament", "createMatch", "addParticipant", "confirmMatch", "createReward", "markRewardFulfilled"]) {
+    assert.match(app, new RegExp(`function ${name}\\(`));
+  }
+});
+
+test("admin writes are gated on non-viewer role before rendering the editor", () => {
+  assert.match(app, /state\.membership\.role === "viewer"/);
+});
