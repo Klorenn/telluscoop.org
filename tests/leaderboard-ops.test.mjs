@@ -133,6 +133,14 @@ test("discord-verify only writes stellar_passport_url via the service-role chann
   assert.match(edge, /parsed\.protocol === "https:"/);
 });
 
+test("discord-verify falls back to Passport's public builder endpoint for demo profiles", () => {
+  assert.match(edge, /api\/builder\/public\/\$\{encodeURIComponent\(username\)\}/);
+  assert.match(edge, /builderResponse\?\.ok/);
+  assert.match(edge, /publicBuilderResponse\.status === 404/);
+  assert.match(edge, /publicBuilderResponse\.status === 404[\s\S]*?No encontramos ese perfil en Stellar Passport/);
+  assert.match(edge, /builder\.builder\?\.github_username/);
+});
+
 test("discord-verify's avatar lookup is gated to non-viewer staff, never the calling player", () => {
   assert.match(edge, /lookup_avatar/);
   assert.match(edge, /\.neq\("role", "viewer"\)/);

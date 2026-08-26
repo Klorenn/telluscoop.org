@@ -107,20 +107,50 @@ Deno.serve(async (request) => {
       }
       if (!username) return json({ error: "URL de Stellar Passport inválida" }, 400);
 
-      const passportApiKey = Deno.env.get("STELLAR_PASSPORT_API_KEY");
-      if (!passportApiKey) return json({ error: "Stellar Passport todavía no está configurado" }, 503);
-
       // Real read-only check against Passport's own API — a self-reported URL
       // is never trusted or saved on its own.
-      const builderResponse = await fetch(`${PASSPORT_API_BASE}/builders/${encodeURIComponent(username)}`, {
-        headers: { Authorization: `Bearer ${passportApiKey}` },
-      });
-      if (builderResponse.status === 429) return json({ error: "Límite de la API de Passport alcanzado, probá de nuevo en un rato" }, 429);
-      if (!builderResponse.ok) return json({ error: "No encontramos ese perfil en Stellar Passport" }, 404);
+      const passportApiKey = Deno.env.get("STELLAR_PASSPORT_API_KEY");
+      const builderResponse = passportApiKey
+        ? await fetch(`${PASSPORT_API_BASE}/builders/${encodeURIComponent(username)}`, {
+            headers: { Authorization: `Bearer ${passportApiKey}` },
+          })
+        : null;
 
-      const builder = await builderResponse.json();
+      if (builderResponse?.status === 429) {
+        return json({ error: "Límite de la API de Passport alcanzado, probá de nuevo en un rato" }, 429);
+      }
+      if (builderResponse && !builderResponse.ok && builderResponse.status !== 404) {
+        return json({ error: "No se pudo validar el perfil de Stellar Passport" }, 502);
+      }
+
+      // Demo profiles are served by Passport's public endpoint rather than
+      // the authenticated v1 API. Only use it after a v1 404 (or without a
+      // key), and never send the private API key to this endpoint.
+      let builder: Record<string, any>;
+      if (builderResponse?.ok) {
+        builder = await builderResponse.json();
+      } else {
+        const publicBuilderResponse = await fetch(
+          `https://demo.stellarpassport.xyz/api/builder/public/${encodeURIComponent(username)}`,
+        );
+        if (publicBuilderResponse.status === 429) {
+          return json({ error: "Límite de la API de Passport alcanzado, probá de nuevo en un rato" }, 429);
+        }
+        if (publicBuilderResponse.status === 404) {
+          return json({ error: "No encontramos ese perfil en Stellar Passport" }, 404);
+        }
+        if (!publicBuilderResponse.ok) {
+          return json({ error: "No se pudo validar el perfil de Stellar Passport" }, 502);
+        }
+        builder = await publicBuilderResponse.json();
+      }
+
       stellarPassportUrl = candidate;
-      stellarPassportName = builder.data?.name ?? null;
+      stellarPassportName = builder.data?.name
+        ?? builder.builder?.name
+        ?? builder.builder?.github_username
+        ?? builder.github_username
+        ?? username;
     }
 
     const { data: player, error: upsertError } = await admin
