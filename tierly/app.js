@@ -390,7 +390,7 @@
     if (!session) {
       el.innerHTML = `<button id="lb-discord-login" class="lb-discord-btn">${t("loginDiscord")}</button>`;
       document.querySelector("#lb-discord-login").addEventListener("click", () => {
-        supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: `/tierly` } });
+        supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: `${window.location.origin}/tierly` } });
       });
       return;
     }
