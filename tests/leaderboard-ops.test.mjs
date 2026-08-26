@@ -81,6 +81,17 @@ const edge = await readFile(
   new URL("../supabase/functions/discord-verify/index.ts", import.meta.url),
   "utf8",
 );
+const supabaseConfig = await readFile(
+  new URL("../supabase/config.toml", import.meta.url),
+  "utf8",
+);
+
+test("discord-verify delegates gateway auth and keeps function-level session validation", () => {
+  assert.match(supabaseConfig, /\[functions\.discord-verify\][\s\S]*?verify_jwt\s*=\s*false/);
+  assert.match(edge, /auth\.getUser\(\)/);
+  assert.match(edge, /Sesión requerida/);
+  assert.match(edge, /Sesión inválida/);
+});
 
 test("discord-verify requires a session and never trusts client-supplied membership", () => {
   assert.match(edge, /Sesión requerida/);
@@ -100,9 +111,21 @@ test("discord-verify caches the verification result to survive rate limits", () 
 });
 
 test("discord-verify never writes client-controlled user_metadata into gaming_players", () => {
-  assert.doesNotMatch(edge, /user_metadata/);
+  assert.doesNotMatch(edge, /body\.[\s\S]{0,80}user_metadata/);
   assert.match(edge, /discordIdentity\?\.identity_data\?\.full_name/);
   assert.match(edge, /discordIdentity\?\.identity_data\?\.avatar_url/);
+});
+
+test("discord-verify prefers Discord avatar, falls back to metadata, and preserves stored avatars", () => {
+  assert.match(edge, /discordIdentity\?\.identity_data\?\.avatar_url\s*(?:\|\||\?\?)\s*user\.user_metadata\?\.avatar_url\s*(?:\|\||\?\?)\s*user\.user_metadata\?\.picture/);
+  assert.match(edge, /\{\s*avatar_url:\s*avatarUrl\s*\}/);
+  assert.match(edge, /\.\.\.\(avatarUrl\s*\?\s*\{\s*avatar_url:\s*avatarUrl\s*\}\s*:\s*\{\}\)/s);
+});
+
+test("discord-verify never exposes internal exception details to the browser", () => {
+  assert.match(edge, /console\.error\(error\)/);
+  assert.match(edge, /return json\(\{ error: "Error de verificación" \}, 500\)/);
+  assert.doesNotMatch(edge, /json\(\{ error: error instanceof Error \? error\.message/);
 });
 
 test("discord-verify only writes stellar_passport_url via the service-role channel, validated as https", () => {
@@ -114,6 +137,16 @@ test("discord-verify's avatar lookup is gated to non-viewer staff, never the cal
   assert.match(edge, /lookup_avatar/);
   assert.match(edge, /\.neq\("role", "viewer"\)/);
   assert.match(edge, /Solo staff puede buscar avatares/);
+});
+
+test("discord-verify reflects only approved production and local origins", () => {
+  assert.match(edge, /https:\/\/telluscoop\.org/);
+  assert.match(edge, /https:\/\/www\.telluscoop\.org/);
+  assert.match(edge, /LOCAL_ORIGIN/);
+  assert.match(edge, /localhost\|127\\.0\\.0\\.1/);
+  assert.match(edge, /:\\d\+/);
+  assert.match(edge, /Access-Control-Allow-Origin.*origin/);
+  assert.doesNotMatch(edge, /ALLOWED_ORIGINS\.includes\(origin\).*ALLOWED_ORIGINS\[0\]/);
 });
 
 const app = await readFile(new URL("../ops/tierly/app.js", import.meta.url), "utf8");

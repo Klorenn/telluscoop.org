@@ -87,7 +87,8 @@
     .lb-discord-btn svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
 
     .lb-session-pill { display: inline-flex; align-items: center; gap: 9px; background: var(--sand-soft); padding: 8px 14px; border-radius: 999px; }
-    .lb-session-pill img { width: 22px; height: 22px; border-radius: 50%; }
+    .lb-session-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex: 0 0 22px; }
+    .lb-session-avatar-fallback { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; background: var(--teal); color: #fff; font-size: 9px; font-weight: 700; letter-spacing: .02em; }
     .lb-session-pill span { font-size: 12.5px; color: var(--ink); }
 
     .lb-discord-gate { margin-top: 12px; }
@@ -103,20 +104,71 @@
     .lb-gate-retry:hover { background: var(--hover-bg); }
     .lb-verified-badge { display: block; font-size: 12px; font-weight: 600; color: var(--teal-bright); }
 
-    .lb-profile-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 22px; max-width: 420px; }
-    .lb-profile-card .lb-session-pill { width: 100%; box-sizing: border-box; }
-    .lb-profile-card .lb-discord-gate { margin-top: 16px; }
-    .lb-profile-card .lb-passport-block { text-align: left; margin-top: 12px; }
+    .lb-profile-grid { display: grid; grid-template-columns: minmax(280px, 380px) minmax(280px, 1fr); gap: 24px; align-items: start; }
+    @media (max-width: 780px) { .lb-profile-grid { grid-template-columns: 1fr; } }
+    .lb-profile-identity-card, .lb-profile-stats-card {
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 18px;
+      padding: 26px; box-shadow: var(--card-shadow); min-width: 0;
+    }
+    .lb-profile-identity-card h3, .lb-profile-stats-card h3 {
+      font-family: var(--serif); font-size: 17px; color: var(--ink); margin-bottom: 16px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--card-border);
+    }
+    .lb-profile-stats-empty {
+      color: var(--ink-dim); font-size: 13.5px; display: flex; flex-direction: column;
+      align-items: center; text-align: center; gap: 8px; padding: 28px 12px;
+    }
+    .lb-profile-identity-card .lb-session-pill { width: 100%; box-sizing: border-box; }
+    .lb-profile-identity-card .lb-discord-gate { margin-top: 16px; }
+    .lb-profile-identity-card .lb-passport-block { text-align: left; margin-top: 12px; }
+
+    .lb-passport-stat-card { display: flex; flex-direction: column; gap: 14px; }
+    .lb-passport-stat-header { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+    .lb-passport-stat-header img,
+    .lb-passport-stat-header .lb-rank-avatar-fallback { width: 48px; height: 48px; border-radius: 14px; object-fit: cover; font-size: 16px; }
+    .lb-passport-stat-name { display: block; font-family: var(--serif); font-size: 16.5px; color: var(--ink); }
+    .lb-passport-stat-username { display: block; font-size: 12.5px; color: var(--ink-dim); }
+    .lb-passport-stat-desc { font-size: 13px; color: var(--ink-dim); line-height: 1.5; }
+    .lb-passport-stat-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+    .lb-passport-stat-chip {
+      display: inline-flex; align-items: center; gap: 5px; background: var(--chip-bg); color: var(--ink);
+      font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px; font-family: var(--sans);
+    }
+    .lb-passport-stat-chip strong { font-family: var(--serif); font-size: 13.5px; }
+    .lb-passport-stat-link {
+      font-size: 12.5px; font-weight: 600; color: var(--teal-bright); text-decoration: none;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .lb-passport-stat-link:hover { text-decoration: underline; }
     .lb-passport-block { margin-top: 8px; text-align: right; }
-    .lb-passport-block form { display: inline-flex; gap: 6px; }
+    .lb-passport-block form { display: inline-flex; gap: 6px; align-items: flex-start; width: 100%; max-width: 320px; }
+    .lb-passport-autocomplete { position: relative; flex: 1; }
     .lb-passport-block input {
       background: var(--card); border: 1px solid var(--card-border); border-radius: 8px;
-      padding: 6px 10px; font-size: 12px; font-family: var(--sans); color: var(--ink); width: 220px;
+      padding: 6px 10px; font-size: 12px; font-family: var(--sans); color: var(--ink); width: 100%; box-sizing: border-box;
     }
     .lb-passport-block button {
       background: var(--teal-bright); color: #fff; border: none; border-radius: 8px;
       padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--sans);
+      white-space: nowrap;
     }
+    .lb-passport-block button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .lb-passport-link-error { color: #B05A1E; font-size: 11.5px; line-height: 1.35; margin: 4px 0 0; text-align: left; }
+    .lb-passport-suggest {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 10px;
+      box-shadow: var(--card-shadow); max-height: 220px; overflow-y: auto; text-align: left;
+    }
+    .lb-passport-suggest-row {
+      display: flex; align-items: center; gap: 8px; padding: 7px 10px; width: 100%;
+      background: none; border: none; cursor: pointer; font-family: var(--sans); text-align: left;
+    }
+    .lb-passport-suggest-row:hover { background: var(--hover-bg); }
+    .lb-passport-suggest-row img,
+    .lb-passport-suggest-row .lb-rank-avatar-fallback { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .lb-passport-suggest-name { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+    .lb-passport-suggest-username { display: block; font-size: 11px; color: var(--ink-dim); }
+    .lb-passport-suggest-empty { padding: 8px 10px; font-size: 12px; color: var(--ink-dim); }
     .lb-passport-linked { font-size: 12px; color: var(--teal-bright); font-weight: 600; text-decoration: none; }
     .lb-passport-linked:hover { text-decoration: underline; }
     #lb-retry-verify {
@@ -151,9 +203,9 @@
       padding: 24px; box-shadow: var(--card-shadow); min-height: 460px; display: flex; flex-direction: column;
     }
 
-    .lb-view-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .lb-view-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
     .lb-view-head h2 { font-family: var(--serif); font-size: 21px; color: var(--ink); }
-    .lb-rank-controls { display: flex; align-items: center; gap: 16px; }
+    .lb-rank-controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; flex: 1; justify-content: flex-end; }
     .lb-rank-tabs { display: flex; gap: 20px; }
     .lb-rank-tabs button {
       background: none; border: none; font-family: var(--sans); font-size: 13.5px; font-weight: 600;
@@ -162,12 +214,13 @@
     .lb-rank-tabs button.is-active { color: var(--ink); border-color: var(--glow); }
 
     .lb-search-input {
-      appearance: none; width: 200px; font-family: var(--sans); font-size: 13px; color: var(--ink);
-      background: var(--sand-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23808080' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E") no-repeat 12px center;
-      border: 1px solid var(--card-border); border-radius: 999px; padding: 8px 14px 8px 32px;
-      transition: border-color 140ms ease;
+      appearance: none; width: 100%; max-width: 320px; min-width: 220px; font-family: var(--sans);
+      font-size: 14px; color: var(--ink);
+      background: var(--sand-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%23808080' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E") no-repeat 14px center;
+      border: 1px solid var(--card-border); border-radius: 999px; padding: 10px 16px 10px 38px;
+      transition: border-color 140ms ease, box-shadow 140ms ease;
     }
-    .lb-search-input:focus { outline: none; border-color: var(--glow); }
+    .lb-search-input:focus { outline: none; border-color: var(--glow); box-shadow: 0 0 0 3px rgba(63,132,135,0.12); }
     .lb-search-input::placeholder { color: var(--ink-dim); }
     .lb-search-input::-webkit-search-cancel-button { cursor: pointer; }
 
@@ -252,7 +305,7 @@
     .lb-discord-icon svg { width: 20px; height: 20px; fill: currentColor; }
     .lb-discord-card strong { display: block; font-size: 14.5px; margin-bottom: 4px; }
     .lb-discord-card p { font-size: 12.5px; color: var(--ink-dim); margin-bottom: 14px; }
-    .lb-discord-card .lb-discord-btn { width: 100%; justify-content: center; }
+    .lb-discord-card .lb-discord-btn, .lb-discord-card .lb-mini-btn { width: 100%; justify-content: center; }
 
     .lb-mini-row { display: flex; gap: 16px; }
     .lb-mini-card { flex: 1; min-width: 0; background: var(--card); border: 1px solid var(--card-border); border-radius: 18px; padding: 16px; box-shadow: var(--card-shadow); }
@@ -421,7 +474,16 @@
 
         <section class="lb-view" data-view="profile" hidden>
           <h2 id="lb-profile-title" class="lb-view-head"></h2>
-          <div id="lb-auth" class="lb-profile-card"></div>
+          <div class="lb-profile-grid">
+            <div class="lb-profile-identity-card">
+              <h3 id="lb-profile-account-title"></h3>
+              <div id="lb-auth"></div>
+            </div>
+            <div class="lb-profile-stats-card">
+              <h3 id="lb-passport-stats-title"></h3>
+              <div id="lb-passport-stats"></div>
+            </div>
+          </div>
         </section>
 
         <section class="lb-view" data-view="settings" hidden>
@@ -449,6 +511,6 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"></script>
-  <script src="/tierly/app.js?v=20260826-01"></script>
+  <script src="/tierly/app.js?v=20260826-03"></script>
 </body>
 </html>

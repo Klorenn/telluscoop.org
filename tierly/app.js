@@ -14,6 +14,12 @@
       bracketTitle: "Latest event", rewardsTitle: "Winners & rewards",
       navRanking: "Leaderboard", navBracket: "Events", navRewards: "Rewards", navProfile: "Profile", navSettings: "Settings",
       profileTitle: "Profile",
+      profileAccountTitle: "Account",
+      passportStatsTitle: "Stellar Passport stats",
+      passportStatsEmpty: "Link your Stellar Passport profile to see your builder stats here.",
+      passportStatsLoading: "Loading your builder profile…",
+      passportStatsError: "Couldn't load your Stellar Passport stats right now.",
+      passportStatCategory: "Category", passportStatStamps: "Stamps collected", passportStatWebsite: "Visit website ↗",
       top5: "Top 5", all: "All Players", viewFull: "View Full Leaderboard", searchPlaceholder: "Search player…",
       loginDiscord: "Sign in with Discord", loginedAs: "Signed in as",
       loginPrompt: "Sync your profile, check your history, and join events.",
@@ -37,14 +43,17 @@
       upcomingEventsTitle: "Upcoming events", recentActivityTitle: "Recent activity",
       noUpcomingEvents: "No upcoming events yet.", noRecentActivity: "No recent activity yet.",
       activityReward: "received",
-      passportPlaceholder: "Your Stellar Passport builder profile URL",
+      passportPlaceholder: "Search your Stellar Passport handle…",
       passportLinkBtn: "Link",
+      passportLinkError: "Couldn't link this profile. Check the handle and try again.",
       passportLinked: "Stellar Passport profile ↗",
       passportResultsLabel: "Also on Stellar Passport",
+      passportNoMatches: "No matches found",
       discordJoinBody: "You must join the Tellus Discord server to participate — Tierly checks your membership before unlocking anything.",
       discordJoinBtn: "Join Tellus Discord",
       discordVerifyBtn: "I already joined · Verify",
       discordChecking: "Checking your membership…",
+      discordVerifyError: "We couldn't check Discord right now. Try again in a moment.",
     },
     es: {
       title: "Leaderboard Gaming Tierly",
@@ -54,6 +63,12 @@
       bracketTitle: "Último evento", rewardsTitle: "Ganadores y premios",
       navRanking: "Leaderboard", navBracket: "Eventos", navRewards: "Premios", navProfile: "Perfil", navSettings: "Configuración",
       profileTitle: "Perfil",
+      profileAccountTitle: "Cuenta",
+      passportStatsTitle: "Estadísticas de Stellar Passport",
+      passportStatsEmpty: "Vincula tu perfil de Stellar Passport para ver tus estadísticas de builder acá.",
+      passportStatsLoading: "Cargando tu perfil de builder…",
+      passportStatsError: "No pudimos cargar tus estadísticas de Stellar Passport ahora.",
+      passportStatCategory: "Categoría", passportStatStamps: "Sellos conseguidos", passportStatWebsite: "Visitar sitio web ↗",
       top5: "Top 5", all: "Todos", viewFull: "Ver leaderboard completo", searchPlaceholder: "Buscar jugador…",
       loginDiscord: "Iniciar sesión con Discord", loginedAs: "Sesión iniciada como",
       loginPrompt: "Sincroniza tu perfil, revisa tu historial y participa en eventos.",
@@ -77,14 +92,17 @@
       upcomingEventsTitle: "Próximos eventos", recentActivityTitle: "Actividad reciente",
       noUpcomingEvents: "No hay próximos eventos todavía.", noRecentActivity: "Todavía no hay actividad reciente.",
       activityReward: "recibió",
-      passportPlaceholder: "URL de tu perfil builder de Stellar Passport",
+      passportPlaceholder: "Buscá tu handle de Stellar Passport…",
       passportLinkBtn: "Vincular",
+      passportLinkError: "No pudimos vincular este perfil. Revisá el handle e intentá de nuevo.",
       passportLinked: "Perfil de Stellar Passport ↗",
       passportResultsLabel: "También en Stellar Passport",
+      passportNoMatches: "No encontramos coincidencias",
       discordJoinBody: "Debes unirte al servidor de Discord de Tellus para participar — Tierly comprueba tu membresía antes de desbloquear cualquier cosa.",
       discordJoinBtn: "Unirse al Discord de Tellus",
       discordVerifyBtn: "Ya me uní · Verificar",
       discordChecking: "Comprobando tu membresía…",
+      discordVerifyError: "No pudimos comprobar Discord ahora. Probá de nuevo en un momento.",
     },
   };
   const DISCORD_ICON = `<svg viewBox="0 0 24 24"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8649-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3846-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.522 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>`;
@@ -103,6 +121,7 @@
   let theme = localStorage.getItem("tellus-theme") === "dark" ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", theme);
   let currentSession = null;
+  let currentPassportUrl = null;
   let activeView = "ranking";
   let rankingLimit = 5;
   let rankingSearch = "";
@@ -112,6 +131,38 @@
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const initials = (name) => esc((name || "?").trim().slice(0, 2).toUpperCase());
+  function resolveAvatarUrl(user) {
+    const discordIdentity = user?.identities?.find((identity) => identity.provider === "discord");
+    return user?.user_metadata?.avatar_url || user?.user_metadata?.picture || discordIdentity?.identity_data?.avatar_url || null;
+  }
+
+  function renderSessionAvatar(user) {
+    const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || "?";
+    const fallback = `<span class="lb-session-avatar lb-session-avatar-fallback" aria-hidden="true">${initials(name)}</span>`;
+    const avatarUrl = resolveAvatarUrl(user);
+    if (!avatarUrl) return fallback;
+    return `<img class="lb-session-avatar" src="${esc(avatarUrl)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" /><span class="lb-session-avatar lb-session-avatar-fallback" aria-hidden="true" style="display:none">${initials(name)}</span>`;
+  }
+
+  function renderImageWithFallback(url, name, className = "lb-rank-avatar") {
+    const fallback = `<span class="${className} lb-rank-avatar-fallback">${initials(name)}</span>`;
+    if (!url) return fallback;
+    return `<img src="${esc(url)}" alt="" class="${className}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" /><span class="${className} lb-rank-avatar-fallback" aria-hidden="true" style="display:none">${initials(name)}</span>`;
+  }
+
+  function formatPassportLinkError(error, data) {
+    const status = Number(error?.context?.status || error?.status);
+    if (status === 404 || /No encontramos/i.test(String(data?.error || ""))) return " (perfil no encontrado)";
+    if (status === 429) return " (límite temporal, probá más tarde)";
+    if (Number.isInteger(status) && status >= 400 && status < 600) return ` (${status})`;
+    return "";
+  }
+
+  function formatDiscordVerifyError(error) {
+    const status = Number(error?.context?.status || error?.status);
+    if (Number.isInteger(status) && status >= 400 && status < 600) return ` (${status})`;
+    return "";
+  }
 
   function emptyStateBlock(title, body, ctaLabel, ctaView, mascot = "tierly-apoyado.png") {
     return `
@@ -149,9 +200,7 @@
           <div class="lb-rank-row${rank === 1 ? " lb-rank-row-first" : ""}">
             <span class="lb-rank-badge${tierClass}">${rank}</span>
             <span class="lb-rank-player">
-              ${row.avatar_url
-                ? `<img src="${esc(row.avatar_url)}" alt="" class="lb-rank-avatar" />`
-                : `<span class="lb-rank-avatar lb-rank-avatar-fallback">${initials(row.display_name)}</span>`}
+              ${renderImageWithFallback(row.avatar_url, row.display_name)}
               <span class="lb-rank-name">${esc(row.display_name || "—")}${row.discord_member ? CHECK_ICON : ""}</span>
             </span>
             <span class="lb-rank-points">${row.total_points}</span>
@@ -268,7 +317,7 @@
           <strong>${t("loginDiscord")}</strong>
           <p>${t("loginPrompt")}</p>
         </div>
-        <div id="lb-auth"></div>
+        <button class="lb-mini-btn" data-view="profile">${t("navProfile")} →</button>
       </div>
       <div class="lb-mini-row">
       <div class="lb-mini-card">
@@ -288,7 +337,6 @@
       </div>`;
     el.querySelectorAll("[data-view]").forEach((btn) => btn.addEventListener("click", () => switchView(btn.dataset.view)));
     window.lucide?.createIcons();
-    renderAuth(currentSession);
   }
 
   function renderUpcomingEvents() {
@@ -342,21 +390,94 @@
       return;
     }
     el.innerHTML = `
-      <form id="lb-passport-form">
-        <input type="url" name="url" placeholder="${t("passportPlaceholder")}" required />
-        <button type="submit">${t("passportLinkBtn")}</button>
+      <form id="lb-passport-form" autocomplete="off">
+        <div class="lb-passport-autocomplete">
+          <input type="text" name="handle" placeholder="${t("passportPlaceholder")}" required />
+          <div id="lb-passport-suggest" class="lb-passport-suggest" hidden></div>
+        </div>
+        <button type="submit" disabled>${t("passportLinkBtn")}</button>
+        <p id="lb-passport-link-error" class="lb-passport-link-error" role="alert" hidden></p>
       </form>`;
-    document.querySelector("#lb-passport-form").addEventListener("submit", async (e) => {
+
+    const form = document.querySelector("#lb-passport-form");
+    const input = form.querySelector("input[name=handle]");
+    const submitBtn = form.querySelector("button");
+    const suggestEl = document.querySelector("#lb-passport-suggest");
+    let selectedUrl = null;
+    let suggestToken = 0;
+    let debounceTimer = null;
+
+    function renderSuggestions(builders) {
+      if (!builders.length) {
+        suggestEl.innerHTML = `<div class="lb-passport-suggest-empty">${t("passportNoMatches")}</div>`;
+        suggestEl.hidden = false;
+        return;
+      }
+      suggestEl.innerHTML = builders.map((b) => `
+        <button type="button" class="lb-passport-suggest-row" data-username="${esc(b.username)}" data-name="${esc(b.name || b.username)}">
+          ${renderImageWithFallback(b.logo_url, b.name, "lb-passport-suggest-avatar")}
+          <span>
+            <span class="lb-passport-suggest-name">${esc(b.name || b.username)}</span>
+            <span class="lb-passport-suggest-username">@${esc(b.username)}</span>
+          </span>
+        </button>`).join("");
+      suggestEl.hidden = false;
+      suggestEl.querySelectorAll(".lb-passport-suggest-row").forEach((row) => {
+        row.addEventListener("click", () => {
+          selectedUrl = `https://demo.stellarpassport.xyz/builder/${encodeURIComponent(row.dataset.username)}`;
+          input.value = row.dataset.name;
+          suggestEl.hidden = true;
+          submitBtn.disabled = false;
+        });
+      });
+    }
+
+    input.addEventListener("input", () => {
+      selectedUrl = null;
+      submitBtn.disabled = true;
+      const query = input.value.trim();
+      clearTimeout(debounceTimer);
+      if (query.length < 2) {
+        suggestEl.hidden = true;
+        return;
+      }
+      debounceTimer = setTimeout(async () => {
+        const token = ++suggestToken;
+        if (!currentSession) return;
+        try {
+          const res = await fetch(`${SUPABASE_URL}/functions/v1/passport-profile?action=builders&q=${encodeURIComponent(query)}`, {
+            headers: { Authorization: `Bearer ${currentSession.access_token}` },
+          });
+          if (!res.ok || token !== suggestToken) return;
+          const data = await res.json();
+          if (token === suggestToken) renderSuggestions(data.builders || []);
+        } catch {
+          // Silent — suggestions are best-effort.
+        }
+      }, 300);
+    });
+
+    input.addEventListener("blur", () => {
+      setTimeout(() => { suggestEl.hidden = true; }, 150);
+    });
+
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const fd = new FormData(e.target);
-      const url = fd.get("url");
-      if (!currentSession) return;
+      if (!selectedUrl || !currentSession) return;
       const { data, error } = await supabase.functions.invoke("discord-verify", {
-        body: { stellar_passport_url: url },
+        body: { stellar_passport_url: selectedUrl },
         headers: { Authorization: `Bearer ${currentSession.access_token}` },
       });
-      if (error || data?.error) return;
-      renderPassportLink(data?.stellar_passport_url || url);
+      const errorEl = document.querySelector("#lb-passport-link-error");
+      if (errorEl) errorEl.hidden = true;
+      if (error || data?.error) {
+        if (errorEl) {
+          errorEl.textContent = `${t("passportLinkError")}${formatPassportLinkError(error, data)}`;
+          errorEl.hidden = false;
+        }
+        return;
+      }
+      renderPassportLink(data?.stellar_passport_url || selectedUrl);
     });
   }
 
@@ -368,9 +489,10 @@
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
     if (error || !data?.verified) {
+      const errorMessage = error ? ` · ${t("discordVerifyError")}${formatDiscordVerifyError(error)}` : "";
       gateEl.innerHTML = `
         <div class="lb-gate-blocked">
-          <span class="lb-not-verified">${t("discordJoinBody")}</span>
+          <span class="lb-not-verified">${errorMessage || t("discordJoinBody")}</span>
           <a href="${DISCORD_INVITE_URL}" target="_blank" rel="noopener noreferrer" class="lb-discord-btn">${t("discordJoinBtn")}</a>
           <button id="lb-retry-verify" class="lb-gate-retry">${t("discordVerifyBtn")}</button>
         </div>`;
@@ -381,6 +503,7 @@
       <span class="lb-verified-badge">✓ ${t("verified")}</span>
       <div id="lb-passport-link" class="lb-passport-block"></div>`;
     renderPassportLink(data?.stellar_passport_url);
+    renderPassportStats(data?.stellar_passport_url);
   }
 
   function renderAuth(session) {
@@ -392,16 +515,74 @@
       document.querySelector("#lb-discord-login").addEventListener("click", () => {
         supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: `${window.location.origin}/tierly` } });
       });
+      renderPassportStats(null);
       return;
     }
-    const avatarUrl = session.user.user_metadata?.avatar_url;
+    const displayName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email;
     el.innerHTML = `
       <div class="lb-session-pill">
-        ${avatarUrl ? `<img src="${esc(avatarUrl)}" alt="" />` : ""}
-        <span>${t("loginedAs")} ${esc(session.user.user_metadata?.full_name || session.user.email)}</span>
+        ${renderSessionAvatar(session.user)}
+        <span>${t("loginedAs")} ${esc(displayName)}</span>
       </div>
       <div id="lb-discord-gate" class="lb-discord-gate"></div>`;
     checkDiscordMembership(session);
+  }
+
+  let passportStatsToken = 0;
+  async function renderPassportStats(url = currentPassportUrl) {
+    currentPassportUrl = url;
+    const el = document.querySelector("#lb-passport-stats");
+    if (!el) return;
+    const token = ++passportStatsToken;
+    if (!currentSession || !url) {
+      el.innerHTML = `<p class="lb-profile-stats-empty">${t("passportStatsEmpty")}</p>`;
+      return;
+    }
+    let username;
+    try {
+      const parsed = new URL(url);
+      username = parsed.pathname.split("/").filter(Boolean).pop();
+    } catch {
+      username = null;
+    }
+    if (!username) {
+      el.innerHTML = `<p class="lb-profile-stats-empty">${t("passportStatsEmpty")}</p>`;
+      return;
+    }
+    el.innerHTML = `<p class="lb-profile-stats-empty">${t("passportStatsLoading")}</p>`;
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/passport-profile?action=profile&username=${encodeURIComponent(username)}`, {
+        headers: { Authorization: `Bearer ${currentSession.access_token}` },
+      });
+      if (token !== passportStatsToken) return;
+      if (!res.ok) throw new Error(String(res.status));
+      const data = await res.json();
+      if (token !== passportStatsToken) return;
+      const b = data.builder;
+      if (!b) {
+        el.innerHTML = `<p class="lb-profile-stats-empty">${t("passportStatsEmpty")}</p>`;
+        return;
+      }
+      el.innerHTML = `
+        <div class="lb-passport-stat-card">
+          <a class="lb-passport-stat-header" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
+            ${renderImageWithFallback(b.logo_url, b.name, "lb-passport-stat-avatar")}
+            <span>
+              <span class="lb-passport-stat-name">${esc(b.name || username)}</span>
+              <span class="lb-passport-stat-username">@${esc(b.username || username)}</span>
+            </span>
+          </a>
+          ${b.description ? `<p class="lb-passport-stat-desc">${esc(b.description)}</p>` : ""}
+          <div class="lb-passport-stat-meta">
+            ${b.category ? `<span class="lb-passport-stat-chip">${t("passportStatCategory")}: <strong>${esc(b.category)}</strong></span>` : ""}
+            ${b.stamp_count != null ? `<span class="lb-passport-stat-chip">${t("passportStatStamps")}: <strong>${esc(String(b.stamp_count))}</strong></span>` : ""}
+          </div>
+          ${b.website ? `<a class="lb-passport-stat-link" href="${esc(b.website)}" target="_blank" rel="noopener noreferrer">${t("passportStatWebsite")}</a>` : ""}
+        </div>`;
+    } catch {
+      if (token !== passportStatsToken) return;
+      el.innerHTML = `<p class="lb-profile-stats-empty">${t("passportStatsError")}</p>`;
+    }
   }
 
   async function initAuth() {
@@ -454,8 +635,8 @@
     el.innerHTML = `
       <div class="lb-passport-results-label">${t("passportResultsLabel")}</div>
       ${builders.map((b) => `
-        <a class="lb-passport-result-row" href="https://demo.stellarpassport.xyz/${esc(b.username)}" target="_blank" rel="noopener noreferrer">
-          ${b.logo_url ? `<img src="${esc(b.logo_url)}" alt="" />` : `<span class="lb-rank-avatar lb-rank-avatar-fallback">${initials(b.name)}</span>`}
+        <a class="lb-passport-result-row" href="https://demo.stellarpassport.xyz/builder/${encodeURIComponent(b.username)}" target="_blank" rel="noopener noreferrer">
+              ${renderImageWithFallback(b.logo_url, b.name, "lb-passport-result-avatar")}
           <span class="lb-passport-result-name">${esc(b.name)}</span>
           <span class="lb-passport-result-username">@${esc(b.username)}</span>
         </a>`).join("")}`;
@@ -536,6 +717,8 @@
     document.querySelector("#lb-bracket-title").textContent = t("bracketTitle");
     document.querySelector("#lb-rewards-title").textContent = t("rewardsTitle");
     document.querySelector("#lb-profile-title").textContent = t("profileTitle");
+    document.querySelector("#lb-passport-stats-title").textContent = t("passportStatsTitle");
+    document.querySelector("#lb-profile-account-title").textContent = t("profileAccountTitle");
     document.querySelector("#lb-settings-title").textContent = t("settingsTitle");
     document.querySelector("#lb-view-full").textContent = t("viewFull") + " →";
     document.querySelector("#lb-sidebar-promo-text").textContent = t("promoSidebar");
@@ -552,6 +735,7 @@
     renderRankTabs();
     renderRankSearch();
     renderSettingsView();
+    renderPassportStats();
     renderStats();
     loadRanking();
     loadLatestBracket();
@@ -570,6 +754,7 @@
   renderRankSearch();
   renderSettingsView();
   renderFooter();
+  renderPassportStats();
   switchView("ranking");
 
   initAuth();

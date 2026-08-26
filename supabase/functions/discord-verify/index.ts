@@ -1,22 +1,30 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const cors = {
-  "Access-Control-Allow-Origin": "https://telluscoop.org",
+const ALLOWED_ORIGINS = ["https://telluscoop.org", "https://www.telluscoop.org"];
+const LOCAL_ORIGIN = /^https?:\/\/(?:localhost|127\.0\.0\.1):\d+$/;
+
+const isAllowedOrigin = (origin: string | null) =>
+  Boolean(origin && (ALLOWED_ORIGINS.includes(origin) || LOCAL_ORIGIN.test(origin)));
+
+const corsFor = (origin: string | null) => ({
+  "Access-Control-Allow-Origin": isAllowedOrigin(origin) ? origin! : ALLOWED_ORIGINS[0],
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+  Vary: "Origin",
+});
 
 const VERIFY_TTL_MS = 10 * 60 * 1000;
 const PASSPORT_API_BASE = "https://demo.stellarpassport.xyz/api/v1";
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...cors, "Content-Type": "application/json" },
-  });
-
 Deno.serve(async (request) => {
+  const cors = corsFor(request.headers.get("Origin"));
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+
   if (request.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (request.method !== "POST") return json({ error: "Método no permitido" }, 405);
 
@@ -78,6 +86,10 @@ Deno.serve(async (request) => {
     const discordIdentity = user.identities?.find((i: { provider: string }) => i.provider === "discord");
     const discordId = discordIdentity?.identity_data?.provider_id ?? discordIdentity?.identity_data?.sub;
     if (!discordId) return json({ error: "Sesión sin identidad de Discord" }, 400);
+    const avatarUrl = discordIdentity?.identity_data?.avatar_url
+      ?? user.user_metadata?.avatar_url
+      ?? user.user_metadata?.picture
+      ?? null;
 
     let stellarPassportUrl: string | undefined;
     let stellarPassportName: string | null | undefined;
@@ -111,19 +123,20 @@ Deno.serve(async (request) => {
       stellarPassportName = builder.data?.name ?? null;
     }
 
-    const { data: player } = await admin
+    const { data: player, error: upsertError } = await admin
       .from("gaming_players")
       .upsert(
         {
           discord_id: discordId,
           display_name: discordIdentity?.identity_data?.full_name ?? discordIdentity?.identity_data?.name ?? null,
-          avatar_url: discordIdentity?.identity_data?.avatar_url ?? null,
+          ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
           ...(stellarPassportUrl ? { stellar_passport_url: stellarPassportUrl, stellar_passport_name: stellarPassportName } : {}),
         },
         { onConflict: "discord_id" },
       )
       .select("discord_member, discord_verified_at, stellar_passport_url, stellar_passport_name")
       .single();
+    if (upsertError) console.error("gaming_players upsert failed", upsertError);
 
     const isFresh = player?.discord_verified_at &&
       Date.now() - new Date(player.discord_verified_at).getTime() < VERIFY_TTL_MS;
@@ -148,18 +161,19 @@ Deno.serve(async (request) => {
     }
 
     const isMember = memberResponse.status === 200;
-    await admin
+    const { error: updateError } = await admin
       .from("gaming_players")
       .update({ discord_member: isMember, discord_verified_at: new Date().toISOString() })
       .eq("discord_id", discordId);
+    if (updateError) console.error("gaming_players update failed", updateError);
 
     return json({
       verified: isMember,
       stellar_passport_url: stellarPassportUrl ?? player?.stellar_passport_url ?? null,
       stellar_passport_name: stellarPassportName ?? player?.stellar_passport_name ?? null,
     });
-  } catch (error) {
-    console.error(error);
-    return json({ error: error instanceof Error ? error.message : "Error de verificación" }, 500);
-  }
+      } catch (error) {
+        console.error(error);
+        return json({ error: "Error de verificación" }, 500);
+      }
 });

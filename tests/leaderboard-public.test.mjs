@@ -45,3 +45,27 @@ test("public page never embeds secrets", () => {
   assert.doesNotMatch(app, /DISCORD_BOT_TOKEN/);
   assert.doesNotMatch(app, /eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\./);
 });
+
+test("Tierly resolves Discord avatars from metadata and renders an initials fallback", () => {
+  assert.match(app, /function resolveAvatarUrl\(/);
+  assert.match(app, /user_metadata\?\.avatar_url/);
+  assert.match(app, /user_metadata\?\.picture/);
+  assert.match(app, /identity_data\?\.avatar_url/);
+  assert.match(app, /lb-session-avatar-fallback/);
+  assert.match(app, /onerror/);
+  assert.match(page, /\.lb-session-avatar-fallback\s*\{[^}]*display:\s*inline-flex/);
+  assert.match(page, /\.lb-session-avatar-fallback\s*\{[^}]*width:\s*22px/);
+  assert.match(page, /\.lb-session-avatar-fallback\s*\{[^}]*justify-content:\s*center/);
+  assert.match(app, /function formatDiscordVerifyError\(/);
+  assert.match(app, /context\?\.status/);
+});
+
+test("Passport linking reports safe actionable errors and every external profile image has a fallback", () => {
+  assert.match(app, /function formatPassportLinkError\(/);
+  assert.match(app, /data\?\.error/);
+  assert.match(app, /lb-passport-link-error/);
+  assert.match(app, /lb-rank-avatar-fallback/);
+  assert.match(app, /onerror=/);
+  assert.match(app, /renderImageWithFallback|onerror=.*nextElementSibling/);
+  assert.match(page, /\.lb-passport-link-error/);
+});
