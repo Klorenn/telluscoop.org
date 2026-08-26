@@ -3,20 +3,21 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const page = await readFile(new URL("../leaderboard/index.html", import.meta.url), "utf8");
-const app = await readFile(new URL("../leaderboard/app.js", import.meta.url), "utf8");
+const page = await readFile(new URL("../tierly/index.html", import.meta.url), "utf8");
+const app = await readFile(new URL("../tierly/app.js", import.meta.url), "utf8");
 const vercelConfig = await readFile(new URL("../vercel.json", import.meta.url), "utf8");
 
-test("vercel.json rewrites /leaderboard to leaderboard/index.html", () => {
+test("vercel.json rewrites /tierly to tierly/index.html", () => {
   const rules = JSON.parse(vercelConfig).rewrites;
-  assert.ok(rules.some((r) => r.source === "/leaderboard" && r.destination === "/leaderboard/index.html"));
+  assert.ok(rules.some((r) => r.source === "/tierly" && r.destination === "/tierly/index.html"));
 });
 
 test("public page renders the ranking, bracket, rewards, and auth sections", () => {
   assert.match(page, /id="lb-ranking"/);
   assert.match(page, /id="lb-bracket"/);
   assert.match(page, /id="lb-rewards"/);
-  assert.match(page, /id="lb-auth"/);
+  // Auth mounts inside the Discord card, rendered by app.js rather than static markup.
+  assert.match(page + app, /id="lb-auth"/);
 });
 
 test("public page loads the ranking unconditionally, not behind a login gate", () => {

@@ -8,8 +8,8 @@ administrar el leaderboard).
 
 ## Setup local
 
-`npm run dev` → `http://localhost:8080/ops/leaderboard/?preview=1` para una
-vista sin datos reales. `http://localhost:8080/ops/leaderboard/` (sin query)
+`npm run dev` → `http://localhost:8080/ops/tierly/?preview=1` para una
+vista sin datos reales. `http://localhost:8080/ops/tierly/` (sin query)
 usa Supabase Auth real — necesitás una cuenta con rol no-`viewer` en la org.
 
 ## Setup de producción (pasos manuales, una sola vez)
@@ -24,7 +24,7 @@ usa Supabase Auth real — necesitás una cuenta con rol no-`viewer` en la org.
 3. **Habilitar el provider Discord OAuth** en el dashboard de Supabase (Auth →
    Providers → Discord), usando el client id/secret de la misma Discord
    Application.
-4. **Agregar la redirect URL** `https://telluscoop.org/leaderboard` a la
+4. **Agregar la redirect URL** `https://telluscoop.org/tierly` a la
    allowlist de Auth (Auth → URL Configuration → Redirect URLs) — mismo lugar
    donde ya está `https://telluscoop.org/ops/stellar/`.
 5. **Configurar secrets del Edge Function** (nunca en `config.js`/`.env.local`/git):

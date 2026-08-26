@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { calculatePoints } from "../leaderboard/points.mjs";
+import { calculatePoints } from "../tierly/points.mjs";
 
 test("1st place scores 10 points", () => {
   assert.equal(calculatePoints(1), 10);

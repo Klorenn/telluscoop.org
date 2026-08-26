@@ -1,7 +1,7 @@
-// ops/leaderboard/app.js
+// ops/tierly/app.js
 (() => {
   "use strict";
-  const cfg = window.LEADERBOARD_OPS_CONFIG;
+  const cfg = window.TIERLY_OPS_CONFIG;
   const supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabasePublishableKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
   });
@@ -18,6 +18,7 @@
     rewards: [],
     activeEventId: null,
     activeTournamentId: null,
+    lumaEvents: null,
   };
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -41,6 +42,39 @@
       .eq("user_id", session.user.id)
       .maybeSingle();
     state.membership = data;
+  }
+
+  async function invokeEdge(name, body) {
+    const invoke = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return supabase.functions.invoke(name, {
+        body,
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      });
+    };
+    let result = await invoke();
+    if (result.error?.context?.status === 401) {
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (!refreshError) result = await invoke();
+    }
+    return result;
+  }
+
+  async function loadLumaEvents() {
+    const { data, error } = await invokeEdge("luma-events", { action: "list" });
+    if (error || data?.error) return notify(data?.error || error?.message || "No se pudo leer Luma.", true);
+    state.lumaEvents = data.events ?? [];
+    render();
+  }
+
+  function useLumaEvent(id) {
+    const ev = (state.lumaEvents ?? []).find((e) => e.id === id);
+    if (!ev) return;
+    const form = document.querySelector("#event-form");
+    if (!form) return;
+    form.querySelector('[name="name"]').value = ev.name ?? "";
+    form.querySelector('[name="event_date"]').value = ev.start_at ? ev.start_at.slice(0, 10) : "";
+    form.querySelector('[name="name"]').focus();
   }
 
   async function loadEvents() {
@@ -97,12 +131,13 @@
     const { data: player, error: playerError } = await supabase
       .from("gaming_players")
       .upsert({ discord_id: discordId, display_name: displayName }, { onConflict: "discord_id" })
-      .select("id")
+      .select("id, avatar_url")
       .single();
     if (playerError) return notify(playerError.message, true);
     const { error } = await supabase.from("gaming_match_participants").insert({ match_id: matchId, player_id: player.id, placement });
     if (error) return notify(error.message, true);
     notify("Jugador agregado");
+    if (!player.avatar_url) invokeEdge("discord-verify", { action: "lookup_avatar", discord_id: discordId });
     await loadMatches(state.activeTournamentId);
     render();
   }
@@ -193,6 +228,14 @@
 
     if (state.view === "events") {
       body.innerHTML = `
+        <button id="sync-luma" type="button">Sincronizar con Luma</button>
+        ${state.lumaEvents === null ? "" : state.lumaEvents.length === 0
+          ? `<p class="empty">Luma no devolvió eventos.</p>`
+          : `<ul class="luma-list">${state.lumaEvents.map((ev) => `
+              <li>
+                ${esc(ev.name)} — ${fmtDate(ev.start_at)}
+                <button class="use-luma" data-id="${esc(ev.id)}" type="button">Usar</button>
+              </li>`).join("")}</ul>`}
         <form id="event-form">
           <input name="name" placeholder="Nombre del evento" required />
           <input name="event_date" type="date" />
@@ -200,6 +243,8 @@
           <button type="submit">Crear evento</button>
         </form>
         <ul>${state.events.map((e) => `<li data-id="${e.id}">${esc(e.name)} — ${fmtDate(e.event_date)}</li>`).join("")}</ul>`;
+      document.querySelector("#sync-luma").addEventListener("click", loadLumaEvents);
+      body.querySelectorAll(".use-luma").forEach((btn) => btn.addEventListener("click", () => useLumaEvent(btn.dataset.id)));
       document.querySelector("#event-form").addEventListener("submit", (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tierly Gaming Leaderboard</title>
+  <meta name="description" content="Cumulative ranking across every Tellus gaming event — Mario Kart, Smash, and more." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://telluscoop.org/tierly" />
+  <link rel="icon" type="image/png" href="/tierly/tierly-logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --sand: #ECE0CC; --sand-soft: #F8F1E4; --teal: #3F8487; --teal-bright: #159C83; --teal-deep: #1C746B; --teal-ink: #1F3536; --clay: #C75A2A;
+      --glow: #C75A2A;
+      --ink: #1F3536; --ink-dim: #6B8280;
+      --card: #FFFFFF; --card-border: #E9E5DD;
+      --hover-bg: rgba(31,53,54,0.05); --chip-bg: rgba(31,53,54,0.07); --toggle-shadow: rgba(15,35,30,0.08);
+      --card-shadow: 0 4px 20px rgba(15,35,30,0.04);
+      --page-bg: #FAF8F3;
+      --serif: 'Fraunces', Georgia, serif; --sans: 'Inter', -apple-system, sans-serif;
+    }
+    :root[data-theme="dark"] {
+      --sand: #2E3734; --sand-soft: #24302C; --teal-deep: #17615A; --teal-ink: #EDF3F1;
+      --ink: #EDF3F1; --ink-dim: #93ACA6;
+      --card: #182220; --card-border: rgba(255,255,255,0.08);
+      --hover-bg: rgba(255,255,255,0.06); --chip-bg: rgba(255,255,255,0.1); --toggle-shadow: rgba(0,0,0,0.4);
+      --card-shadow: 0 4px 20px rgba(0,0,0,0.18);
+      --page-bg: #101816;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { color: var(--ink); font-family: var(--sans); background: var(--page-bg); min-height: 100vh; }
+    body { line-height: 1.55; min-height: 100vh; }
+
+    main { display: block; width: 100%; max-width: none; margin: 0; padding: 0; }
+
+    .lb-shell { display: flex; width: 100%; min-height: 100vh; background: var(--page-bg); }
+
+    .lb-sidebar {
+      width: 232px; flex-shrink: 0; background: var(--sand-soft); border-right: 1px solid var(--card-border);
+      display: flex; flex-direction: column; padding: 28px 18px;
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    }
+    .lb-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; padding: 0 4px; }
+    .lb-brand img { width: 34px; height: 34px; object-fit: cover; border-radius: 50%; }
+    .lb-brand span { font-family: var(--serif); font-size: 19px; font-weight: 600; color: var(--ink); }
+    .lb-nav { display: flex; flex-direction: column; gap: 8px; }
+    .lb-nav-item {
+      width: 100%; height: 48px; border-radius: 12px; border: none; background: transparent;
+      color: var(--ink-dim); display: flex; align-items: center; gap: 12px; padding: 0 14px;
+      cursor: pointer; transition: background 160ms ease, color 160ms ease; font-family: var(--sans); font-size: 14px; font-weight: 600;
+    }
+    .lb-nav-item svg { width: 19px; height: 19px; flex-shrink: 0; }
+    .lb-nav-item:hover { background: var(--hover-bg); color: var(--ink); }
+    .lb-nav-item.is-active { background: var(--teal-bright); color: #fff; }
+
+    .lb-sidebar-promo {
+      margin-top: auto; position: relative; background: var(--sand); border-radius: 18px;
+      padding: 18px 16px 60px; text-align: center; overflow: visible;
+    }
+    .lb-sidebar-promo p { font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1.4; }
+    .lb-sidebar-promo img {
+      position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%);
+      width: 96px; height: auto; filter: drop-shadow(0 8px 14px rgba(15,35,30,0.22));
+    }
+
+    .lb-main {
+      flex: 1; min-width: 0; padding: 32px 40px 40px; overflow-x: hidden;
+      background: linear-gradient(180deg, #FFFFFF 0%, #F7FBFA 100%);
+      display: flex; flex-direction: column; min-height: 100vh;
+    }
+    :root[data-theme="dark"] .lb-main { background: var(--card); }
+
+    .lb-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 30px; }
+    .lb-hero h1 { font-family: var(--serif); font-size: clamp(30px, 3.6vw, 40px); letter-spacing: -0.01em; }
+    .lb-hero p { margin-top: 8px; color: var(--ink-dim); font-size: 15px; max-width: 48ch; }
+
+    .lb-discord-btn {
+      display: inline-flex; align-items: center; gap: 9px;
+      background: #5865F2; color: #fff; border: none; border-radius: 12px;
+      padding: 11px 20px; font-size: 14px; font-weight: 600; font-family: var(--sans);
+      cursor: pointer; transition: background 160ms ease, transform 160ms ease; white-space: nowrap;
+    }
+    .lb-discord-btn:hover { background: #4752C4; transform: translateY(-1px); }
+    .lb-discord-btn svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
+
+    .lb-session-pill { display: inline-flex; align-items: center; gap: 9px; background: var(--sand-soft); padding: 8px 14px; border-radius: 999px; }
+    .lb-session-pill img { width: 22px; height: 22px; border-radius: 50%; }
+    .lb-session-pill span { font-size: 12.5px; color: var(--ink); }
+
+    .lb-discord-gate { margin-top: 12px; }
+    .lb-gate-checking { font-size: 12px; color: var(--ink-dim); }
+    .lb-gate-blocked { display: flex; flex-direction: column; gap: 8px; }
+    .lb-gate-blocked .lb-not-verified { font-size: 12px; color: #B05A1E; line-height: 1.4; }
+    .lb-gate-blocked .lb-discord-btn { width: 100%; justify-content: center; }
+    .lb-gate-retry {
+      background: transparent; border: 1px solid var(--card-border); color: var(--ink);
+      border-radius: 10px; padding: 8px 12px; font-size: 12.5px; font-weight: 600;
+      font-family: var(--sans); cursor: pointer; transition: background 160ms ease;
+    }
+    .lb-gate-retry:hover { background: var(--hover-bg); }
+    .lb-verified-badge { display: block; font-size: 12px; font-weight: 600; color: var(--teal-bright); }
+
+    .lb-profile-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 22px; max-width: 420px; }
+    .lb-profile-card .lb-session-pill { width: 100%; box-sizing: border-box; }
+    .lb-profile-card .lb-discord-gate { margin-top: 16px; }
+    .lb-profile-card .lb-passport-block { text-align: left; margin-top: 12px; }
+    .lb-passport-block { margin-top: 8px; text-align: right; }
+    .lb-passport-block form { display: inline-flex; gap: 6px; }
+    .lb-passport-block input {
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 8px;
+      padding: 6px 10px; font-size: 12px; font-family: var(--sans); color: var(--ink); width: 220px;
+    }
+    .lb-passport-block button {
+      background: var(--teal-bright); color: #fff; border: none; border-radius: 8px;
+      padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--sans);
+    }
+    .lb-passport-linked { font-size: 12px; color: var(--teal-bright); font-weight: 600; text-decoration: none; }
+    .lb-passport-linked:hover { text-decoration: underline; }
+    #lb-retry-verify {
+      background: transparent; border: 1px solid var(--card-border); color: var(--ink);
+      border-radius: 8px; padding: 4px 10px; font-size: 11.5px; cursor: pointer; font-family: var(--sans);
+    }
+    #lb-retry-verify:hover { border-color: var(--glow); color: var(--glow); }
+
+    .lb-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .lb-stat-card {
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; padding: 18px 20px;
+      display: flex; align-items: flex-start; gap: 12px; box-shadow: var(--card-shadow);
+      transition: box-shadow 160ms ease, transform 160ms ease;
+    }
+    .lb-stat-card:hover { box-shadow: 0 6px 24px rgba(15,35,30,0.07); transform: translateY(-1px); }
+    .lb-stat-icon {
+      width: 36px; height: 36px; border-radius: 10px; background: var(--chip-bg);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .lb-stat-icon svg { width: 18px; height: 18px; color: var(--ink-dim); }
+    .lb-stat-accent .lb-stat-icon { background: rgba(199,90,42,0.12); }
+    .lb-stat-accent .lb-stat-icon svg { color: var(--clay); }
+    .lb-stat-label { display: block; font-size: 12px; color: var(--ink-dim); margin-bottom: 2px; }
+    .lb-stat-card strong { display: block; font-family: var(--serif); font-size: 24px; color: var(--ink); }
+    .lb-stat-cta { display: block; font-size: 11.5px; font-weight: 700; color: var(--clay); text-decoration: none; margin-top: 2px; }
+
+    .lb-content-grid { display: flex; gap: 24px; align-items: flex-start; }
+    .lb-col-main { flex: 1; min-width: 0; }
+
+    .lb-leaderboard-card {
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 18px;
+      padding: 24px; box-shadow: var(--card-shadow); min-height: 460px; display: flex; flex-direction: column;
+    }
+
+    .lb-view-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .lb-view-head h2 { font-family: var(--serif); font-size: 21px; color: var(--ink); }
+    .lb-rank-controls { display: flex; align-items: center; gap: 16px; }
+    .lb-rank-tabs { display: flex; gap: 20px; }
+    .lb-rank-tabs button {
+      background: none; border: none; font-family: var(--sans); font-size: 13.5px; font-weight: 600;
+      color: var(--ink-dim); cursor: pointer; padding: 5px 0; border-bottom: 2px solid transparent;
+    }
+    .lb-rank-tabs button.is-active { color: var(--ink); border-color: var(--glow); }
+
+    .lb-search-input {
+      appearance: none; width: 200px; font-family: var(--sans); font-size: 13px; color: var(--ink);
+      background: var(--sand-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23808080' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E") no-repeat 12px center;
+      border: 1px solid var(--card-border); border-radius: 999px; padding: 8px 14px 8px 32px;
+      transition: border-color 140ms ease;
+    }
+    .lb-search-input:focus { outline: none; border-color: var(--glow); }
+    .lb-search-input::placeholder { color: var(--ink-dim); }
+    .lb-search-input::-webkit-search-cancel-button { cursor: pointer; }
+
+    .lb-passport-results { margin-top: 10px; border-top: 1px solid var(--card-border); padding-top: 10px; }
+    .lb-passport-results-label { font-family: var(--sans); font-size: 12px; font-weight: 600; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .lb-passport-result-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; text-decoration: none; }
+    .lb-passport-result-row img,
+    .lb-passport-result-row .lb-rank-avatar-fallback { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+    .lb-passport-result-name { font-family: var(--sans); font-size: 13.5px; font-weight: 600; color: var(--ink); }
+    .lb-passport-result-username { font-family: var(--sans); font-size: 12px; color: var(--ink-dim); }
+
+    .lb-rank-list { display: flex; flex-direction: column; }
+    .lb-rank-head {
+      display: grid; grid-template-columns: 40px 1fr auto; gap: 14px; align-items: center;
+      padding: 0 12px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--ink-dim); font-weight: 600; border-bottom: 1px solid var(--card-border);
+    }
+    .lb-rank-row {
+      display: grid; grid-template-columns: 40px 1fr auto; gap: 14px; align-items: center;
+      padding: 14px 12px; border-bottom: 1px solid var(--card-border); border-radius: 10px; transition: background 140ms ease;
+    }
+    .lb-rank-row:hover { background: var(--sand-soft); }
+    .lb-rank-row-first { background: rgba(199,90,42,0.05); }
+    .lb-rank-badge {
+      width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      font-family: var(--serif); font-size: 14px; font-weight: 700; color: var(--ink-dim);
+    }
+    .lb-rank-badge.tier-1 { background: #F2B90C; color: #fff; }
+    .lb-rank-badge.tier-2 { background: #ADB5BD; color: #fff; }
+    .lb-rank-badge.tier-3 { background: #C9793B; color: #fff; }
+    .lb-rank-player { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .lb-rank-name { font-size: 15px; font-weight: 600; color: var(--ink); display: inline-flex; align-items: center; gap: 5px; }
+    .lb-verified { width: 14px; height: 14px; color: var(--teal-bright); flex-shrink: 0; }
+    .lb-rank-points { font-family: var(--serif); font-size: 16px; color: var(--ink); font-weight: 600; }
+    .lb-rank-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .lb-rank-avatar-fallback {
+      display: flex; align-items: center; justify-content: center;
+      background: var(--chip-bg); color: var(--ink); font-size: 12px; font-weight: 700;
+    }
+
+    .lb-empty-state {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 32px 20px; gap: 6px;
+    }
+    .lb-empty-mascot { width: 110px; height: auto; margin-bottom: 10px; filter: drop-shadow(0 8px 16px rgba(15,35,30,0.16)); }
+    .lb-empty-state strong { font-family: var(--serif); font-size: 18px; color: var(--ink); }
+    .lb-empty-state p { color: var(--ink-dim); font-size: 13.5px; max-width: 34ch; margin-bottom: 14px; }
+    .lb-empty-cta { width: auto; padding: 11px 22px; }
+
+    #lb-view-full {
+      display: block; width: 100%; margin-top: 18px; padding: 13px; background: var(--sand-soft);
+      border: 1px solid var(--card-border); border-radius: 12px; color: var(--ink); font-family: var(--sans);
+      font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background 140ms ease;
+    }
+    #lb-view-full:hover { background: var(--sand); }
+
+    .lb-col-side { display: flex; flex-direction: column; gap: 16px; width: 320px; flex-shrink: 0; }
+    .lb-promo-card {
+      background: linear-gradient(160deg, var(--teal-bright) 0%, var(--teal-deep) 100%);
+      border-radius: 20px; padding: 24px 22px; color: #fff; position: relative; overflow: hidden;
+      box-shadow: var(--card-shadow);
+    }
+    .lb-promo-card::before, .lb-promo-card::after {
+      content: "✦"; position: absolute; color: rgba(199,90,42,0.55); font-size: 14px;
+    }
+    .lb-promo-card::before { top: 20px; right: 28px; }
+    .lb-promo-card::after { top: 52px; right: 54px; font-size: 9px; }
+    .lb-promo-mascot { width: 120px; height: auto; display: block; margin: -8px auto 8px; filter: drop-shadow(0 10px 18px rgba(0,0,0,0.3)); position: relative; z-index: 1; }
+    .lb-promo-card h3 { font-family: var(--serif); font-size: 19px; line-height: 1.3; margin-bottom: 8px; }
+    .lb-promo-card p { font-size: 13px; color: rgba(255,255,255,0.85); margin-bottom: 16px; }
+    .lb-promo-btn {
+      width: 100%; background: rgba(0,0,0,0.25); border: none; color: #fff; padding: 11px;
+      border-radius: 10px; font-family: var(--sans); font-size: 13.5px; font-weight: 600; cursor: pointer;
+    }
+    .lb-promo-btn:hover { background: rgba(0,0,0,0.4); }
+
+    .lb-discord-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 18px; padding: 18px; box-shadow: var(--card-shadow); }
+    .lb-discord-icon {
+      width: 40px; height: 40px; border-radius: 50%; background: #5865F2; color: #fff;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 10px;
+    }
+    .lb-discord-icon svg { width: 20px; height: 20px; fill: currentColor; }
+    .lb-discord-card strong { display: block; font-size: 14.5px; margin-bottom: 4px; }
+    .lb-discord-card p { font-size: 12.5px; color: var(--ink-dim); margin-bottom: 14px; }
+    .lb-discord-card .lb-discord-btn { width: 100%; justify-content: center; }
+
+    .lb-mini-row { display: flex; gap: 16px; }
+    .lb-mini-card { flex: 1; min-width: 0; background: var(--card); border: 1px solid var(--card-border); border-radius: 18px; padding: 16px; box-shadow: var(--card-shadow); }
+    .lb-mini-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .lb-mini-head span:first-child { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-dim); }
+    .lb-mini-badge { font-size: 9.5px; padding: 2px 8px; }
+    .lb-mini-card strong { display: block; font-size: 15px; color: var(--ink); }
+    .lb-mini-sub { display: block; font-size: 12.5px; color: var(--ink-dim); margin-top: 2px; }
+    .lb-mini-empty-icon { width: 22px; height: 22px; color: var(--ink-dim); opacity: 0.6; margin-bottom: 4px; }
+    .lb-mini-btn {
+      width: 100%; margin-top: 12px; background: var(--sand-soft); border: 1px solid var(--card-border);
+      color: var(--ink); padding: 9px; border-radius: 10px; font-family: var(--sans); font-size: 12.5px;
+      font-weight: 600; cursor: pointer;
+    }
+    .lb-mini-btn:hover { background: var(--sand); }
+
+    .lb-event-banner {
+      border-radius: 16px; padding: 20px 22px; margin-bottom: 16px; position: relative;
+      background: linear-gradient(120deg, var(--teal-deep) 0%, var(--teal-ink) 100%); color: #fff;
+    }
+    .lb-event-banner.lb-event-live { background: linear-gradient(120deg, #C75A2A 0%, #8F3F1B 100%); }
+    .lb-event-banner.lb-event-upcoming { background: linear-gradient(120deg, var(--teal-bright) 0%, var(--teal-deep) 100%); }
+    .lb-event-badge {
+      display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+      background: rgba(255,255,255,0.18); padding: 4px 10px; border-radius: 999px; margin-bottom: 10px;
+    }
+    .lb-event-banner h3 { font-family: var(--serif); font-size: 20px; }
+    .lb-event-date { display: block; margin-top: 6px; font-size: 12.5px; color: rgba(255,255,255,0.75); }
+
+    ul { list-style: none; }
+    ul li { padding: 9px 0; border-bottom: 1px solid var(--card-border); font-size: 13.5px; color: var(--ink-dim); }
+    ul li:last-child { border-bottom: none; }
+
+    p.lb-empty { color: var(--ink-dim); font-size: 13.5px; }
+
+    .lb-secondary-grid { display: flex; gap: 24px; margin-top: 24px; }
+    .lb-secondary-card {
+      flex: 1; min-width: 0; background: var(--card); border: 1px solid var(--card-border); border-radius: 18px;
+      padding: 20px 22px; box-shadow: var(--card-shadow);
+    }
+    .lb-secondary-card h2 { font-family: var(--serif); font-size: 17px; margin-bottom: 14px; color: var(--ink); }
+    .lb-upcoming-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--card-border); }
+    .lb-upcoming-row:last-child { border-bottom: none; }
+    .lb-upcoming-row strong { display: block; font-size: 14px; color: var(--ink); }
+    .lb-upcoming-row .lb-mini-btn { width: auto; margin-top: 0; padding: 7px 14px; white-space: nowrap; }
+    .lb-activity-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--card-border); font-size: 13.5px; color: var(--ink-dim); }
+    .lb-activity-row:last-child { border-bottom: none; }
+    .lb-activity-row svg { width: 16px; height: 16px; color: var(--clay); flex-shrink: 0; }
+    .lb-activity-row strong { color: var(--ink); font-weight: 600; }
+
+    .lb-footer { margin-top: auto; padding-top: 36px; display: flex; flex-direction: column; align-items: center; gap: 28px; text-align: center; }
+    .lb-footer-brand { display: flex; align-items: center; gap: 14px; }
+    .lb-footer-brand img { height: 26px; width: auto; object-fit: contain; }
+    .lb-footer-brand .lb-footer-tierly-mark { height: 30px; width: 30px; border-radius: 50%; object-fit: cover; }
+    .lb-footer-brand span { color: var(--card-border); font-size: 18px; }
+    .lb-footer-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+    .lb-footer-nav a {
+      color: var(--ink-dim); text-decoration: none; font-size: 13.5px; font-weight: 500;
+      padding: 7px 14px; border-radius: 999px; transition: background 160ms ease, color 160ms ease;
+    }
+    .lb-footer-nav a:hover { background: var(--sand-soft); color: var(--ink); }
+    .lb-footer-links { display: flex; gap: 8px; }
+    .lb-footer-icon {
+      width: 34px; height: 34px; border-radius: 50%; background: var(--sand-soft); border: 1px solid var(--card-border);
+      display: flex; align-items: center; justify-content: center; color: var(--ink-dim); transition: color 140ms ease, border-color 140ms ease, transform 140ms ease;
+    }
+    .lb-footer-icon svg { width: 15px; height: 15px; fill: currentColor; }
+    .lb-footer-icon:hover { color: var(--glow); border-color: var(--glow); transform: translateY(-2px); }
+    .lb-footer-divider {
+      width: 100%; height: 28px;
+      background-image: repeating-linear-gradient(315deg, var(--card-border) 0, var(--card-border) 1px, transparent 0, transparent 50%);
+      background-size: 9px 9px; opacity: 0.6;
+    }
+    .lb-footer-copy { font-size: 12px; color: var(--ink-dim); }
+
+    .lb-settings-block { margin-bottom: 26px; }
+    .lb-settings-label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-dim); margin-bottom: 10px; }
+    .lb-settings-lang { display: flex; gap: 8px; }
+    .lb-settings-lang button {
+      background: var(--sand-soft); border: 1px solid var(--card-border); color: var(--ink-dim);
+      font-family: var(--sans); font-size: 13.5px; font-weight: 600; padding: 9px 16px;
+      border-radius: 10px; cursor: pointer;
+    }
+    .lb-settings-lang button.is-active { background: var(--teal-bright); border-color: transparent; color: #fff; }
+    .lb-settings-about { color: var(--ink-dim); font-size: 13.5px; max-width: 52ch; line-height: 1.6; }
+
+    @media (max-width: 960px) {
+      .lb-content-grid { flex-direction: column; }
+      .lb-col-side { width: 100%; }
+      .lb-stats { grid-template-columns: repeat(2, 1fr); }
+      .lb-secondary-grid { flex-direction: column; }
+    }
+    @media (max-width: 720px) {
+      .lb-shell { flex-direction: column; }
+      .lb-sidebar { width: 100%; padding: 16px; position: static; height: auto; overflow-y: visible; }
+      .lb-sidebar-promo { display: none; }
+      .lb-nav { flex-direction: row; overflow-x: auto; }
+      .lb-nav-item { width: auto; white-space: nowrap; }
+      .lb-main { padding: 28px 20px 32px; }
+      .lb-stats { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="lb-shell">
+      <aside class="lb-sidebar">
+        <div class="lb-brand">
+          <img src="/tierly/tierly-logo.png" alt="Tierly" />
+          <span>Tierly</span>
+        </div>
+        <nav class="lb-nav" id="lb-nav"></nav>
+        <div class="lb-sidebar-promo">
+          <p id="lb-sidebar-promo-text"></p>
+          <img src="/tierly/tierly-apoyado.png" alt="Tierly" />
+        </div>
+      </aside>
+      <div class="lb-main">
+        <header class="lb-hero">
+          <div>
+            <h1 id="lb-title"></h1>
+            <p id="lb-subtitle"></p>
+          </div>
+        </header>
+
+        <section id="lb-ranking-view" class="lb-view" data-view="ranking">
+          <div class="lb-stats" id="lb-stats"></div>
+          <div class="lb-content-grid">
+            <div class="lb-col-main">
+              <div class="lb-leaderboard-card">
+                <div class="lb-view-head">
+                  <h2 id="lb-ranking-title"></h2>
+                  <div class="lb-rank-controls">
+                    <div id="lb-rank-tabs" class="lb-rank-tabs"></div>
+                    <input type="search" id="lb-player-search" class="lb-search-input" />
+                  </div>
+                </div>
+                <div id="lb-ranking" aria-label="ranking" style="flex:1; display:flex; flex-direction:column;"></div>
+                <div id="lb-passport-results" class="lb-passport-results" hidden></div>
+                <button id="lb-view-full" type="button"></button>
+              </div>
+            </div>
+            <aside class="lb-col-side" id="lb-side"></aside>
+          </div>
+          <div class="lb-secondary-grid">
+            <div class="lb-secondary-card">
+              <h2 id="lb-upcoming-title"></h2>
+              <div id="lb-upcoming"></div>
+            </div>
+            <div class="lb-secondary-card">
+              <h2 id="lb-activity-title"></h2>
+              <div id="lb-activity"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="lb-view" data-view="bracket" hidden>
+          <h2 id="lb-bracket-title" class="lb-view-head"></h2>
+          <div id="lb-bracket"></div>
+        </section>
+
+        <section class="lb-view" data-view="rewards" hidden>
+          <h2 id="lb-rewards-title" class="lb-view-head"></h2>
+          <div id="lb-rewards"></div>
+        </section>
+
+        <section class="lb-view" data-view="profile" hidden>
+          <h2 id="lb-profile-title" class="lb-view-head"></h2>
+          <div id="lb-auth" class="lb-profile-card"></div>
+        </section>
+
+        <section class="lb-view" data-view="settings" hidden>
+          <h2 id="lb-settings-title" class="lb-view-head"></h2>
+          <div id="lb-settings"></div>
+        </section>
+
+        <footer class="lb-footer">
+          <div class="lb-footer-brand">
+            <img src="/tierly/tierly-logo.png" alt="Tierly" class="lb-footer-tierly-mark" />
+            <span>×</span>
+            <img src="/hub/logos/tellus-logo-full.svg" alt="Tellus Cooperative" />
+          </div>
+          <nav class="lb-footer-nav">
+            <a href="https://telluscoop.org" target="_blank" rel="noopener noreferrer">Tellus Cooperative</a>
+            <a href="https://telluscoop.org/resources" target="_blank" rel="noopener noreferrer">Recursos</a>
+            <a href="https://telluscoop.org/hub" target="_blank" rel="noopener noreferrer">Hub</a>
+          </nav>
+          <div class="lb-footer-links" id="lb-footer-links"></div>
+          <div class="lb-footer-divider"></div>
+          <span class="lb-footer-copy">© 2026 Tellus Cooperative — Tierly</span>
+        </footer>
+      </div>
+    </div>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"></script>
+  <script src="/tierly/app.js"></script>
+</body>
+</html>

@@ -40,6 +40,29 @@ test("public views are the only anon-readable surface, granted explicitly", () =
   assert.doesNotMatch(migration, /grant select on public\.gaming_scores to anon/);
 });
 
+const memberViewMigration = await readFile(
+  new URL("../supabase/migrations/20260826010000_add_discord_member_to_leaderboard_view.sql", import.meta.url),
+  "utf8",
+);
+
+test("leaderboard_public_view exposes discord_member without leaking discord_id", () => {
+  assert.match(memberViewMigration, /discord_member/);
+  assert.doesNotMatch(memberViewMigration, /discord_id/);
+  assert.match(memberViewMigration, /grant select on public\.leaderboard_public_view to anon, authenticated/);
+});
+
+const passportMigration = await readFile(
+  new URL("../supabase/migrations/20260826020000_add_stellar_passport_url.sql", import.meta.url),
+  "utf8",
+);
+
+test("stellar_passport_url is a self-reported text column, exposed publicly, no new write RLS", () => {
+  assert.match(passportMigration, /add column if not exists stellar_passport_url text/);
+  assert.match(passportMigration, /stellar_passport_url/);
+  assert.doesNotMatch(passportMigration, /_member_all|for all to authenticated/);
+  assert.match(passportMigration, /grant select on public\.leaderboard_public_view to anon, authenticated/);
+});
+
 test("score trigger is security definer with a locked search_path", () => {
   const fn = migration.match(/create or replace function public\.recalculate_gaming_score[\s\S]*?\$\$;/)?.[0] ?? "";
   assert.match(fn, /security definer/);
@@ -82,8 +105,19 @@ test("discord-verify never writes client-controlled user_metadata into gaming_pl
   assert.match(edge, /discordIdentity\?\.identity_data\?\.avatar_url/);
 });
 
-const app = await readFile(new URL("../ops/leaderboard/app.js", import.meta.url), "utf8");
-const page = await readFile(new URL("../ops/leaderboard/index.html", import.meta.url), "utf8");
+test("discord-verify only writes stellar_passport_url via the service-role channel, validated as https", () => {
+  assert.match(edge, /stellar_passport_url/);
+  assert.match(edge, /parsed\.protocol === "https:"/);
+});
+
+test("discord-verify's avatar lookup is gated to non-viewer staff, never the calling player", () => {
+  assert.match(edge, /lookup_avatar/);
+  assert.match(edge, /\.neq\("role", "viewer"\)/);
+  assert.match(edge, /Solo staff puede buscar avatares/);
+});
+
+const app = await readFile(new URL("../ops/tierly/app.js", import.meta.url), "utf8");
+const page = await readFile(new URL("../ops/tierly/index.html", import.meta.url), "utf8");
 
 test("admin ops app never embeds secrets", () => {
   assert.doesNotMatch(app, /service[_-]?role/i);

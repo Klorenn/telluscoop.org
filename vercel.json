@@ -4,6 +4,6 @@
     { "source": "/hub", "destination": "/hub/index.html" },
     { "source": "/resources", "destination": "/resources/index.html" },
     { "source": "/resources/tools/:slug", "destination": "/resources/tool.html" },
-    { "source": "/leaderboard", "destination": "/leaderboard/index.html" }
+    { "source": "/tierly", "destination": "/tierly/index.html" }
   ]
 }
