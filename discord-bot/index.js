@@ -172,9 +172,9 @@ client.once("ready", async () => {
 
   const guild = await client.guilds.fetch(DISCORD_GUILD_ID);
   const channel = await getWelcomeChannel(guild);
-  await channel.send(
-    `🐈‍⬛ **Tierly está en línea.** Ya puedo verificar membresías para el leaderboard → ${LEADERBOARD_URL}`,
-  );
+  await channel
+    .send(`🐈‍⬛ **Tierly está en línea.** Ya puedo verificar membresías para el leaderboard → ${LEADERBOARD_URL}`)
+    .catch((err) => console.error("No se pudo postear saludo de arranque:", err.message));
 
   if (supabase) {
     await runNotificationPoll(guild).catch((err) => console.error("Fallo el poll de notificaciones:", err.message));
@@ -187,9 +187,9 @@ client.once("ready", async () => {
 client.on("guildMemberAdd", async (member) => {
   if (member.guild.id !== DISCORD_GUILD_ID) return;
   const channel = await getWelcomeChannel(member.guild);
-  await channel.send(
-    `🐈‍⬛ ¡Bienvenido/a, ${member}! Sumate al leaderboard gaming de Tellus → ${LEADERBOARD_URL}`,
-  );
+  await channel
+    .send(`🐈‍⬛ ¡Bienvenido/a, ${member}! Sumate al leaderboard gaming de Tellus → ${LEADERBOARD_URL}`)
+    .catch((err) => console.error("No se pudo postear bienvenida:", err.message));
   await syncMembership(member);
 });
 
@@ -200,9 +200,9 @@ client.on("messageCreate", async (message) => {
   if (message.guild?.id !== DISCORD_GUILD_ID) return;
   if (message.content.trim().toLowerCase() !== "!bienvenida") return;
 
-  await message.channel.send(
-    `🐈‍⬛ ¡Bienvenido/a, ${message.member}! Sumate al leaderboard gaming de Tellus → ${LEADERBOARD_URL}`,
-  );
+  await message.channel
+    .send(`🐈‍⬛ ¡Bienvenido/a, ${message.member}! Sumate al leaderboard gaming de Tellus → ${LEADERBOARD_URL}`)
+    .catch((err) => console.error("No se pudo postear bienvenida:", err.message));
   await syncMembership(message.member);
 });
 
