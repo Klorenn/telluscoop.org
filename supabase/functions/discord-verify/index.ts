@@ -353,6 +353,41 @@ Deno.serve(async (request) => {
       return json({ error: "No se pudo guardar la verificación" }, 500);
     }
 
+    // Primera vez que esta persona usa Tierly (sin importar si ya estaba en el
+    // server de Discord desde antes, así que guildMemberAdd no la cubre).
+    if (!existingPlayer) {
+      const welcomeBotToken = Deno.env.get("DISCORD_BOT_TOKEN");
+      const welcomeGuildId = Deno.env.get("DISCORD_GUILD_ID");
+      if (welcomeBotToken && welcomeGuildId) {
+        try {
+          let welcomeChannelId = Deno.env.get("WELCOME_CHANNEL_ID");
+          if (!welcomeChannelId) {
+            const channelsResponse = await fetch(
+              `https://discord.com/api/v10/guilds/${welcomeGuildId}/channels`,
+              { headers: { Authorization: `Bot ${welcomeBotToken}` } },
+            );
+            if (channelsResponse.ok) {
+              const channels = await channelsResponse.json();
+              welcomeChannelId = channels.find(
+                (c: { name: string; type: number }) => c.name === "bienvenida-tierly" && c.type === 0,
+              )?.id;
+            }
+          }
+          if (welcomeChannelId) {
+            await fetch(`https://discord.com/api/v10/channels/${welcomeChannelId}/messages`, {
+              method: "POST",
+              headers: { Authorization: `Bot ${welcomeBotToken}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                content: `🐈‍⬛ ¡Bienvenido/a a Tierly, <@${discordId}>! Ya sos parte del leaderboard gaming de Tellus → https://telluscoop.org/tierly`,
+              }),
+            });
+          }
+        } catch (welcomeError) {
+          console.error("No se pudo enviar el saludo de bienvenida a Discord", welcomeError);
+        }
+      }
+    }
+
     const isFresh = player?.discord_verified_at &&
       Date.now() - new Date(player.discord_verified_at).getTime() < VERIFY_TTL_MS;
     if (isFresh) {
