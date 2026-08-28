@@ -25,7 +25,12 @@ const LEADERBOARD_URL = "https://telluscoop.org/tierly";
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
 });
 
 async function getWelcomeChannel(guild) {
@@ -186,6 +191,19 @@ client.on("guildMemberAdd", async (member) => {
     `🐈‍⬛ ¡Bienvenido/a, ${member}! Sumate al leaderboard gaming de Tellus → ${LEADERBOARD_URL}`,
   );
   await syncMembership(member);
+});
+
+// Comando manual para gente que ya era miembro del server antes de que el bot
+// arrancara — guildMemberAdd no dispara retroactivamente para esos casos.
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+  if (message.guild?.id !== DISCORD_GUILD_ID) return;
+  if (message.content.trim().toLowerCase() !== "!bienvenida") return;
+
+  await message.channel.send(
+    `🐈‍⬛ ¡Bienvenido/a, ${message.member}! Sumate al leaderboard gaming de Tellus → ${LEADERBOARD_URL}`,
+  );
+  await syncMembership(message.member);
 });
 
 client.login(DISCORD_BOT_TOKEN);
