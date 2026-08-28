@@ -114,21 +114,21 @@ import { calculatePoints } from "./points.mjs";
       profileStatWins: "Victorias", profileStatTop3: "Top 3", profileStatWinRate: "Win rate",
       profileLoginPrompt: "Inicia sesión con Discord para ver tus estadísticas.",
       streakTitle: "Racha actual", streakMonth: "mes", streakMonths: "meses",
-      streakActive: "Seguí jugando para mantener tu racha", streakInactive: "Sumate a un evento para empezar tu racha",
+      streakActive: "Sigue jugando para mantener tu racha", streakInactive: "Únete a un evento para empezar tu racha",
       streakNextReward: "Próxima recompensa", streakMonthsToGo: "faltan {months}",
       tierBronze: "Bronce", tierSilver: "Plata", tierGold: "Oro", tierPlatinum: "Platino", tierDiamond: "Diamante",
       tierMax: "Rango máximo alcanzado", tierProgress: "{points} pts para {tier}",
       ranksInfoBtn: "Ver rangos", ranksModalTitle: "Rangos y cómo funcionan",
-      ranksModalIntro: "Cada rango tiene 3 divisiones (1, 2 y 3). Arrancás en la división 1 y subís a la 2 y 3 sumando puntos, hasta pasar al siguiente rango.",
-      ranksModalPoints: "Sumás puntos jugando eventos: 10 pts por 1er puesto, 6 por 2do, 3 por 3ro, y 1 solo por participar.",
+      ranksModalIntro: "Cada rango tiene 3 divisiones (1, 2 y 3). Empiezas en la división 1 y subes a la 2 y 3 sumando puntos, hasta pasar al siguiente rango.",
+      ranksModalPoints: "Ganas puntos jugando eventos: 10 pts por 1er puesto, 6 por 2do, 3 por 3ro, y 1 solo por participar.",
       ranksModalClose: "Cerrar",
       ranksModalPtsFrom: "desde {points} pts",
-      tierDescBronze: "Todos arrancan acá. Sumá puntos en eventos para empezar a subir.",
-      tierDescSilver: "Ya mostraste que sos constante en el ranking.",
-      tierDescGold: "Un jugador destacado, entre los mejores del server.",
+      tierDescBronze: "Todos empiezan aquí. Gana puntos en eventos para empezar a subir.",
+      tierDescSilver: "Ya has demostrado constancia en el ranking.",
+      tierDescGold: "Un jugador destacado, entre los mejores del servidor.",
       tierDescPlatinum: "Nivel de élite — pocos jugadores llegan tan lejos.",
       tierDescDiamond: "El rango más alto. Reservado para los mejores de la temporada.",
-      profileHistoryEmpty: "Todavía no jugaste ninguna partida.",
+      profileHistoryEmpty: "Todavía no has jugado ninguna partida.",
       playerBackBtn: "← Volver al ranking",
       playerNotFound: "Este perfil no está disponible.",
       top5: "Top 5", all: "Todos", viewFull: "Ver leaderboard completo", searchPlaceholder: "Buscar jugador…",
@@ -138,8 +138,8 @@ import { calculatePoints } from "./points.mjs";
       loginDiscord: "Iniciar sesión con Discord", loginedAs: "Sesión iniciada como",
       signOutBtn: "Cerrar sesión",
       profileEditBtn: "Editar perfil", profileEditBtnClose: "Listo",
-      bannerPickerTitle: "Elegí un banner",
-      bannerAdjustBtn: "Ajustar posición", bannerAdjustTitle: "Ajustá tu banner",
+      bannerPickerTitle: "Elige un banner",
+      bannerAdjustBtn: "Ajustar posición", bannerAdjustTitle: "Ajusta tu banner",
       bannerAdjustCancel: "Cancelar", bannerAdjustApply: "Aplicar",
       passportUnlinkBtn: "Desvincular",
       profileSaveBtn: "Guardar perfil",
@@ -149,7 +149,7 @@ import { calculatePoints } from "./points.mjs";
       profileInstagramLabel: "Usuario de Instagram",
       profileTelegramLabel: "Usuario de Telegram",
       profileDiscordLabel: "Usuario de Discord",
-      profileLinkedHint: "Estos campos se copian desde Stellar Passport cuando te vinculás. Después podés editarlos acá. Si querés volver a sincronizar con Passport, desvinculate y vinculá de nuevo.",
+      profileLinkedHint: "Estos campos se copian desde Stellar Passport cuando vinculas tu cuenta. Después puedes editarlos aquí. Si quieres volver a sincronizar con Passport, desvincula y vincula de nuevo.",
       profileSaved: "Perfil guardado.",
       profileSettingsTitle: "Configuración del perfil",
       profilePassportLinked: "Passport vinculado",
@@ -179,9 +179,9 @@ import { calculatePoints } from "./points.mjs";
       upcomingEventsTitle: "Próximos eventos", recentActivityTitle: "Actividad reciente",
       noUpcomingEvents: "No hay próximos eventos todavía.", noRecentActivity: "Todavía no hay actividad reciente.",
       activityReward: "recibió",
-      passportPlaceholder: "Buscá tu handle de Stellar Passport…",
+      passportPlaceholder: "Busca tu handle de Stellar Passport…",
       passportLinkBtn: "Vincular",
-      passportLinkError: "No pudimos vincular este perfil. Revisá el handle e intentá de nuevo.",
+      passportLinkError: "No pudimos vincular este perfil. Revisa el handle e inténtalo de nuevo.",
       passportLinked: "Perfil de Stellar Passport ↗",
       passportResultsLabel: "También en Stellar Passport",
       passportNoMatches: "No encontramos coincidencias",
@@ -189,7 +189,7 @@ import { calculatePoints } from "./points.mjs";
       discordJoinBtn: "Unirse al Discord de Tellus",
       discordVerifyBtn: "Ya me uní · Verificar",
       discordChecking: "Comprobando tu membresía…",
-      discordVerifyError: "No pudimos comprobar Discord ahora. Probá de nuevo en un momento.",
+      discordVerifyError: "No pudimos comprobar Discord ahora. Inténtalo de nuevo en un momento.",
     },
   };
   const X_ICON = `<svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`;
@@ -565,17 +565,20 @@ import { calculatePoints } from "./points.mjs";
         ? `<img src="${tier.icon}" alt="${esc(label)}" class="lb-ranks-modal-tier-icon" />`
         : `<span class="lb-ranks-modal-tier-icon-fallback"><i data-lucide="gem"></i></span>`;
       const divisionsHtml = tier.divisions
-        .map((min, i) => `<div class="lb-ranks-modal-division"><strong>${label} ${i + 1}</strong><span>${t("ranksModalPtsFrom").replace("{points}", min)}</span></div>`)
+        .map((min, i) => `<div class="lb-ranks-modal-division"><strong>${i + 1}</strong><span>${t("ranksModalPtsFrom").replace("{points}", min)}</span></div>`)
         .join("");
       return `
-        <div class="lb-ranks-modal-tier">
-          ${iconHtml}
+        <details class="lb-ranks-modal-tier">
+          <summary class="lb-ranks-modal-tier-summary">
+            ${iconHtml}
+            <span class="lb-ranks-modal-tier-name">${esc(label)}</span>
+            <span class="lb-ranks-modal-tier-range">${t("ranksModalPtsFrom").replace("{points}", tier.divisions[0])}</span>
+          </summary>
           <div class="lb-ranks-modal-tier-body">
-            <h3>${esc(label)}</h3>
             <p>${esc(t(TIER_DESC_KEY[tier.id]))}</p>
             <div class="lb-ranks-modal-divisions">${divisionsHtml}</div>
           </div>
-        </div>`;
+        </details>`;
     }).join("");
     window.lucide?.createIcons();
   }
