@@ -40,7 +40,40 @@ test("normalizes the public Klorenn envelope", () => {
     name: "Klorenn",
     display_name: "Klorenn",
     avatar_url: "avatar",
+    logo_url: "avatar",
   });
+});
+
+test("normalizes the public Passport fields the profile card renders", () => {
+  const response = {
+    builder: {
+      github_username: "Klorenn",
+      display_name: "Pau Koh",
+      avatar_url: "https://avatars.githubusercontent.com/u/189268805?s=200",
+      bio: "builder bio",
+      website_url: "https://example.com",
+      scf_tier: "navigator",
+    },
+    stats: { totalCommits30d: 60, activeDays30d: 9, lastActiveDate: "2026-08-26" },
+  };
+  const normalized = normalizeBuilderResponse(response);
+  assert.equal(normalized.username, "Klorenn");
+  assert.equal(normalized.name, "Pau Koh");
+  assert.equal(normalized.avatar_url, "https://avatars.githubusercontent.com/u/189268805?s=200");
+  assert.equal(normalized.logo_url, "https://avatars.githubusercontent.com/u/189268805?s=200");
+  assert.equal(normalized.description, "builder bio");
+  assert.equal(normalized.website, "https://example.com");
+});
+
+test("profile action exposes builder stats and project count from the public envelope", () => {
+  assert.match(edge, /response\?\.stats \|\| response\?\.data\?\.stats \|\| builder\?\.stats/);
+  assert.match(edge, /Array\.isArray\(response\?\.projects\)/);
+  assert.match(edge, /project_count/);
+});
+
+test("profile action flattens top 2 repos from projects", () => {
+  assert.match(edge, /top_repos/);
+  assert.match(edge, /\.slice\(0, 2\)/);
 });
 
 test("builder search uses the public fallback without paging", async () => {
@@ -56,6 +89,60 @@ test("builder search uses the public fallback without paging", async () => {
   assert.deepEqual(matches, [{ github_username: "Klorenn", display_name: "Klorenn", username: "Klorenn", name: "Klorenn" }]);
   assert.ok(calls.some((path) => path === "public:/api/builder/public/Klorenn"));
   assert.equal(calls.some((path) => path.includes("?limit=")), false);
+});
+
+test("builder search maps the public avatar for suggestion thumbnails", async () => {
+  const matches = await searchBuilders(async () => {
+    throw new Error("passport_404");
+  }, "key", "Klorenn", async () => ({
+    builder: { github_username: "Klorenn", display_name: "Pau Koh", avatar_url: "avatar" },
+  }));
+
+  assert.equal(matches[0].logo_url, "avatar");
+});
+
+test("passport-profile still normalizes public Passport builder data for linking", async () => {
+  const app = await readFile(new URL("../tierly/app.js", import.meta.url), "utf8");
+  assert.match(app, /renderImageWithFallback\(b\.logo_url, b\.name, "lb-passport-suggest-avatar"\)/);
+  assert.match(app, /demo\.stellarpassport\.xyz\/builder\/\$\{encodeURIComponent\(row\.dataset\.username\)\}/);
+});
+
+test("Tierly profile uses the synced Tierly fields instead of a separate Passport stats card", async () => {
+  const app = await readFile(new URL("../tierly/app.js", import.meta.url), "utf8");
+  assert.doesNotMatch(app, /passportCardTitle/);
+  assert.doesNotMatch(app, /passportStatsEmpty/);
+  assert.doesNotMatch(app, /passportStatsLoading/);
+  assert.doesNotMatch(app, /passportStatsError/);
+  assert.doesNotMatch(app, /function renderPassportStats/);
+  assert.doesNotMatch(app, /currentPlayer\?\.stellar_passport_project_count/);
+  assert.doesNotMatch(app, /currentPlayer\?\.stellar_passport_commits_30d/);
+  assert.doesNotMatch(app, /currentPlayer\?\.stellar_passport_active_days_30d/);
+  assert.doesNotMatch(app, /currentPlayer\?\.stellar_passport_role_title/);
+  assert.doesNotMatch(app, /currentPlayer\?\.stellar_passport_tier/);
+  assert.match(app, /currentPlayer\?\.bio/);
+  assert.match(app, /player\?\.twitter_handle/);
+  assert.match(app, /player\?\.instagram_handle/);
+  assert.match(app, /player\?\.telegram_handle/);
+  assert.match(app, /player\?\.discord_handle/);
+  assert.match(app, /action:\s*"update_profile"/);
+  assert.match(app, /action:\s*"unlink_passport"/);
+});
+
+test("Tierly syncs the persisted player snapshot immediately after verify and link responses", async () => {
+  const app = await readFile(new URL("../tierly/app.js", import.meta.url), "utf8");
+  assert.match(app, /syncCurrentPlayer\(data\?\.player \|\| currentPlayer,\s*data\?\.stellar_passport_url \|\| currentPassportUrl\)/);
+  assert.match(app, /syncCurrentPlayer\(data\?\.player \|\| currentPlayer,\s*effectivePassportUrl\)/);
+  assert.match(app, /renderProfileAvatar\(\)/);
+  assert.match(app, /renderProfileSummary\(\)/);
+});
+
+test("Tierly profile view keeps only the profile card and history blocks", async () => {
+  const html = await readFile(new URL("../tierly/index.html", import.meta.url), "utf8");
+  assert.match(html, /id="lb-profile-summary"/);
+  assert.match(html, /id="lb-profile-history-title"/);
+  assert.doesNotMatch(html, /id="lb-profile-account-title"/);
+  assert.doesNotMatch(html, /id="lb-passport-card-title"/);
+  assert.doesNotMatch(html, /id="lb-passport-stats"/);
 });
 
 test("profile normalizes the public Klorenn envelope with stats", () => {

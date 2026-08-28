@@ -56,11 +56,37 @@ const passportMigration = await readFile(
   "utf8",
 );
 
+const passportProfileSyncMigration = await readFile(
+  new URL("../supabase/migrations/20260826050000_sync_passport_profile_snapshot.sql", import.meta.url),
+  "utf8",
+);
+
 test("stellar_passport_url is a self-reported text column, exposed publicly, no new write RLS", () => {
   assert.match(passportMigration, /add column if not exists stellar_passport_url text/);
   assert.match(passportMigration, /stellar_passport_url/);
   assert.doesNotMatch(passportMigration, /_member_all|for all to authenticated/);
   assert.match(passportMigration, /grant select on public\.leaderboard_public_view to anon, authenticated/);
+});
+
+test("gaming_players stores Passport link metadata plus editable local profile fields", () => {
+  for (const column of [
+    "username",
+    "bio",
+    "twitter_handle",
+    "telegram_handle",
+    "discord_handle",
+    "stellar_passport_username",
+    "stellar_passport_avatar_url",
+    "stellar_passport_bio",
+    "stellar_passport_role_title",
+    "stellar_passport_tier",
+    "stellar_passport_project_count",
+    "stellar_passport_commits_30d",
+    "stellar_passport_active_days_30d",
+  ]) {
+    assert.match(passportProfileSyncMigration, new RegExp(`add column if not exists ${column} `));
+  }
+  assert.match(passportProfileSyncMigration, /grant select on public\.leaderboard_public_view to anon, authenticated/);
 });
 
 test("score trigger is security definer with a locked search_path", () => {
@@ -133,12 +159,35 @@ test("discord-verify only writes stellar_passport_url via the service-role chann
   assert.match(edge, /parsed\.protocol === "https:"/);
 });
 
+test("discord-verify never reports success when player persistence fails", () => {
+  assert.match(edge, /if \(upsertError\) \{[\s\S]*return json\(\{ error: "No se pudo guardar la verificación" \}, 500\);/);
+  assert.match(edge, /if \(updateError\) \{[\s\S]*return json\(\{ error: "No se pudo guardar la verificación" \}, 500\);/);
+});
+
 test("discord-verify falls back to Passport's public builder endpoint for demo profiles", () => {
-  assert.match(edge, /api\/builder\/public\/\$\{encodeURIComponent\(username\)\}/);
+  assert.match(edge, /api\/builder\/public\/\$\{encodeURIComponent\(linkedUsername\)\}/);
   assert.match(edge, /builderResponse\?\.ok/);
   assert.match(edge, /publicBuilderResponse\.status === 404/);
   assert.match(edge, /publicBuilderResponse\.status === 404[\s\S]*?No encontramos ese perfil en Stellar Passport/);
-  assert.match(edge, /builder\.builder\?\.github_username/);
+  assert.match(edge, /normalizePassportProfile\(builderData,\s*linkedUsername\)/);
+});
+
+test("discord-verify copies Passport profile fields into the Tierly profile, supports local edits, and can unlink for a clean relink", () => {
+  assert.match(edge, /action === "update_profile"/);
+  assert.match(edge, /action === "unlink_passport"/);
+  assert.match(edge, /display_name:\s*cleanText\(builder\?\.display_name \?\? builder\?\.name/);
+  assert.match(edge, /bio:\s*passportBio/);
+  assert.match(edge, /twitter_handle:\s*cleanHandle\(builder\?\.twitter_handle\)/);
+  assert.match(edge, /telegram_handle:\s*cleanHandle\(builder\?\.telegram_handle\)/);
+  assert.match(edge, /discord_handle:\s*cleanHandle\(builder\?\.discord_handle \?\? builder\?\.discord_username\)/);
+  assert.match(edge, /twitter_handle/);
+  assert.match(edge, /telegram_handle/);
+  assert.match(edge, /discord_handle/);
+  assert.match(edge, /builder\?\.avatar_url/);
+  assert.match(edge, /builder\?\.bio/);
+  assert.match(edge, /builder\?\.twitter_handle/);
+  assert.match(edge, /builder\?\.telegram_handle/);
+  assert.match(edge, /builder\?\.discord_handle/);
 });
 
 test("discord-verify's avatar lookup is gated to non-viewer staff, never the calling player", () => {
@@ -158,7 +207,13 @@ test("discord-verify reflects only approved production and local origins", () =>
 });
 
 const app = await readFile(new URL("../ops/tierly/app.js", import.meta.url), "utf8");
+const tierlyApp = await readFile(new URL("../tierly/app.js", import.meta.url), "utf8");
 const page = await readFile(new URL("../ops/tierly/index.html", import.meta.url), "utf8");
+
+test("Tierly refreshes the synced profile after linking instead of rendering a second Passport panel", () => {
+  assert.match(tierlyApp, /const effectivePassportUrl = data\?\.stellar_passport_url \|\| selectedUrl;[\s\S]*renderProfileAvatar\(\);[\s\S]*renderProfileSummary\(\);[\s\S]*renderPassportLink\(effectivePassportUrl\);/);
+  assert.doesNotMatch(tierlyApp, /renderPassportStats\(effectivePassportUrl\)/);
+});
 
 test("admin ops app never embeds secrets", () => {
   assert.doesNotMatch(app, /service[_-]?role/i);

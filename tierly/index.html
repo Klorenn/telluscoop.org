@@ -4,9 +4,26 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tierly Gaming Leaderboard</title>
-  <meta name="description" content="Cumulative ranking across every Tellus gaming event — Mario Kart, Smash, and more." />
+  <meta name="description" content="Compete in events. Climb the ranks. Earn epic rewards across every Tellus gaming event." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://telluscoop.org/tierly" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://telluscoop.org/tierly" />
+  <meta property="og:site_name" content="Tellus Cooperative" />
+  <meta property="og:title" content="Tierly Gaming Leaderboard" />
+  <meta property="og:description" content="Compete in events. Climb the ranks. Earn epic rewards across every Tellus gaming event." />
+  <meta property="og:image" content="https://telluscoop.org/tierly/OpenGraph.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1729" />
+  <meta property="og:image:height" content="910" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="es_LA" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@TellusCoop" />
+  <meta name="twitter:creator" content="@TellusCoop" />
+  <meta name="twitter:title" content="Tierly Gaming Leaderboard" />
+  <meta name="twitter:description" content="Compete in events. Climb the ranks. Earn epic rewards across every Tellus gaming event." />
+  <meta name="twitter:image" content="https://telluscoop.org/tierly/OpenGraph.png" />
   <link rel="icon" type="image/png" href="/tierly/tierly-logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -73,9 +90,7 @@
     }
     :root[data-theme="dark"] .lb-main { background: var(--card); }
 
-    .lb-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 30px; }
-    .lb-hero h1 { font-family: var(--serif); font-size: clamp(30px, 3.6vw, 40px); letter-spacing: -0.01em; }
-    .lb-hero p { margin-top: 8px; color: var(--ink-dim); font-size: 15px; max-width: 48ch; }
+    .lb-view-head[hidden] { display: none; }
 
     .lb-discord-btn {
       display: inline-flex; align-items: center; gap: 9px;
@@ -104,23 +119,201 @@
     .lb-gate-retry:hover { background: var(--hover-bg); }
     .lb-verified-badge { display: block; font-size: 12px; font-weight: 600; color: var(--teal-bright); }
 
-    .lb-profile-grid { display: grid; grid-template-columns: minmax(280px, 380px) minmax(280px, 1fr); gap: 24px; align-items: start; }
-    @media (max-width: 780px) { .lb-profile-grid { grid-template-columns: 1fr; } }
-    .lb-profile-identity-card, .lb-profile-stats-card {
+    .lb-profile-card {
       background: var(--card); border: 1px solid var(--card-border); border-radius: 18px;
-      padding: 26px; box-shadow: var(--card-shadow); min-width: 0;
+      box-shadow: var(--card-shadow); padding: 26px 26px 24px;
+      position: relative; z-index: 1;
     }
-    .lb-profile-identity-card h3, .lb-profile-stats-card h3 {
+    .lb-profile-card h3 {
       font-family: var(--serif); font-size: 17px; color: var(--ink); margin-bottom: 16px;
       padding-bottom: 12px; border-bottom: 1px solid var(--card-border);
+    }
+    .lb-profile-edit-btn {
+      font-size: 12.5px; font-weight: 600; color: var(--teal-bright); background: none;
+      border: 1px solid var(--card-border); border-radius: 999px; padding: 6px 14px; cursor: pointer;
+    }
+    .lb-profile-edit-btn:hover { background: var(--hover-bg); }
+    .lb-profile-banner {
+      width: 100%; height: 260px; background-size: cover; background-position: center;
+      background-color: var(--chip-bg);
+    }
+    .lb-profile-banner-full {
+      width: 100%; height: 280px; background-color: var(--chip-bg); border-radius: 18px;
+      overflow: hidden; position: relative;
+    }
+    .lb-profile-banner-full img {
+      display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%;
+      transform-origin: center; will-change: transform;
+    }
+    @media (max-width: 780px) { .lb-profile-banner { height: 160px; } .lb-profile-banner-full { height: 180px; } }
+    .lb-profile-banner-adjust-btn {
+      font-size: 12.5px; font-weight: 600; color: var(--teal-bright); background: none;
+      border: 1px solid var(--card-border); border-radius: 999px; padding: 6px 14px; cursor: pointer;
+      margin: 10px 0 12px;
+    }
+    .lb-profile-banner-adjust-btn:hover { background: var(--hover-bg); }
+    .lb-crop-modal {
+      border: none; border-radius: 20px; padding: 24px; width: min(520px, 92vw);
+      background: var(--card); color: var(--ink); box-shadow: 0 20px 60px rgba(15,35,30,0.25);
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0;
+    }
+    .lb-crop-modal::backdrop { background: rgba(15,35,30,0.55); }
+    .lb-crop-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .lb-crop-modal-head h2 { font-family: var(--serif); font-size: 18px; color: var(--ink); }
+    .lb-crop-modal-close-btn {
+      background: none; border: none; font-size: 22px; line-height: 1; color: var(--ink-dim);
+      cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: background 140ms ease;
+    }
+    .lb-crop-modal-close-btn:hover { background: var(--hover-bg); }
+    .lb-crop-frame {
+      width: 100%; aspect-ratio: 4.2 / 1; border-radius: 12px; overflow: hidden;
+      position: relative; background: var(--chip-bg); cursor: grab; touch-action: none;
+      user-select: none;
+    }
+    .lb-crop-frame.is-dragging { cursor: grabbing; }
+    .lb-crop-frame img {
+      position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+      pointer-events: none; will-change: transform;
+    }
+    .lb-crop-zoom-row { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 16px; }
+    .lb-crop-zoom-btn {
+      width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--card-border); background: var(--card);
+      color: var(--ink); font-size: 18px; line-height: 1; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; transition: background 120ms ease;
+    }
+    .lb-crop-zoom-btn:hover:not(:disabled) { background: var(--hover-bg); }
+    .lb-crop-zoom-btn:disabled { opacity: 0.35; cursor: default; }
+    .lb-crop-zoom-label { font-size: 12.5px; color: var(--ink-dim); min-width: 44px; text-align: center; }
+    .lb-crop-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .lb-crop-modal-cancel {
+      background: none; border: 1px solid var(--card-border); color: var(--ink-dim);
+      border-radius: 999px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .lb-crop-modal-cancel:hover { background: var(--hover-bg); }
+    .lb-crop-modal-apply {
+      background: var(--teal-bright); border: none; color: #fff;
+      border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .lb-crop-modal-apply:hover { filter: brightness(1.05); }
+    .lb-profile-avatar-wrap { margin: 0 0 16px; position: relative; z-index: 2; }
+    .lb-profile-avatar-wrap .lb-session-avatar {
+      width: 96px; height: 96px; border-radius: 50%; border: 4px solid var(--card); box-shadow: var(--card-shadow);
+    }
+    .lb-profile-avatar-wrap .lb-session-avatar-fallback { width: 96px; height: 96px; font-size: 28px; }
+    .lb-profile-avatar-wrap:empty { display: none; }
+    .lb-banner-carousel { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .lb-banner-carousel-track {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; flex: 1; min-width: 0;
+    }
+    .lb-banner-carousel-arrow {
+      width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--card-border);
+      background: var(--card); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; color: var(--ink-dim); transition: background 120ms, color 120ms;
+    }
+    .lb-banner-carousel-arrow:hover:not(:disabled) { background: var(--hover-bg); color: var(--ink); }
+    .lb-banner-carousel-arrow:disabled { opacity: 0.3; cursor: default; }
+    .lb-profile-banner-option {
+      height: 44px; border-radius: 8px; border: 2px solid transparent; background-size: cover;
+      background-position: center; cursor: pointer; padding: 0;
+    }
+    .lb-profile-banner-option.is-active { border-color: var(--teal-bright); }
+    @media (max-width: 520px) {
+      .lb-banner-carousel-track { grid-template-columns: repeat(3, 1fr); }
     }
     .lb-profile-stats-empty {
       color: var(--ink-dim); font-size: 13.5px; display: flex; flex-direction: column;
       align-items: center; text-align: center; gap: 8px; padding: 28px 12px;
     }
-    .lb-profile-identity-card .lb-session-pill { width: 100%; box-sizing: border-box; }
-    .lb-profile-identity-card .lb-discord-gate { margin-top: 16px; }
-    .lb-profile-identity-card .lb-passport-block { text-align: left; margin-top: 12px; }
+    .lb-profile-summary-block { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+    .lb-profile-summary-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .lb-profile-summary-name { font-family: var(--serif); font-size: 19px; color: var(--ink); }
+    .lb-profile-summary-bio, .lb-profile-linked-hint {
+      margin: 0; font-size: 13px; line-height: 1.6; color: var(--ink-dim);
+    }
+    .lb-profile-summary-socials { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; }
+    .lb-profile-summary-socials a,
+    .lb-profile-summary-socials .lb-passport-stat-social-static { display: inline-flex; align-items: center; gap: 5px; color: var(--teal-bright); text-decoration: none; }
+    .lb-profile-summary-socials a:hover { text-decoration: underline; }
+    .lb-profile-summary-socials svg { width: 15px; height: 15px; fill: currentColor; flex-shrink: 0; }
+    .lb-profile-edit-panel { display: flex; flex-direction: column; gap: 20px; margin-top: 16px; }
+    .lb-profile-edit-section { display: flex; flex-direction: column; gap: 10px; }
+    .lb-profile-edit-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .lb-profile-edit-label { font-size: 12px; font-weight: 600; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+    .lb-profile-settings-actions { display: flex; flex-direction: column; gap: 10px; }
+    .lb-profile-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .lb-profile-setting-info { font-size: 13px; color: var(--ink-dim); }
+    .lb-profile-link-btn { width: auto; padding: 8px 16px; font-size: 12.5px; }
+    .lb-profile-setting-row { flex-direction: column; align-items: stretch; }
+    .lb-profile-edit-field-label { font-size: 12px; font-weight: 600; color: var(--ink-dim); margin-bottom: 4px; }
+    .lb-profile-form-input {
+      width: 100%; box-sizing: border-box; background: var(--card); border: 1px solid var(--card-border);
+      border-radius: 10px; padding: 10px 12px; font: inherit; color: var(--ink); font-size: 13px;
+    }
+    .lb-profile-form-input:focus { outline: none; border-color: var(--accent); }
+    .lb-profile-form { display: grid; gap: 12px; margin-top: 16px; }
+    .lb-profile-form label { display: grid; gap: 6px; }
+    .lb-profile-form span { font-size: 12px; font-weight: 600; color: var(--ink-dim); }
+    .lb-profile-form input,
+    .lb-profile-form textarea {
+      width: 100%; box-sizing: border-box; background: var(--card); border: 1px solid var(--card-border);
+      border-radius: 10px; padding: 10px 12px; font: inherit; color: var(--ink);
+    }
+    .lb-profile-form textarea { resize: vertical; min-height: 112px; }
+    .lb-profile-form-message { margin: 0; font-size: 12px; color: var(--ink-dim); line-height: 1.5; }
+    .lb-signout-btn {
+      margin-left: auto; font-size: 11.5px; font-weight: 600; color: var(--ink-dim);
+      background: none; border: none; cursor: pointer; text-decoration: underline;
+    }
+    .lb-signout-btn:hover { color: var(--ink); }
+    .lb-passport-linked-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .lb-passport-unlink-btn {
+      font-size: 11.5px; font-weight: 600; color: var(--ink-dim); background: none;
+      border: none; cursor: pointer; text-decoration: underline;
+    }
+    .lb-passport-unlink-btn:hover { color: var(--ink); }
+    .lb-profile-tier-badge {
+      display: flex; align-items: center; gap: 12px; margin-top: 16px; padding-top: 16px;
+      border-top: 1px solid var(--card-border);
+    }
+    .lb-profile-tier-badge:empty { display: none; }
+    .lb-streak-card {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin-top: 16px; padding: 14px 16px; border-radius: 14px; background: var(--sand-soft);
+    }
+    .lb-streak-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .lb-streak-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-dim); font-weight: 600; }
+    .lb-streak-count { font-family: var(--serif); font-size: 20px; color: var(--ink); }
+    .lb-streak-sub { font-size: 12.5px; color: var(--ink-dim); }
+    .lb-streak-next { font-size: 12px; color: var(--teal-bright); font-weight: 600; }
+    .lb-streak-cat { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; }
+    .lb-profile-tier-icon { width: 44px; height: 44px; object-fit: contain; flex-shrink: 0; }
+    .lb-profile-tier-icon-fallback {
+      display: flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+      border-radius: 50%; background: var(--chip-bg); color: var(--ink-dim);
+    }
+    .lb-profile-tier-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .lb-profile-tier-text strong { font-family: var(--serif); font-size: 15px; color: var(--ink); }
+    .lb-profile-tier-progress { font-size: 12px; color: var(--ink-dim); }
+
+    .lb-profile-stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; padding-bottom: 20px; border-bottom: 1px solid var(--card-border); }
+    .lb-profile-stats-row .lb-stat-card:nth-child(n+5) { justify-self: center; width: 100%; }
+    @media (max-width: 640px) { .lb-profile-stats-row { grid-template-columns: repeat(2, 1fr); } .lb-profile-stats-row .lb-stat-card:nth-child(n+5) { justify-self: stretch; } }
+    @media (max-width: 360px) { .lb-profile-stats-row { grid-template-columns: 1fr; } }
+    .lb-profile-history-scroll { max-height: 320px; overflow-y: auto; }
+    .lb-passport-stat-header-text { align-items: flex-start; }
+
+    .lb-profile-history-row {
+      display: flex; align-items: center; gap: 12px; padding: 12px 0;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .lb-profile-history-row:last-child { border-bottom: none; }
+    .lb-profile-history-event { flex: 1; min-width: 0; font-size: 14px; color: var(--ink); font-weight: 600; }
+    .lb-profile-history-date { font-size: 12.5px; color: var(--ink-dim); }
+    .lb-profile-history-points { font-family: var(--serif); font-size: 15px; color: var(--ink); font-weight: 600; }
+    .lb-profile-history-empty {
+      color: var(--ink-dim); font-size: 13.5px; display: flex; flex-direction: column;
+      align-items: center; text-align: center; gap: 8px; padding: 28px 12px;
+    }
 
     .lb-passport-stat-card { display: flex; flex-direction: column; gap: 14px; }
     .lb-passport-stat-header { display: flex; align-items: center; gap: 12px; text-decoration: none; }
@@ -140,6 +333,17 @@
       display: inline-flex; align-items: center; gap: 4px;
     }
     .lb-passport-stat-link:hover { text-decoration: underline; }
+    .lb-passport-stat-role { display: block; font-size: 12px; color: var(--ink-dim); }
+    .lb-passport-stat-socials { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; }
+    .lb-passport-stat-socials a,
+    .lb-passport-stat-socials .lb-passport-stat-social-static { display: inline-flex; align-items: center; gap: 5px; color: var(--teal-bright); text-decoration: none; }
+    .lb-passport-stat-socials a:hover { text-decoration: underline; }
+    .lb-passport-stat-socials .lb-passport-stat-social-static { color: var(--ink-dim); }
+    .lb-passport-stat-socials svg { width: 15px; height: 15px; fill: currentColor; flex-shrink: 0; }
+    .lb-passport-stat-repos { display: flex; flex-direction: column; gap: 4px; }
+    .lb-passport-stat-repos-title { font-size: 12px; font-weight: 600; color: var(--ink-dim); }
+    .lb-passport-stat-repo { font-size: 12.5px; color: var(--teal-bright); text-decoration: none; }
+    .lb-passport-stat-repo:hover { text-decoration: underline; }
     .lb-passport-block { margin-top: 8px; text-align: right; }
     .lb-passport-block form { display: inline-flex; gap: 6px; align-items: flex-start; width: 100%; max-width: 320px; }
     .lb-passport-autocomplete { position: relative; flex: 1; }
@@ -179,20 +383,20 @@
 
     .lb-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
     .lb-stat-card {
-      background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; padding: 18px 20px;
-      display: flex; align-items: flex-start; gap: 12px; box-shadow: var(--card-shadow);
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 16px 18px;
+      display: flex; align-items: center; gap: 14px; box-shadow: var(--card-shadow);
       transition: box-shadow 160ms ease, transform 160ms ease;
     }
     .lb-stat-card:hover { box-shadow: 0 6px 24px rgba(15,35,30,0.07); transform: translateY(-1px); }
     .lb-stat-icon {
-      width: 36px; height: 36px; border-radius: 10px; background: var(--chip-bg);
+      width: 40px; height: 40px; border-radius: 12px; background: var(--chip-bg);
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .lb-stat-icon svg { width: 18px; height: 18px; color: var(--ink-dim); }
+    .lb-stat-icon svg { width: 20px; height: 20px; color: var(--ink-dim); }
     .lb-stat-accent .lb-stat-icon { background: rgba(199,90,42,0.12); }
     .lb-stat-accent .lb-stat-icon svg { color: var(--clay); }
     .lb-stat-label { display: block; font-size: 12px; color: var(--ink-dim); margin-bottom: 2px; }
-    .lb-stat-card strong { display: block; font-family: var(--serif); font-size: 24px; color: var(--ink); }
+    .lb-stat-card strong { display: block; font-family: var(--serif); font-size: 22px; color: var(--ink); line-height: 1.2; }
     .lb-stat-cta { display: block; font-size: 11.5px; font-weight: 700; color: var(--clay); text-decoration: none; margin-top: 2px; }
 
     .lb-content-grid { display: flex; gap: 24px; align-items: flex-start; }
@@ -204,6 +408,7 @@
     }
 
     .lb-view-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+    .lb-season-note { display: block; font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
     .lb-view-head h2 { font-family: var(--serif); font-size: 21px; color: var(--ink); }
     .lb-rank-controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; flex: 1; justify-content: flex-end; }
     .lb-rank-tabs { display: flex; gap: 20px; }
@@ -212,6 +417,52 @@
       color: var(--ink-dim); cursor: pointer; padding: 5px 0; border-bottom: 2px solid transparent;
     }
     .lb-rank-tabs button.is-active { color: var(--ink); border-color: var(--glow); }
+
+    .lb-ranks-info-btn {
+      display: inline-flex; align-items: center; gap: 7px; background: var(--sand-soft);
+      border: 1px solid var(--card-border); border-radius: 999px; padding: 8px 14px;
+      font-family: var(--sans); font-size: 13px; font-weight: 600; color: var(--ink);
+      cursor: pointer; transition: background 140ms ease; white-space: nowrap;
+    }
+    .lb-ranks-info-btn:hover { background: var(--hover-bg); }
+    .lb-ranks-info-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    .lb-ranks-modal {
+      border: none; border-radius: 20px; padding: 28px; width: min(960px, 95vw);
+      max-height: 85vh; overflow-y: auto; background: var(--card); color: var(--ink);
+      box-shadow: 0 20px 60px rgba(15,35,30,0.25);
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0;
+    }
+    .lb-ranks-modal::backdrop { background: rgba(15,35,30,0.45); }
+    .lb-ranks-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .lb-ranks-modal-head h2 { font-family: var(--serif); font-size: 22px; color: var(--ink); }
+    .lb-ranks-modal-close-btn {
+      background: none; border: none; font-size: 24px; line-height: 1; color: var(--ink-dim);
+      cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: background 140ms ease;
+    }
+    .lb-ranks-modal-close-btn:hover { background: var(--hover-bg); }
+    .lb-ranks-modal-intro { font-size: 13.5px; color: var(--ink-dim); line-height: 1.5; margin-bottom: 10px; }
+    .lb-ranks-modal-list { display: flex; flex-direction: row; flex-wrap: wrap; gap: 14px; margin-top: 16px; }
+    .lb-ranks-modal-tier {
+      display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center;
+      padding: 14px; border-radius: 14px; flex: 1 1 160px; min-width: 160px;
+      background: var(--sand-soft); border: 1px solid var(--card-border);
+    }
+    .lb-ranks-modal-tier-icon { width: 40px; height: 40px; object-fit: contain; flex-shrink: 0; }
+    .lb-ranks-modal-tier-icon-fallback {
+      display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+      border-radius: 50%; background: var(--chip-bg); color: var(--ink-dim); flex-shrink: 0;
+    }
+    .lb-ranks-modal-tier-body { min-width: 0; }
+    .lb-ranks-modal-tier-body h3 { font-family: var(--serif); font-size: 16px; color: var(--ink); margin-bottom: 3px; }
+    .lb-ranks-modal-tier-body p { font-size: 12.5px; color: var(--ink-dim); line-height: 1.45; margin-bottom: 8px; }
+    .lb-ranks-modal-divisions { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+    .lb-ranks-modal-division {
+      display: flex; flex-direction: column; align-items: center; gap: 1px;
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 10px;
+      padding: 5px 10px; font-size: 11px; color: var(--ink-dim); min-width: 60px; width: 100%;
+    }
+    .lb-ranks-modal-division strong { font-size: 12.5px; color: var(--ink); }
 
     .lb-search-input {
       appearance: none; width: 100%; max-width: 320px; min-width: 220px; font-family: var(--sans);
@@ -225,7 +476,7 @@
     .lb-search-input::-webkit-search-cancel-button { cursor: pointer; }
 
     .lb-passport-results { margin-top: 10px; border-top: 1px solid var(--card-border); padding-top: 10px; }
-    .lb-passport-results-label { font-family: var(--sans); font-size: 12px; font-weight: 600; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .lb-passport-results-label, .lb-rank-results-label { font-family: var(--sans); font-size: 12px; font-weight: 600; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
     .lb-passport-result-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; text-decoration: none; }
     .lb-passport-result-row img,
     .lb-passport-result-row .lb-rank-avatar-fallback { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
@@ -244,6 +495,9 @@
     }
     .lb-rank-row:hover { background: var(--sand-soft); }
     .lb-rank-row-first { background: rgba(199,90,42,0.05); }
+    .lb-rank-row-clickable { cursor: pointer; }
+    .lb-rank-row-clickable:focus-visible { outline: 2px solid var(--teal-bright); outline-offset: 2px; }
+    .lb-rank-tier-icon { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; }
     .lb-rank-badge {
       width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
       font-family: var(--serif); font-size: 14px; font-weight: 700; color: var(--ink-dim);
@@ -424,12 +678,6 @@
         </div>
       </aside>
       <div class="lb-main">
-        <header class="lb-hero">
-          <div>
-            <h1 id="lb-title"></h1>
-            <p id="lb-subtitle"></p>
-          </div>
-        </header>
 
         <section id="lb-ranking-view" class="lb-view" data-view="ranking">
           <div class="lb-stats" id="lb-stats"></div>
@@ -437,8 +685,14 @@
             <div class="lb-col-main">
               <div class="lb-leaderboard-card">
                 <div class="lb-view-head">
-                  <h2 id="lb-ranking-title"></h2>
+                  <div>
+                    <h2 id="lb-ranking-title"></h2>
+                    <span id="lb-season-note" class="lb-season-note"></span>
+                  </div>
                   <div class="lb-rank-controls">
+                    <button id="lb-ranks-info-btn" type="button" class="lb-ranks-info-btn">
+                      <i data-lucide="info"></i><span id="lb-ranks-info-btn-label"></span>
+                    </button>
                     <div id="lb-rank-tabs" class="lb-rank-tabs"></div>
                     <input type="search" id="lb-player-search" class="lb-search-input" />
                   </div>
@@ -473,22 +727,33 @@
         </section>
 
         <section class="lb-view" data-view="profile" hidden>
-          <h2 id="lb-profile-title" class="lb-view-head"></h2>
-          <div class="lb-profile-grid">
-            <div class="lb-profile-identity-card">
-              <h3 id="lb-profile-account-title"></h3>
-              <div id="lb-auth"></div>
-            </div>
-            <div class="lb-profile-stats-card">
-              <h3 id="lb-passport-stats-title"></h3>
-              <div id="lb-passport-stats"></div>
-            </div>
+          <h2 id="lb-profile-title" class="lb-view-head" hidden></h2>
+          <div id="lb-profile-banner" class="lb-profile-banner-full"><img id="lb-profile-banner-img" alt="" /></div>
+          <div class="lb-profile-card">
+            <div id="lb-profile-avatar" class="lb-profile-avatar-wrap"></div>
+            <div id="lb-auth"></div>
+            <div id="lb-profile-summary"></div>
+            <div id="lb-profile-tier" class="lb-profile-tier-badge"></div>
+            <div id="lb-profile-streak"></div>
+            <div id="lb-profile-stats" class="lb-profile-stats-row"></div>
+            <h3 id="lb-profile-history-title"></h3>
+            <div id="lb-profile-history" class="lb-profile-history-scroll"></div>
           </div>
         </section>
 
         <section class="lb-view" data-view="settings" hidden>
           <h2 id="lb-settings-title" class="lb-view-head"></h2>
           <div id="lb-settings"></div>
+        </section>
+
+        <section class="lb-view" data-view="player" hidden>
+          <button type="button" id="lb-player-back-btn" class="lb-mini-btn lb-profile-link-btn" style="margin-bottom:16px;"><span id="lb-player-back-label"></span></button>
+          <div class="lb-profile-card">
+            <div id="lb-player-avatar" class="lb-profile-avatar-wrap"></div>
+            <div id="lb-player-summary"></div>
+            <div id="lb-player-tier" class="lb-profile-tier-badge"></div>
+            <div id="lb-player-stats" class="lb-profile-stats-row"></div>
+          </div>
         </section>
 
         <footer class="lb-footer">
@@ -508,9 +773,36 @@
         </footer>
       </div>
     </div>
+    <dialog id="lb-ranks-modal" class="lb-ranks-modal">
+      <div class="lb-ranks-modal-head">
+        <h2 id="lb-ranks-modal-title"></h2>
+        <button id="lb-ranks-modal-close" type="button" class="lb-ranks-modal-close-btn" aria-label="close">&times;</button>
+      </div>
+      <p id="lb-ranks-modal-intro" class="lb-ranks-modal-intro"></p>
+      <p id="lb-ranks-modal-points" class="lb-ranks-modal-intro"></p>
+      <div id="lb-ranks-modal-list" class="lb-ranks-modal-list"></div>
+    </dialog>
+    <dialog id="lb-crop-modal" class="lb-crop-modal">
+      <div class="lb-crop-modal-head">
+        <h2 id="lb-crop-modal-title"></h2>
+        <button id="lb-crop-modal-close" type="button" class="lb-crop-modal-close-btn" aria-label="close">&times;</button>
+      </div>
+      <div id="lb-crop-frame" class="lb-crop-frame">
+        <img id="lb-crop-frame-img" alt="" draggable="false" />
+      </div>
+      <div class="lb-crop-zoom-row">
+        <button type="button" id="lb-crop-zoom-out" class="lb-crop-zoom-btn" aria-label="Zoom out">&minus;</button>
+        <span id="lb-crop-zoom-label" class="lb-crop-zoom-label">100%</span>
+        <button type="button" id="lb-crop-zoom-in" class="lb-crop-zoom-btn" aria-label="Zoom in">&plus;</button>
+      </div>
+      <div class="lb-crop-modal-actions">
+        <button type="button" id="lb-crop-modal-cancel" class="lb-crop-modal-cancel"></button>
+        <button type="button" id="lb-crop-modal-apply" class="lb-crop-modal-apply"></button>
+      </div>
+    </dialog>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"></script>
-  <script src="/tierly/app.js?v=20260826-03"></script>
+  <script type="module" src="/tierly/app.js?v=20260827-01"></script>
 </body>
 </html>

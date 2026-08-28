@@ -16,6 +16,112 @@ const corsFor = (origin: string | null) => ({
 
 const VERIFY_TTL_MS = 10 * 60 * 1000;
 const PASSPORT_API_BASE = "https://demo.stellarpassport.xyz/api/v1";
+const PLAYER_SELECT = [
+  "id",
+  "display_name",
+  "username",
+  "avatar_url",
+  "bio",
+  "twitter_handle",
+  "telegram_handle",
+  "discord_handle",
+  "instagram_handle",
+  "discord_member",
+  "discord_verified_at",
+  "stellar_passport_url",
+  "stellar_passport_name",
+  "stellar_passport_username",
+  "stellar_passport_avatar_url",
+  "stellar_passport_bio",
+  "stellar_passport_role_title",
+  "stellar_passport_tier",
+  "stellar_passport_project_count",
+  "stellar_passport_commits_30d",
+  "stellar_passport_active_days_30d",
+].join(", ");
+
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 20);
+}
+
+async function generateUsername(admin: ReturnType<typeof createClient>, displayName: string | null, discordId: string): Promise<string> {
+  const base = slugify(displayName || "") || `player-${discordId.slice(-6)}`;
+  let candidate = base;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const { data } = await admin.from("gaming_players").select("id").eq("username", candidate).maybeSingle();
+    if (!data) return candidate;
+    candidate = `${base}-${Math.floor(Math.random() * 9000 + 1000)}`;
+  }
+  return `${base}-${discordId.slice(-6)}`;
+}
+
+function cleanText(value: unknown, maxLength: number) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().replace(/\s+/g, " ");
+  return normalized ? normalized.slice(0, maxLength) : null;
+}
+
+function cleanHandle(value: unknown) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().replace(/^@+/, "").replace(/\s+/g, "");
+  return normalized ? normalized.slice(0, 64) : null;
+}
+
+function normalizePassportProfile(builderData: Record<string, any>, username: string) {
+  const builder = builderData?.builder && typeof builderData.builder === "object"
+    ? builderData.builder
+    : builderData?.data && typeof builderData.data === "object"
+    ? builderData.data
+    : builderData;
+  const stats = builderData?.stats || builderData?.data?.stats || builder?.stats || {};
+  const projects = Array.isArray(builderData?.projects) ? builderData.projects : [];
+  const passportName = cleanText(
+    builder?.name ?? builder?.display_name ?? builder?.full_name ?? builder?.github_username ?? username,
+    120,
+  );
+  const passportUsername = cleanText(builder?.username ?? builder?.github_username ?? username, 80);
+  const passportAvatarUrl = cleanText(
+    builder?.avatar_url ?? builder?.avatar ?? builder?.image ?? builder?.logo_url,
+    500,
+  );
+  const passportBio = cleanText(builder?.bio ?? builder?.description, 1200);
+  const passportRoleTitle = cleanText(builder?.role_title, 160);
+  const passportTier = cleanText(builder?.scf_tier, 80);
+  const projectsCount = Array.isArray(projects) ? projects.length : null;
+  return {
+    display_name: cleanText(builder?.display_name ?? builder?.name, 120),
+    bio: passportBio,
+    twitter_handle: cleanHandle(builder?.twitter_handle),
+    telegram_handle: cleanHandle(builder?.telegram_handle),
+    discord_handle: cleanHandle(builder?.discord_handle ?? builder?.discord_username),
+    instagram_handle: cleanHandle(builder?.instagram_handle),
+    stellar_passport_name: passportName,
+    stellar_passport_username: passportUsername,
+    stellar_passport_avatar_url: passportAvatarUrl,
+    stellar_passport_bio: passportBio,
+    stellar_passport_role_title: passportRoleTitle,
+    stellar_passport_tier: passportTier,
+    stellar_passport_project_count: Number.isInteger(projectsCount) ? projectsCount : null,
+    stellar_passport_commits_30d: Number.isInteger(stats?.totalCommits30d) ? stats.totalCommits30d : null,
+    stellar_passport_active_days_30d: Number.isInteger(stats?.activeDays30d) ? stats.activeDays30d : null,
+  };
+}
+
+function buildResponse(player: Record<string, any> | null, verified: boolean) {
+  return {
+    verified,
+    stellar_passport_url: player?.stellar_passport_url ?? null,
+    stellar_passport_name: player?.stellar_passport_name ?? null,
+    username: player?.username ?? null,
+    player,
+  };
+}
 
 Deno.serve(async (request) => {
   const cors = corsFor(request.headers.get("Origin"));
@@ -90,28 +196,103 @@ Deno.serve(async (request) => {
       ?? user.user_metadata?.avatar_url
       ?? user.user_metadata?.picture
       ?? null;
+    const displayName = discordIdentity?.identity_data?.full_name ?? discordIdentity?.identity_data?.name ?? null;
+
+    const { data: existingPlayer } = await admin
+      .from("gaming_players")
+      .select(PLAYER_SELECT)
+      .eq("discord_id", discordId)
+      .maybeSingle();
+    const username = existingPlayer?.username ?? await generateUsername(admin, displayName, discordId);
+
+    if (body.action === "update_profile") {
+      const updates = {
+        display_name: cleanText(body.display_name, 120),
+        bio: cleanText(body.bio, 1200),
+        twitter_handle: cleanHandle(body.twitter_handle),
+        telegram_handle: cleanHandle(body.telegram_handle),
+        discord_handle: cleanHandle(body.discord_handle),
+        instagram_handle: cleanHandle(body.instagram_handle),
+      };
+      const { data: player, error: profileError } = await admin
+        .from("gaming_players")
+        .upsert(
+          {
+            discord_id: discordId,
+            username,
+            ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+            ...updates,
+          },
+          { onConflict: "discord_id" },
+        )
+        .select(PLAYER_SELECT)
+        .single();
+      if (profileError) {
+        console.error("gaming_players profile update failed", profileError);
+        return json({ error: "No se pudo guardar el perfil" }, 500);
+      }
+      return json(buildResponse(player, player?.discord_member === true));
+    }
+
+    if (body.action === "unlink_passport") {
+      const { data: player, error: unlinkError } = await admin
+        .from("gaming_players")
+        .upsert(
+          {
+            discord_id: discordId,
+            username,
+            ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+            stellar_passport_url: null,
+            stellar_passport_name: null,
+            stellar_passport_username: null,
+            stellar_passport_avatar_url: null,
+            stellar_passport_bio: null,
+            stellar_passport_role_title: null,
+            stellar_passport_tier: null,
+            stellar_passport_project_count: null,
+            stellar_passport_commits_30d: null,
+            stellar_passport_active_days_30d: null,
+            instagram_handle: null,
+          },
+          { onConflict: "discord_id" },
+        )
+        .select(PLAYER_SELECT)
+        .single();
+      if (unlinkError) {
+        console.error("gaming_players passport unlink failed", unlinkError);
+        return json({ error: "No se pudo desvincular el perfil" }, 500);
+      }
+      return json(buildResponse(player, player?.discord_member === true));
+    }
+
+    const requestedPassportUrl = typeof body.stellar_passport_url === "string" && body.stellar_passport_url.trim()
+      ? body.stellar_passport_url.trim()
+      : null;
+    // Auto-heal legacy links stored before bio/social columns existed: re-fetch
+    // once so stellar_passport_bio isn't stuck null forever without a manual unlink+relink.
+    const staleLinkedUrl = !requestedPassportUrl && existingPlayer?.stellar_passport_url && !existingPlayer?.stellar_passport_bio
+      ? existingPlayer.stellar_passport_url
+      : null;
 
     let stellarPassportUrl: string | undefined;
-    let stellarPassportName: string | null | undefined;
-    if (typeof body.stellar_passport_url === "string" && body.stellar_passport_url.trim()) {
-      const candidate = body.stellar_passport_url.trim();
-      let username: string | undefined;
+    let passportProfile: Record<string, any> | null = null;
+    if (requestedPassportUrl || staleLinkedUrl) {
+      const candidate = requestedPassportUrl || staleLinkedUrl!;
+      let linkedUsername: string | undefined;
       try {
         const parsed = new URL(candidate);
         if (parsed.protocol === "https:") {
           const segments = parsed.pathname.split("/").filter(Boolean);
-          username = segments[segments.length - 1];
+          linkedUsername = segments[segments.length - 1];
         }
       } catch {
         // Not a valid URL — falls through to the 400 below.
       }
-      if (!username) return json({ error: "URL de Stellar Passport inválida" }, 400);
+      if (!linkedUsername) return json({ error: "URL de Stellar Passport inválida" }, 400);
 
-      // Real read-only check against Passport's own API — a self-reported URL
-      // is never trusted or saved on its own.
       const passportApiKey = Deno.env.get("STELLAR_PASSPORT_API_KEY");
       const builderResponse = passportApiKey
-        ? await fetch(`${PASSPORT_API_BASE}/builders/${encodeURIComponent(username)}`, {
+        ? await fetch(`${PASSPORT_API_BASE}/builders/${encodeURIComponent(linkedUsername)}`, {
             headers: { Authorization: `Bearer ${passportApiKey}` },
           })
         : null;
@@ -123,15 +304,12 @@ Deno.serve(async (request) => {
         return json({ error: "No se pudo validar el perfil de Stellar Passport" }, 502);
       }
 
-      // Demo profiles are served by Passport's public endpoint rather than
-      // the authenticated v1 API. Only use it after a v1 404 (or without a
-      // key), and never send the private API key to this endpoint.
-      let builder: Record<string, any>;
+      let builderData: Record<string, any>;
       if (builderResponse?.ok) {
-        builder = await builderResponse.json();
+        builderData = await builderResponse.json();
       } else {
         const publicBuilderResponse = await fetch(
-          `https://demo.stellarpassport.xyz/api/builder/public/${encodeURIComponent(username)}`,
+          `https://demo.stellarpassport.xyz/api/builder/public/${encodeURIComponent(linkedUsername)}`,
         );
         if (publicBuilderResponse.status === 429) {
           return json({ error: "Límite de la API de Passport alcanzado, probá de nuevo en un rato" }, 429);
@@ -142,15 +320,11 @@ Deno.serve(async (request) => {
         if (!publicBuilderResponse.ok) {
           return json({ error: "No se pudo validar el perfil de Stellar Passport" }, 502);
         }
-        builder = await publicBuilderResponse.json();
+        builderData = await publicBuilderResponse.json();
       }
 
+      passportProfile = normalizePassportProfile(builderData, linkedUsername);
       stellarPassportUrl = candidate;
-      stellarPassportName = builder.data?.name
-        ?? builder.builder?.name
-        ?? builder.builder?.github_username
-        ?? builder.github_username
-        ?? username;
     }
 
     const { data: player, error: upsertError } = await admin
@@ -158,24 +332,31 @@ Deno.serve(async (request) => {
       .upsert(
         {
           discord_id: discordId,
-          display_name: discordIdentity?.identity_data?.full_name ?? discordIdentity?.identity_data?.name ?? null,
+          display_name: cleanText(passportProfile?.display_name ?? displayName, 120),
+          username,
           ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
-          ...(stellarPassportUrl ? { stellar_passport_url: stellarPassportUrl, stellar_passport_name: stellarPassportName } : {}),
+          ...(passportProfile?.stellar_passport_avatar_url ? { avatar_url: passportProfile.stellar_passport_avatar_url } : {}),
+          ...(passportProfile ? passportProfile : {}),
+          ...(stellarPassportUrl
+            ? {
+                stellar_passport_url: stellarPassportUrl,
+                stellar_passport_name: passportProfile?.stellar_passport_name ?? existingPlayer?.stellar_passport_name ?? null,
+              }
+            : {}),
         },
         { onConflict: "discord_id" },
       )
-      .select("discord_member, discord_verified_at, stellar_passport_url, stellar_passport_name")
+      .select(PLAYER_SELECT)
       .single();
-    if (upsertError) console.error("gaming_players upsert failed", upsertError);
+    if (upsertError) {
+      console.error("gaming_players upsert failed", upsertError);
+      return json({ error: "No se pudo guardar la verificación" }, 500);
+    }
 
     const isFresh = player?.discord_verified_at &&
       Date.now() - new Date(player.discord_verified_at).getTime() < VERIFY_TTL_MS;
     if (isFresh) {
-      return json({
-        verified: player.discord_member === true,
-        stellar_passport_url: player.stellar_passport_url ?? null,
-        stellar_passport_name: player.stellar_passport_name ?? null,
-      });
+      return json(buildResponse(player, player.discord_member === true));
     }
 
     const botToken = Deno.env.get("DISCORD_BOT_TOKEN");
@@ -195,13 +376,22 @@ Deno.serve(async (request) => {
       .from("gaming_players")
       .update({ discord_member: isMember, discord_verified_at: new Date().toISOString() })
       .eq("discord_id", discordId);
-    if (updateError) console.error("gaming_players update failed", updateError);
+    if (updateError) {
+      console.error("gaming_players update failed", updateError);
+      return json({ error: "No se pudo guardar la verificación" }, 500);
+    }
 
-    return json({
-      verified: isMember,
-      stellar_passport_url: stellarPassportUrl ?? player?.stellar_passport_url ?? null,
-      stellar_passport_name: stellarPassportName ?? player?.stellar_passport_name ?? null,
-    });
+    const { data: refreshedPlayer, error: refreshedPlayerError } = await admin
+      .from("gaming_players")
+      .select(PLAYER_SELECT)
+      .eq("discord_id", discordId)
+      .maybeSingle();
+    if (refreshedPlayerError) {
+      console.error("gaming_players select failed", refreshedPlayerError);
+      return json({ error: "No se pudo guardar la verificación" }, 500);
+    }
+
+    return json(buildResponse(refreshedPlayer ?? player, isMember));
       } catch (error) {
         console.error(error);
         return json({ error: "Error de verificación" }, 500);

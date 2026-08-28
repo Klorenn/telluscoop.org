@@ -16,6 +16,7 @@ Proceso Node separado de la web y de las Supabase Edge Functions. Corre 24/7 via
 | `DISCORD_BOT_TOKEN` | sí | Discord Developer Portal → Bot → Token (la misma que ya usás en Supabase Edge Functions) |
 | `DISCORD_GUILD_ID` | sí | ID del server de Tellus (clic derecho al server → Copy Server ID, con modo desarrollador activado) |
 | `WELCOME_CHANNEL_ID` | no | ID de un canal existente si querés elegirlo vos. Si lo dejás vacío, Tierly crea/usa `bienvenida-tierly` |
+| `ANNOUNCE_CHANNEL_ID` | no | ID de un canal para anuncios (eventos nuevos, subidas de rango). Si lo dejás vacío, Tierly crea/usa `anuncios-tierly` |
 | `SUPABASE_URL` | no (recomendada) | `https://rhzanxzoqmbxptvxgnfj.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | no (recomendada) | Supabase Dashboard → Project Settings → API → `service_role` (secreto, nunca en el frontend) |
 

@@ -58,6 +58,8 @@ export async function searchBuilders(passport, key, query, publicLookup = null) 
           const builder = source && typeof source === "object" ? { ...source } : source;
           if (builder && !builder.username && builder.github_username) builder.username = builder.github_username;
           if (builder && !builder.name) builder.name = builder.display_name || builder.full_name || builder.username;
+          const builderAvatar = builder && (builder.avatar_url || builder.avatar || builder.image);
+          if (builder && !builder.logo_url && builderAvatar) builder.logo_url = builderAvatar;
           if (builder?.username) return [builder];
         } catch (publicError) {
           if (!(publicError instanceof Error && publicError.message === "passport_404")) throw publicError;
@@ -109,11 +111,18 @@ export function normalizeBuilderResponse(response) {
   const username = normalized.username || normalized.github_username;
   const name = normalized.name || normalized.display_name || normalized.full_name || username;
   const displayName = normalized.display_name;
-  const avatar = normalized.avatar_url || normalized.avatar || normalized.image;
+  const avatar = normalized.avatar_url || normalized.avatar || normalized.image || normalized.logo_url;
   if (username) normalized.username = username;
   if (name) normalized.name = name;
   if (displayName) normalized.display_name = displayName;
-  if (avatar) normalized.avatar_url = avatar;
+  if (avatar) {
+    normalized.avatar_url = avatar;
+    normalized.logo_url = avatar;
+  }
+  const description = normalized.description || normalized.bio;
+  if (description) normalized.description = description;
+  const website = normalized.website || normalized.website_url;
+  if (website) normalized.website = website;
   return normalized;
 }
 
@@ -168,7 +177,23 @@ Deno.serve(async (request) => {
       }
       const builder = normalizeBuilderResponse(response);
       const stats = response?.stats || response?.data?.stats || builder?.stats;
-      return json({ builder, ...(stats ? { stats } : {}) });
+      const projects = Array.isArray(response?.projects) ? response.projects : [];
+      const projectCount = Array.isArray(response?.projects) ? response.projects.length : undefined;
+      const topRepos = projects
+        .flatMap((project) => (Array.isArray(project.repos) ? project.repos : []))
+        .slice(0, 2)
+        .map((repo) => ({
+          full_name: repo.full_name,
+          html_url: repo.html_url,
+          stars: repo.stars,
+          primary_language: repo.primary_language,
+        }));
+      return json({
+        builder,
+        ...(stats ? { stats } : {}),
+        ...(projectCount !== undefined ? { project_count: projectCount } : {}),
+        ...(topRepos.length ? { top_repos: topRepos } : {}),
+      });
     }
 
     if (action === "events") {
