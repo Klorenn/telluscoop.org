@@ -78,7 +78,7 @@ WorkingDirectory=/home/<usuario>/tellus/discord-bot
 EnvironmentFile=/home/<usuario>/tellus/discord-bot/.env
 ExecStart=/usr/bin/npm start
 Restart=always
-RestartSec=5
+RestartSec=30
 
 [Install]
 WantedBy=multi-user.target
