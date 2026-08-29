@@ -1078,6 +1078,11 @@ import { calculatePoints } from "./points.mjs";
     });
     console.log("[TIERLY DEBUG] discord-verify response:", JSON.stringify({ verified: data?.verified, hasPlayer: !!data?.player, playerKeys: data?.player ? Object.keys(data.player) : [], bio: data?.player?.bio, twitter: data?.player?.twitter_handle, telegram: data?.player?.telegram_handle, discord: data?.player?.discord_handle, instagram: data?.player?.instagram_handle, stellar_passport_url: data?.stellar_passport_url, error }));
     syncCurrentPlayer(data?.player || currentPlayer, data?.stellar_passport_url || currentPassportUrl);
+    if (!data?.player?.banner && localStorage.getItem("tellus-profile-banner")) {
+      // Banner was picked in localStorage before this login (or while logged
+      // out), so persistBannerToServer() no-opped back then. Push it now.
+      persistBannerToServer();
+    }
     console.log("[TIERLY DEBUG] currentPlayer after sync:", JSON.stringify({ bio: currentPlayer?.bio, twitter: currentPlayer?.twitter_handle, telegram: currentPlayer?.telegram_handle, discord: currentPlayer?.discord_handle, instagram: currentPlayer?.instagram_handle, stellar_passport_url: currentPlayer?.stellar_passport_url }));
     renderProfileAvatar();
     renderProfileSummary();
