@@ -160,7 +160,21 @@
     state.rewards = data ?? [];
   }
 
+  async function searchPlayers(query) {
+    const term = String(query ?? "").replace(/[,()%_*"'\\]/g, "").replace(/\s+/g, " ").trim();
+    if (term.length < 2) return [];
+    const { data, error } = await supabase
+      .from("gaming_players")
+      .select("id, display_name, username, avatar_url")
+      .or(`display_name.ilike.%${term}%,username.ilike.%${term}%`)
+      .order("display_name", { ascending: true })
+      .limit(10);
+    if (error) return [];
+    return data ?? [];
+  }
+
   async function createReward(tournamentId, playerId, description) {
+    if (!playerId) return notify("Buscá y seleccioná un jugador primero.", true);
     const { error } = await supabase.from("gaming_rewards").insert({
       tournament_id: tournamentId,
       player_id: playerId,
@@ -303,12 +317,41 @@
     } else if (state.view === "rewards") {
       body.innerHTML = `
         <form id="reward-form">
-          <input name="player_id" placeholder="Player ID" required />
+          <div class="reward-player">
+            <input name="player_query" placeholder="Buscar jugador por nombre o @username…" autocomplete="off" />
+            <input type="hidden" name="player_id" />
+            <div class="reward-player-results"></div>
+          </div>
           <input name="description" placeholder="Premio (ej. Ledger Nano)" required />
           <button type="submit">Asignar premio</button>
         </form>
         <ul>${state.rewards.map((r) => `<li data-id="${r.id}">${esc(r.gaming_players?.display_name ?? r.player_id)} — ${esc(r.description)} — ${r.fulfilled ? "entregado" : `<button class="fulfill" data-id="${r.id}">Marcar entregado</button>`}</li>`).join("")}</ul>`;
-      document.querySelector("#reward-form").addEventListener("submit", (e) => {
+      const resultsEl = body.querySelector(".reward-player-results");
+      let queryToken = 0;
+      body.querySelector('[name="player_query"]').addEventListener("input", (e) => {
+        const token = ++queryToken;
+        const term = e.target.value;
+        body.querySelector('[name="player_id"]').value = "";
+        searchPlayers(term).then((players) => {
+          if (token !== queryToken) return;
+          if (!players.length) {
+            resultsEl.innerHTML = term.trim().length >= 2
+              ? `<p class="reward-player-empty">Sin coincidencias.</p>`
+              : "";
+            return;
+          }
+          resultsEl.innerHTML = players.map((p) => `
+            <button type="button" class="reward-player-option" data-id="${p.id}" data-name="${esc(p.display_name ?? p.username ?? p.id)}">
+              ${esc(p.display_name ?? "")}${p.username ? ` <span class="reward-player-username">@${esc(p.username)}</span>` : ""}
+            </button>`).join("");
+          resultsEl.querySelectorAll(".reward-player-option").forEach((opt) => opt.addEventListener("click", () => {
+            body.querySelector('[name="player_id"]').value = opt.dataset.id;
+            body.querySelector('[name="player_query"]').value = opt.dataset.name;
+            resultsEl.innerHTML = `<p class="reward-player-selected">${esc(opt.dataset.name)}</p>`;
+          }));
+        });
+      });
+      body.querySelector("#reward-form").addEventListener("submit", (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
         createReward(state.activeTournamentId, fd.get("player_id"), fd.get("description"));
