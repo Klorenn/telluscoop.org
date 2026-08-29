@@ -293,6 +293,7 @@ import { calculatePoints } from "./points.mjs";
 
   window.TierlyBridge = {
     supabase,
+    supabaseConfig: { url: SUPABASE_URL, anonKey: SUPABASE_KEY },
     t: (key) => t(key),
     session: () => currentSession,
     player: () => currentPlayer,

@@ -42,21 +42,32 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
   async function invoke(payload) {
     try {
       const b = bridge();
-    if (!b?.supabase) return { error: t("chessError") };
-    const response = await b.supabase.functions.invoke("chess", { body: payload });
-      if (response.error) {
-        let message = null;
-        try {
-          if (typeof response.error.context?.json === "function") {
-            const parsed = await response.error.context.json();
-            message = parsed?.error;
-          }
-        } catch {
-          // Silencio — mensaje genérico abajo.
-        }
-        return { error: message || t("chessError") };
+      if (!b?.supabase) return { error: t("chessError") };
+      const session = await b.supabase.auth.getSession();
+      const accessToken = session?.data?.session?.access_token;
+      if (!accessToken) return { error: t("chessError") };
+      let response;
+      try {
+        response = await fetch(`${b.supabaseConfig?.url ?? ""}/functions/v1/chess`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            apikey: b.supabaseConfig?.anonKey ?? "",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+      } catch (networkError) {
+        console.error("[CHESS] network failed", networkError);
+        return { error: t("chessError") };
       }
-      const body = response.data;
+      const rawText = await response.text();
+      let body = null;
+      try { body = JSON.parse(rawText); } catch { /* cuerpo no-JSON */ }
+      if (!response.ok) {
+        console.error("[CHESS] raw", response.status, rawText.slice(0, 300));
+        return { error: body?.error || t("chessError") };
+      }
       if (body?.error) return { error: body.error };
       return { data: body };
     } catch (error) {
