@@ -216,6 +216,19 @@ test("the mascot cats teach the tutorial and the coach", async () => {
   }
 });
 
+test("the coach panel sits beside the board and the cat animates while it coaches", () => {
+  assert.match(page, /\.lb-chess-layout \{ display: flex; flex-direction: column;/);
+  assert.match(page, /\.lb-chess-layout \{ flex-direction: row; align-items: flex-start; justify-content: center; gap: 28px; \}/);
+  assert.match(page, /\.lb-chess-panel \{ flex: 0 0 260px;/);
+  assert.match(page, /\.lb-chess-coach-cat\s*\{[^}]*width: 48px; height: 48px;/);
+  assert.match(page, /@keyframes lbCoachIdle/);
+  assert.match(page, /@keyframes lbCoachBounce/);
+  assert.match(page, /@keyframes lbCoachPop/);
+  assert.match(page, /\.lb-chess-coach\.is-my-turn \.lb-chess-coach-cat \{ animation: lbCoachBounce/);
+  assert.match(chessJs, /classList\.toggle\("is-my-turn", isMyTurn\(\) && !current\.finished\)/);
+  assert.match(chessJs, /classList\.add\("pop"\)/);
+});
+
 test("chess.js recomputes legal moves with chess.js and drives Stockfish on a worker", () => {
   assert.match(chessJs, /import \{ Chess \} from "https:\/\/cdn\.jsdelivr\.net\/npm\/chess\.js@1\.4\.0\/dist\/esm\/chess\.js"/);
   assert.match(chessJs, /import \{ Chessground \} from "https:\/\/cdn\.jsdelivr\.net\/npm\/chessground@9\.2\.1\/dist\/chessground\.min\.js"/);

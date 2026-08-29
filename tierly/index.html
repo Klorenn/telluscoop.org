@@ -706,6 +706,11 @@
     .lb-chess-layout { display: flex; flex-direction: column; gap: 18px; }
     .lb-chess-board-wrap { display: flex; justify-content: center; }
     #lb-chess-board { width: 100%; max-width: 520px; aspect-ratio: 1 / 1; margin: 0 auto; }
+    @media (min-width: 1200px) {
+      .lb-chess-layout { flex-direction: row; align-items: flex-start; justify-content: center; gap: 28px; }
+      .lb-chess-board-wrap { flex: 0 0 auto; }
+      .lb-chess-panel { flex: 0 0 260px; display: flex; flex-direction: column; gap: 14px; }
+    }
     .lb-chess-lobby-head { display: flex; justify-content: flex-end; margin-bottom: 4px; }
     .lb-chess-tutorial {
       border: none; border-radius: 18px; background: var(--card); color: var(--ink);
@@ -727,8 +732,29 @@
     .lb-chess-coach {
       display: flex; align-items: center; gap: 12px;
       background: var(--chip-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 12px 14px;
+      transition: border-color 200ms ease, background 200ms ease;
     }
-    .lb-chess-coach-cat { width: 48px; height: 48px; object-fit: contain; flex-shrink: 0; }
+    .lb-chess-coach.is-my-turn { border-color: var(--teal-bright); background: rgba(21,156,131,0.08); }
+    .lb-chess-coach-cat {
+      width: 48px; height: 48px; object-fit: contain; flex-shrink: 0;
+      animation: lbCoachIdle 2.6s ease-in-out infinite;
+      transform-origin: 50% 90%;
+    }
+    .lb-chess-coach.is-my-turn .lb-chess-coach-cat { animation: lbCoachBounce 0.9s ease-in-out infinite; }
+    .lb-chess-coach-cat.pop { animation: lbCoachPop 0.5s ease; }
+    @keyframes lbCoachIdle {
+      0%, 100% { transform: translateY(0) rotate(-2deg); }
+      50% { transform: translateY(-3px) rotate(2deg); }
+    }
+    @keyframes lbCoachBounce {
+      0%, 100% { transform: translateY(0) scale(1); }
+      40% { transform: translateY(-6px) scale(1.06); }
+    }
+    @keyframes lbCoachPop {
+      0% { transform: scale(0.85) rotate(-4deg); }
+      55% { transform: scale(1.14) rotate(3deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
     .lb-chess-coach-body { min-width: 0; }
     .lb-chess-coach strong {
       display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;

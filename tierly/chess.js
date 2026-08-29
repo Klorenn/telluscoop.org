@@ -455,9 +455,20 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
     const el = document.querySelector("#lb-chess-coach-text");
     if (!el || !current) return;
     const key = coachTipKey(current.chess);
-    el.textContent = t(key);
+    const tip = t(key);
+    if (el.textContent !== tip) {
+      el.textContent = tip;
+      const cat = document.querySelector("#lb-chess-coach-cat");
+      if (cat) {
+        cat.classList.remove("pop");
+        void cat.offsetWidth;
+        cat.classList.add("pop");
+      }
+    }
     const cat = document.querySelector("#lb-chess-coach-cat");
     if (cat) cat.src = COACH_CAT[key] || COACH_CAT.chessCoachOpening;
+    const coach = document.querySelector("#lb-chess-coach");
+    if (coach) coach.classList.toggle("is-my-turn", isMyTurn() && !current.finished);
   }
 
   function applyServerPosition(fen, winner, gameOver) {
