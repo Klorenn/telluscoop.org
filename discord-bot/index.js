@@ -61,7 +61,7 @@ async function getAnnounceChannel(guild) {
   return guild.channels.create({
     name: ANNOUNCE_CHANNEL_NAME,
     type: ChannelType.GuildText,
-    topic: "Anuncios automáticos del leaderboard gaming de Tellus 🐈‍⬛ — nuevos eventos y subidas de rango.",
+    topic: "Tellus gaming leaderboard updates 🐈‍⬛ — new events and rank-ups.",
   });
 }
 
@@ -95,7 +95,7 @@ async function announceNewEvents(channel) {
   for (const event of events) {
     if (notifiedIds.has(event.id)) continue;
     await channel.send(
-      `🐈‍⬛ **Nuevo evento:** ${event.name}${event.event_date ? ` — ${event.event_date}` : ""}\n${LEADERBOARD_URL}`,
+      `🐈‍⬛ New event: **${event.name}**${event.event_date ? ` — ${event.event_date}` : ""}\n${LEADERBOARD_URL}`,
     );
     await supabase.from("gaming_bot_notifications").insert({ kind: "event", ref_id: event.id });
   }
@@ -132,7 +132,7 @@ async function announceRankUps(channel) {
 
     if (rank.min <= player.last_notified_rank_min) continue; // igual o bajó (ej. reset de temporada) — no se anuncia
     const label = `${rank.tierId} ${rank.division}`;
-    await channel.send(`🎉 <@${player.discord_id}> subió a **${label}** en el leaderboard de Tellus! ${LEADERBOARD_URL}`);
+    await channel.send(`🎉 <@${player.discord_id}> ranked up to **${label}**! ${LEADERBOARD_URL}`);
     await supabase.from("gaming_players").update({ last_notified_rank_min: rank.min }).eq("id", player.id);
   }
 }
