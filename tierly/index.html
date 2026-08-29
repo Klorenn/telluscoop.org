@@ -708,7 +708,7 @@
     #lb-chess-board { width: 100%; max-width: 520px; aspect-ratio: 1 / 1; margin: 0 auto; }
     @media (min-width: 1200px) {
       .lb-chess-layout { flex-direction: row; align-items: flex-start; justify-content: center; gap: 28px; }
-      .lb-chess-board-wrap { flex: 0 0 auto; }
+      .lb-chess-board-wrap { flex: 0 0 clamp(420px, 42vw, 560px); }
       .lb-chess-panel { flex: 0 0 260px; display: flex; flex-direction: column; gap: 14px; }
     }
     .lb-chess-lobby-head { display: flex; justify-content: flex-end; margin-bottom: 4px; }
