@@ -249,6 +249,19 @@ import { calculatePoints } from "./points.mjs";
   function syncCurrentPlayer(player, fallbackUrl = null) {
     currentPlayer = player || null;
     currentPassportUrl = player?.stellar_passport_url || fallbackUrl || null;
+    if (player?.banner) {
+      profileBanner = player.banner;
+      localStorage.setItem("tellus-profile-banner", profileBanner);
+      if (player.banner_fit && typeof player.banner_fit === "object") {
+        profileBannerFit = clampCropFit({
+          tx: Number.isFinite(player.banner_fit.tx) ? player.banner_fit.tx : 0,
+          ty: Number.isFinite(player.banner_fit.ty) ? player.banner_fit.ty : 0,
+          zoom: Number.isFinite(player.banner_fit.zoom) ? player.banner_fit.zoom : 100,
+        });
+        saveBannerFit();
+      }
+      renderProfileBanner();
+    }
   }
 
   function getCurrentPassportUsername() {
@@ -407,13 +420,28 @@ import { calculatePoints } from "./points.mjs";
     const summaryEl = document.querySelector("#lb-player-summary");
     const tierEl = document.querySelector("#lb-player-tier");
     const statsEl = document.querySelector("#lb-player-stats");
+    const bannerEl = document.querySelector("#lb-player-banner");
+    const bannerImgEl = document.querySelector("#lb-player-banner-img");
     if (!avatarEl || !summaryEl || !tierEl || !statsEl) return;
     if (!viewingPlayer) {
       avatarEl.innerHTML = "";
       summaryEl.innerHTML = `<p class="lb-profile-stats-empty">${t("playerNotFound")}</p>`;
       tierEl.innerHTML = "";
       statsEl.innerHTML = "";
+      if (bannerEl) bannerEl.hidden = true;
       return;
+    }
+    if (bannerEl && bannerImgEl) {
+      if (viewingPlayer.banner) {
+        bannerImgEl.src = `/tierly/banners/${viewingPlayer.banner}`;
+        const fit = viewingPlayer.banner_fit && typeof viewingPlayer.banner_fit === "object"
+          ? viewingPlayer.banner_fit
+          : { tx: 0, ty: 0, zoom: 100 };
+        bannerImgEl.style.transform = bannerFitTransform(fit);
+        bannerEl.hidden = false;
+      } else {
+        bannerEl.hidden = true;
+      }
     }
     avatarEl.innerHTML = renderImageWithFallback(viewingPlayer.avatar_url, viewingPlayer.display_name, "lb-session-avatar");
     summaryEl.innerHTML = `
@@ -1286,6 +1314,15 @@ import { calculatePoints } from "./points.mjs";
     localStorage.setItem("tellus-profile-banner-fit-v2", JSON.stringify(profileBannerFit));
   }
 
+  async function persistBannerToServer() {
+    if (!currentSession) return;
+    const { data, error } = await supabase.functions.invoke("discord-verify", {
+      body: { action: "update_profile", banner: profileBanner, banner_fit: profileBannerFit },
+      headers: { Authorization: `Bearer ${currentSession.access_token}` },
+    });
+    if (!error && data?.player) syncCurrentPlayer(data.player, currentPassportUrl);
+  }
+
   function bannerFitTransform(fit) {
     return `translate(${fit.tx}%, ${fit.ty}%) scale(${fit.zoom / 100})`;
   }
@@ -1352,6 +1389,7 @@ import { calculatePoints } from "./points.mjs";
       profileBannerFit = clampCropFit(cropWorkingFit);
       saveBannerFit();
       applyBannerFitStyle();
+      persistBannerToServer();
       modal.close();
     });
     document.querySelector("#lb-crop-zoom-out").addEventListener("click", () => {
@@ -1415,6 +1453,7 @@ import { calculatePoints } from "./points.mjs";
         saveBannerFit();
         renderProfileBanner();
         renderProfileBannerPicker();
+        persistBannerToServer();
       });
     });
     picker.querySelector(".lb-banner-carousel-prev")?.addEventListener("click", () => {

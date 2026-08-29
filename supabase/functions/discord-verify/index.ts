@@ -22,6 +22,8 @@ const PLAYER_SELECT = [
   "username",
   "avatar_url",
   "bio",
+  "banner",
+  "banner_fit",
   "twitter_handle",
   "telegram_handle",
   "discord_handle",
@@ -71,6 +73,27 @@ function cleanHandle(value: unknown) {
   if (typeof value !== "string") return null;
   const normalized = value.trim().replace(/^@+/, "").replace(/\s+/g, "");
   return normalized ? normalized.slice(0, 64) : null;
+}
+
+function cleanBanner(value: unknown) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 200) return null;
+  if (trimmed.includes("/") || trimmed.includes("\\") || trimmed.includes("..")) return null;
+  return trimmed;
+}
+
+function cleanBannerFit(value: unknown) {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  const zoom = typeof raw.zoom === "number" && Number.isFinite(raw.zoom)
+    ? Math.max(100, Math.min(300, raw.zoom))
+    : 100;
+  const limit = Math.max(0, (zoom - 100) / 2);
+  const clampAxis = (n: unknown) => typeof n === "number" && Number.isFinite(n)
+    ? Math.max(-limit, Math.min(limit, n))
+    : 0;
+  return { tx: clampAxis(raw.tx), ty: clampAxis(raw.ty), zoom };
 }
 
 function normalizePassportProfile(builderData: Record<string, any>, username: string) {
@@ -207,12 +230,14 @@ Deno.serve(async (request) => {
 
     if (body.action === "update_profile") {
       const updates = {
-        display_name: cleanText(body.display_name, 120),
-        bio: cleanText(body.bio, 1200),
-        twitter_handle: cleanHandle(body.twitter_handle),
-        telegram_handle: cleanHandle(body.telegram_handle),
-        discord_handle: cleanHandle(body.discord_handle),
-        instagram_handle: cleanHandle(body.instagram_handle),
+        ...(body.display_name !== undefined ? { display_name: cleanText(body.display_name, 120) } : {}),
+        ...(body.bio !== undefined ? { bio: cleanText(body.bio, 1200) } : {}),
+        ...(body.twitter_handle !== undefined ? { twitter_handle: cleanHandle(body.twitter_handle) } : {}),
+        ...(body.telegram_handle !== undefined ? { telegram_handle: cleanHandle(body.telegram_handle) } : {}),
+        ...(body.discord_handle !== undefined ? { discord_handle: cleanHandle(body.discord_handle) } : {}),
+        ...(body.instagram_handle !== undefined ? { instagram_handle: cleanHandle(body.instagram_handle) } : {}),
+        ...(body.banner !== undefined ? { banner: cleanBanner(body.banner) } : {}),
+        ...(body.banner_fit !== undefined ? { banner_fit: cleanBannerFit(body.banner_fit) } : {}),
       };
       const { data: player, error: profileError } = await admin
         .from("gaming_players")
