@@ -28,6 +28,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/chessground@9.2.1/assets/chessground.base.css" />
+  <link rel="stylesheet" href="https://unpkg.com/chessground@9.2.1/assets/chessground.brown.css" />
+  <link rel="stylesheet" href="https://unpkg.com/chessground@9.2.1/assets/chessground.cburnett.css" />
   <style>
     :root {
       --sand: #ECE0CC; --sand-soft: #F8F1E4; --teal: #3F8487; --teal-bright: #159C83; --teal-deep: #1C746B; --teal-ink: #1F3536; --clay: #C75A2A;
@@ -656,6 +659,54 @@
     .lb-settings-lang button.is-active { background: var(--teal-bright); border-color: transparent; color: #fff; }
     .lb-settings-about { color: var(--ink-dim); font-size: 13.5px; max-width: 52ch; line-height: 1.6; }
 
+    .lb-chess-grid { display: flex; flex-direction: column; gap: 18px; max-width: 640px; }
+    .lb-chess-card {
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 18px;
+      padding: 20px 22px; box-shadow: var(--card-shadow);
+    }
+    .lb-chess-difficulty { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .lb-chess-chip {
+      background: var(--sand-soft); border: 1px solid var(--card-border); color: var(--ink-dim);
+      border-radius: 999px; padding: 8px 14px; font-family: var(--sans); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: background 140ms ease, color 140ms ease;
+    }
+    .lb-chess-chip:hover { color: var(--ink); }
+    .lb-chess-chip.is-active { background: var(--teal-bright); border-color: transparent; color: #fff; }
+    .lb-chess-challenge { display: flex; gap: 8px; flex-wrap: wrap; }
+    .lb-chess-input {
+      flex: 1; min-width: 200px; background: var(--sand-soft); border: 1px solid var(--card-border);
+      border-radius: 999px; padding: 9px 14px; font-family: var(--sans); font-size: 13.5px; color: var(--ink);
+    }
+    .lb-chess-input:focus { outline: none; border-color: var(--glow); }
+    .lb-chess-btn {
+      background: var(--sand-soft); border: 1px solid var(--card-border); color: var(--ink);
+      border-radius: 999px; padding: 9px 18px; font-family: var(--sans); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: background 140ms ease;
+    }
+    .lb-chess-btn:hover { background: var(--sand); }
+    .lb-chess-btn-primary { background: var(--teal-bright); border-color: transparent; color: #fff; }
+    .lb-chess-btn-primary:hover { background: var(--teal-bright); filter: brightness(1.05); }
+    .lb-chess-btn-danger { background: var(--clay); border-color: transparent; color: #fff; }
+    .lb-chess-btn-danger:hover { background: var(--clay); filter: brightness(1.05); }
+    .lb-chess-btn-small { padding: 6px 12px; font-size: 12px; }
+    .lb-chess-mygames-title { font-family: var(--serif); font-size: 16px; color: var(--ink); margin-bottom: 10px; }
+    .lb-chess-mygames { display: flex; flex-direction: column; }
+    .lb-chess-game-row {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 0;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .lb-chess-game-row:last-child { border-bottom: none; }
+    .lb-chess-game-info { flex: 1; min-width: 0; font-size: 13.5px; color: var(--ink); }
+    .lb-chess-tag {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-dim);
+      background: var(--chip-bg); padding: 3px 9px; border-radius: 999px; font-weight: 600;
+    }
+    .lb-chess-empty, .lb-chess-status, .lb-chess-error, .lb-chess-finished { font-size: 13.5px; color: var(--ink-dim); }
+    .lb-chess-error { color: #B05A1E; }
+    .lb-chess-layout { display: flex; flex-direction: column; gap: 18px; }
+    .lb-chess-board-wrap { display: flex; justify-content: center; }
+    #lb-chess-board { width: 100%; max-width: 520px; aspect-ratio: 1 / 1; margin: 0 auto; }
+
     @media (max-width: 960px) {
       .lb-content-grid { flex-direction: column; }
       .lb-col-side { width: 100%; }
@@ -767,6 +818,11 @@
           </div>
         </section>
 
+        <section class="lb-view" data-view="chess" hidden>
+          <h2 id="lb-chess-title" class="lb-view-head"></h2>
+          <div id="lb-chess"></div>
+        </section>
+
         <footer class="lb-footer">
           <div class="lb-footer-brand">
             <img src="/tierly/tierly-logo.png" alt="Tierly" class="lb-footer-tierly-mark" />
@@ -814,6 +870,7 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"></script>
-  <script type="module" src="/tierly/app.js?v=20260829-01"></script>
+  <script type="module" src="/tierly/chess.js?v=20260829-03"></script>
+  <script type="module" src="/tierly/app.js?v=20260829-03"></script>
 </body>
 </html>

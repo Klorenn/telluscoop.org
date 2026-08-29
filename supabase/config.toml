@@ -388,6 +388,9 @@ verify_jwt = true
 [functions.discord-verify]
 verify_jwt = false
 
+[functions.chess]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

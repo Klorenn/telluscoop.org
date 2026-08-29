@@ -99,6 +99,35 @@ import { calculatePoints } from "./points.mjs";
       discordVerifyBtn: "I already joined · Verify",
       discordChecking: "Checking your membership…",
       discordVerifyError: "We couldn't check Discord right now. Try again in a moment.",
+      navChess: "Chess",
+      chessBotTitle: "Play the Bot",
+      chessChallengeTitle: "Challenge a Player",
+      chessChallengePlaceholder: "Enter a player's username…",
+      chessChallengeBtn: "Challenge",
+      chessMyGames: "My games",
+      chessStart: "Start game",
+      chessEasy: "Easy",
+      chessMedium: "Medium",
+      chessHard: "Hard",
+      chessAccept: "Accept",
+      chessDecline: "Decline",
+      chessResign: "Resign",
+      chessYouWin: "You win!",
+      chessYouLose: "You lose…",
+      chessDraw: "Draw.",
+      chessFinished: "Game finished",
+      chessWaitingOpponent: "Waiting for the challenge to be accepted…",
+      chessTurn: "Your turn",
+      chessError: "Something went wrong, try again.",
+      chessLoading: "Loading…",
+      chessBot: "Bot",
+      chessCancel: "Cancel",
+      chessEmpty: "No games yet.",
+      chessPending: "Pending",
+      chessActive: "In progress",
+      chessPlay: "Play",
+      chessLogin: "Sign in to play chess.",
+      lbBack: "Back",
     },
     es: {
       title: "Leaderboard Gaming Tierly",
@@ -190,6 +219,35 @@ import { calculatePoints } from "./points.mjs";
       discordVerifyBtn: "Ya me uní · Verificar",
       discordChecking: "Comprobando tu membresía…",
       discordVerifyError: "No pudimos comprobar Discord ahora. Inténtalo de nuevo en un momento.",
+      navChess: "Ajedrez",
+      chessBotTitle: "Jugar contra el bot",
+      chessChallengeTitle: "Desafiar a un jugador",
+      chessChallengePlaceholder: "Ingresá el usuario del jugador…",
+      chessChallengeBtn: "Desafiar",
+      chessMyGames: "Mis partidas",
+      chessStart: "Empezar partida",
+      chessEasy: "Fácil",
+      chessMedium: "Medio",
+      chessHard: "Difícil",
+      chessAccept: "Aceptar",
+      chessDecline: "Rechazar",
+      chessResign: "Abandonar",
+      chessYouWin: "¡Ganaste!",
+      chessYouLose: "Perdiste…",
+      chessDraw: "Empate.",
+      chessFinished: "Partida terminada",
+      chessWaitingOpponent: "Esperando que acepten el desafío…",
+      chessTurn: "Tu turno",
+      chessError: "Algo salió mal, probá de nuevo.",
+      chessLoading: "Cargando…",
+      chessBot: "Bot",
+      chessCancel: "Cancelar",
+      chessEmpty: "Todavía no hay partidas.",
+      chessPending: "Pendiente",
+      chessActive: "En curso",
+      chessPlay: "Jugar",
+      chessLogin: "Iniciá sesión para jugar al ajedrez.",
+      lbBack: "Volver",
     },
   };
   const X_ICON = `<svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`;
@@ -224,6 +282,14 @@ import { calculatePoints } from "./points.mjs";
   let bracketRows = [];
   let rewardsRows = [];
   let viewingPlayer = null;
+
+  window.TierlyBridge = {
+    supabase,
+    t: (key) => t(key),
+    session: () => currentSession,
+    player: () => currentPlayer,
+    switchView: (view) => switchView(view),
+  };
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const initials = (name) => esc((name || "?").trim().slice(0, 2).toUpperCase());
@@ -1143,6 +1209,7 @@ import { calculatePoints } from "./points.mjs";
       <button class="lb-nav-item${activeView === "ranking" ? " is-active" : ""}" data-view="ranking"><i data-lucide="trophy"></i><span>${t("navRanking")}</span></button>
       <button class="lb-nav-item${activeView === "bracket" ? " is-active" : ""}" data-view="bracket"><i data-lucide="calendar-days"></i><span>${t("navBracket")}</span></button>
       <button class="lb-nav-item${activeView === "rewards" ? " is-active" : ""}" data-view="rewards"><i data-lucide="gift"></i><span>${t("navRewards")}</span></button>
+      <button class="lb-nav-item${activeView === "chess" ? " is-active" : ""}" data-view="chess"><i data-lucide="swords"></i><span>${t("navChess")}</span></button>
       <button class="lb-nav-item${activeView === "profile" ? " is-active" : ""}" data-view="profile"><i data-lucide="user"></i><span>${t("navProfile")}</span></button>
       <button class="lb-nav-item${activeView === "settings" ? " is-active" : ""}" data-view="settings"><i data-lucide="settings"></i><span>${t("navSettings")}</span></button>`;
     el.querySelectorAll("button").forEach((btn) => btn.addEventListener("click", () => switchView(btn.dataset.view)));
