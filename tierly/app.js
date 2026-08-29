@@ -1183,9 +1183,17 @@ import { calculatePoints } from "./points.mjs";
     profileSyncError = "";
     let ptr;
     try {
-      ptr = await supabase.functions.invoke("discord-verify", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/discord-verify`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+        body: "{}",
       });
+      const text = await res.text();
+      let parsed = null;
+      try { parsed = JSON.parse(text); } catch {}
+      console.log(`[TIERLY DEBUG] discord-verify raw: status=${res.status} body=${text.slice(0, 500)}`);
+      const errBody = res.ok ? null : (parsed?.error || text || `HTTP ${res.status}`);
+      ptr = res.ok ? { data: parsed, error: null } : { data: null, error: { name: `HTTP ${res.status}`, status: res.status, message: errBody } };
     } catch (invokeError) {
       ptr = { data: null, error: invokeError };
     }
