@@ -278,6 +278,7 @@ import { calculatePoints } from "./points.mjs";
   let currentPlayer = null;
   let currentPassportUrl = null;
   let profileSyncState = "idle"; // idle | loading | ready | error
+  let profileSyncError = "";
   let activeView = "ranking";
   let rankingLimit = 5;
   let rankingSearch = "";
@@ -690,6 +691,22 @@ import { calculatePoints } from "./points.mjs";
     return currentSession ? currentPlayer?.id || null : null;
   }
 
+  function profileSyncErrorBlock() {
+    const detail = profileSyncError ? ` ${esc(profileSyncError)}` : "";
+    return `<p class="lb-profile-stats-empty">${t("discordVerifyError")}${detail}</p>
+      <p class="lb-profile-stats-empty"><button type="button" class="lb-gate-retry" data-sync-retry>${t("profileSyncRetry")}</button></p>`;
+  }
+
+  function wireSyncRetry() {
+    document.querySelectorAll("[data-sync-retry]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!currentSession) return;
+        const { data: fresh } = await supabase.auth.getSession();
+        checkDiscordMembership(fresh.session || currentSession);
+      });
+    });
+  }
+
   function renderProfileStats() {
     const el = document.querySelector("#lb-profile-stats");
     if (!el) return;
@@ -698,10 +715,8 @@ import { calculatePoints } from "./points.mjs";
       if (!currentSession) {
         el.innerHTML = `<p class="lb-profile-stats-empty">${t("profileLoginPrompt")}</p>`;
       } else if (profileSyncState === "error") {
-        el.innerHTML = `<p class="lb-profile-stats-empty">${t("discordVerifyError")} <button type="button" id="lb-profile-sync-retry" class="lb-gate-retry">${t("profileSyncRetry")}</button></p>`;
-        document.querySelector("#lb-profile-sync-retry")?.addEventListener("click", () => {
-          if (currentSession) checkDiscordMembership(currentSession);
-        });
+        el.innerHTML = profileSyncErrorBlock();
+        wireSyncRetry();
       } else {
         el.innerHTML = `<p class="lb-profile-stats-empty">${t("profileSyncing")}</p>`;
       }
@@ -810,10 +825,8 @@ import { calculatePoints } from "./points.mjs";
       if (!currentSession) {
         el.innerHTML = `<p class="lb-profile-stats-empty">${t("profileLoginPrompt")}</p>`;
       } else if (profileSyncState === "error") {
-        el.innerHTML = `<p class="lb-profile-stats-empty">${t("discordVerifyError")} <button type="button" id="lb-profile-history-retry" class="lb-gate-retry">${t("profileSyncRetry")}</button></p>`;
-        document.querySelector("#lb-profile-history-retry")?.addEventListener("click", () => {
-          if (currentSession) checkDiscordMembership(currentSession);
-        });
+        el.innerHTML = profileSyncErrorBlock();
+        wireSyncRetry();
       } else {
         el.innerHTML = `<p class="lb-profile-stats-empty">${t("profileSyncing")}</p>`;
       }
@@ -1167,6 +1180,7 @@ import { calculatePoints } from "./points.mjs";
 
   async function checkDiscordMembership(session) {
     profileSyncState = "loading";
+    profileSyncError = "";
     let ptr;
     try {
       ptr = await supabase.functions.invoke("discord-verify", {
@@ -1179,6 +1193,7 @@ import { calculatePoints } from "./points.mjs";
     console.log("[TIERLY DEBUG] discord-verify response:", JSON.stringify({ verified: data?.verified, hasPlayer: !!data?.player, playerKeys: data?.player ? Object.keys(data.player) : [], bio: data?.player?.bio, twitter: data?.player?.twitter_handle, telegram: data?.player?.telegram_handle, discord: data?.player?.discord_handle, instagram: data?.player?.instagram_handle, stellar_passport_url: data?.stellar_passport_url, error }));
     if (error || !data?.player) {
       console.error("[TIERLY] discord-verify failed:", error?.message || data?.error || "sin respuesta");
+      profileSyncError = data?.error || error?.message || "";
       profileSyncState = currentPlayer ? "ready" : "error";
     } else {
       profileSyncState = "ready";
@@ -1203,6 +1218,7 @@ import { calculatePoints } from "./points.mjs";
     if (!session) {
       currentPlayer = null;
       profileSyncState = "idle";
+      profileSyncError = "";
       renderProfileAvatar();
       renderProfileSummary();
       el.innerHTML = `<button id="lb-discord-login" class="lb-discord-btn">${t("loginDiscord")}</button>`;

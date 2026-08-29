@@ -136,6 +136,55 @@ function normalizePassportProfile(builderData: Record<string, any>, username: st
   };
 }
 
+async function fetchPassportProfile(candidate: string) {
+  let linkedUsername: string | undefined;
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol === "https:") {
+      const segments = parsed.pathname.split("/").filter(Boolean);
+      linkedUsername = segments[segments.length - 1];
+    }
+  } catch {
+    // Not a valid URL — falls through to the 400 below.
+  }
+  if (!linkedUsername) return { ok: false, status: 400, error: "URL de Stellar Passport inválida" };
+
+  const passportApiKey = Deno.env.get("STELLAR_PASSPORT_API_KEY");
+  const builderResponse = passportApiKey
+    ? await fetch(`${PASSPORT_API_BASE}/builders/${encodeURIComponent(linkedUsername)}`, {
+        headers: { Authorization: `Bearer ${passportApiKey}` },
+      })
+    : null;
+
+  if (builderResponse?.status === 429) {
+    return { ok: false, status: 429, error: "Límite de la API de Passport alcanzado, probá de nuevo en un rato" };
+  }
+  if (builderResponse && !builderResponse.ok && builderResponse.status !== 404) {
+    return { ok: false, status: 502, error: "No se pudo validar el perfil de Stellar Passport" };
+  }
+
+  let builderData: Record<string, any>;
+  if (builderResponse?.ok) {
+    builderData = await builderResponse.json();
+  } else {
+    const publicBuilderResponse = await fetch(
+      `https://demo.stellarpassport.xyz/api/builder/public/${encodeURIComponent(linkedUsername)}`,
+    );
+    if (publicBuilderResponse.status === 429) {
+      return { ok: false, status: 429, error: "Límite de la API de Passport alcanzado, probá de nuevo en un rato" };
+    }
+    if (publicBuilderResponse.status === 404) {
+      return { ok: false, status: 404, error: "No encontramos ese perfil en Stellar Passport" };
+    }
+    if (!publicBuilderResponse.ok) {
+      return { ok: false, status: 502, error: "No se pudo validar el perfil de Stellar Passport" };
+    }
+    builderData = await publicBuilderResponse.json();
+  }
+
+  return { ok: true, profile: normalizePassportProfile(builderData, linkedUsername), url: candidate };
+}
+
 function buildResponse(player: Record<string, any> | null, verified: boolean) {
   return {
     verified,
@@ -294,62 +343,36 @@ Deno.serve(async (request) => {
       ? body.stellar_passport_url.trim()
       : null;
     // Auto-heal legacy links stored before bio/social columns existed: re-fetch
-    // once so stellar_passport_bio isn't stuck null forever without a manual unlink+relink.
-    const staleLinkedUrl = !requestedPassportUrl && existingPlayer?.stellar_passport_url && !existingPlayer?.stellar_passport_bio
-      ? existingPlayer.stellar_passport_url
-      : null;
+    // so stellar_passport_bio isn't stuck null forever without a manual unlink+relink.
+    // Best-effort: if the legacy URL is dead (404/429/502), clear it and continue
+    // with the plain Discord verification instead of blocking the whole sync.
+    const autoHealLegacy = !requestedPassportUrl && existingPlayer?.stellar_passport_url && !existingPlayer?.stellar_passport_bio;
 
     let stellarPassportUrl: string | undefined;
     let passportProfile: Record<string, any> | null = null;
-    if (requestedPassportUrl || staleLinkedUrl) {
-      const candidate = requestedPassportUrl || staleLinkedUrl!;
-      let linkedUsername: string | undefined;
-      try {
-        const parsed = new URL(candidate);
-        if (parsed.protocol === "https:") {
-          const segments = parsed.pathname.split("/").filter(Boolean);
-          linkedUsername = segments[segments.length - 1];
-        }
-      } catch {
-        // Not a valid URL — falls through to the 400 below.
-      }
-      if (!linkedUsername) return json({ error: "URL de Stellar Passport inválida" }, 400);
-
-      const passportApiKey = Deno.env.get("STELLAR_PASSPORT_API_KEY");
-      const builderResponse = passportApiKey
-        ? await fetch(`${PASSPORT_API_BASE}/builders/${encodeURIComponent(linkedUsername)}`, {
-            headers: { Authorization: `Bearer ${passportApiKey}` },
-          })
-        : null;
-
-      if (builderResponse?.status === 429) {
-        return json({ error: "Límite de la API de Passport alcanzado, probá de nuevo en un rato" }, 429);
-      }
-      if (builderResponse && !builderResponse.ok && builderResponse.status !== 404) {
-        return json({ error: "No se pudo validar el perfil de Stellar Passport" }, 502);
-      }
-
-      let builderData: Record<string, any>;
-      if (builderResponse?.ok) {
-        builderData = await builderResponse.json();
+    if (requestedPassportUrl || autoHealLegacy) {
+      const candidate = requestedPassportUrl || existingPlayer!.stellar_passport_url!;
+      const result = await fetchPassportProfile(candidate);
+      if (result.ok) {
+        passportProfile = result.profile;
+        stellarPassportUrl = result.url;
+      } else if (requestedPassportUrl) {
+        return json({ error: result.error }, result.status);
       } else {
-        const publicBuilderResponse = await fetch(
-          `https://demo.stellarpassport.xyz/api/builder/public/${encodeURIComponent(linkedUsername)}`,
-        );
-        if (publicBuilderResponse.status === 429) {
-          return json({ error: "Límite de la API de Passport alcanzado, probá de nuevo en un rato" }, 429);
+        // Auto-heal only. Never block the sync over a legacy link:
+        // - 404 → the profile is definitively gone, clear the dead link.
+        // - 429/502 → Passport is temporarily down; keep the link, just skip refresh.
+        console.error("Auto-heal: legacy passport link unreachable", { url: candidate, status: result.status });
+        if (result.status === 404) {
+          const { error: clearError } = await admin
+            .from("gaming_players")
+            .update({ stellar_passport_url: null, stellar_passport_name: null })
+            .eq("discord_id", discordId);
+          if (clearError) {
+            console.error("gaming_players auto-heal clear failed", clearError);
+          }
         }
-        if (publicBuilderResponse.status === 404) {
-          return json({ error: "No encontramos ese perfil en Stellar Passport" }, 404);
-        }
-        if (!publicBuilderResponse.ok) {
-          return json({ error: "No se pudo validar el perfil de Stellar Passport" }, 502);
-        }
-        builderData = await publicBuilderResponse.json();
       }
-
-      passportProfile = normalizePassportProfile(builderData, linkedUsername);
-      stellarPassportUrl = candidate;
     }
 
     const { data: player, error: upsertError } = await admin
