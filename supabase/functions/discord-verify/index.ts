@@ -451,7 +451,17 @@ Deno.serve(async (request) => {
       { headers: { Authorization: `Bot ${botToken}` } },
     );
     if (!memberResponse.ok && memberResponse.status !== 404) {
-      return json({ error: "No se pudo verificar la membresía" }, 502);
+      const body = await memberResponse.text().catch(() => "");
+      console.error(
+        "discord-verify: Discord membership API failed",
+        { guildId, discordId, status: memberResponse.status, body: body.slice(0, 300) },
+      );
+      return json(
+        { error: memberResponse.status === 401 || memberResponse.status === 403
+          ? "El bot de Discord perdió acceso — avisá al staff."
+          : "No se pudo verificar la membresía" },
+        502,
+      );
     }
 
     const isMember = memberResponse.status === 200;
