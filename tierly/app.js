@@ -99,6 +99,8 @@ import { calculatePoints } from "./points.mjs";
       discordVerifyBtn: "I already joined · Verify",
       discordChecking: "Checking your membership…",
       discordVerifyError: "We couldn't check Discord right now. Try again in a moment.",
+      profileSyncing: "Syncing your profile…",
+      profileSyncRetry: "Retry",
       navChess: "Chess",
       chessBotTitle: "Play the Bot",
       chessChallengeTitle: "Challenge a Player",
@@ -127,6 +129,7 @@ import { calculatePoints } from "./points.mjs";
       chessActive: "In progress",
       chessPlay: "Play",
       chessLogin: "Sign in to play chess.",
+      chessSyncError: "Something went wrong syncing your profile. Check your profile and retry.",
       lbBack: "Back",
     },
     es: {
@@ -219,6 +222,8 @@ import { calculatePoints } from "./points.mjs";
       discordVerifyBtn: "Ya me uní · Verificar",
       discordChecking: "Comprobando tu membresía…",
       discordVerifyError: "No pudimos comprobar Discord ahora. Inténtalo de nuevo en un momento.",
+      profileSyncing: "Sincronizando tu perfil…",
+      profileSyncRetry: "Reintentar",
       navChess: "Ajedrez",
       chessBotTitle: "Jugar contra el bot",
       chessChallengeTitle: "Desafiar a un jugador",
@@ -247,6 +252,7 @@ import { calculatePoints } from "./points.mjs";
       chessActive: "En curso",
       chessPlay: "Jugar",
       chessLogin: "Iniciá sesión para jugar al ajedrez.",
+      chessSyncError: "Falló la sincronización de tu perfil. Revisá tu perfil y reintentá.",
       lbBack: "Volver",
     },
   };
@@ -271,6 +277,7 @@ import { calculatePoints } from "./points.mjs";
   let currentSession = null;
   let currentPlayer = null;
   let currentPassportUrl = null;
+  let profileSyncState = "idle"; // idle | loading | ready | error
   let activeView = "ranking";
   let rankingLimit = 5;
   let rankingSearch = "";
@@ -288,6 +295,7 @@ import { calculatePoints } from "./points.mjs";
     t: (key) => t(key),
     session: () => currentSession,
     player: () => currentPlayer,
+    syncState: () => profileSyncState,
     switchView: (view) => switchView(view),
   };
 
@@ -314,6 +322,7 @@ import { calculatePoints } from "./points.mjs";
 
   function syncCurrentPlayer(player, fallbackUrl = null) {
     currentPlayer = player || null;
+    profileSyncState = currentPlayer ? "ready" : profileSyncState;
     currentPassportUrl = player?.stellar_passport_url || fallbackUrl || null;
     if (player?.banner) {
       profileBanner = player.banner;
@@ -686,7 +695,16 @@ import { calculatePoints } from "./points.mjs";
     if (!el) return;
     const playerId = currentPlayerId();
     if (!playerId) {
-      el.innerHTML = `<p class="lb-profile-stats-empty">${t("profileLoginPrompt")}</p>`;
+      if (!currentSession) {
+        el.innerHTML = `<p class="lb-profile-stats-empty">${t("profileLoginPrompt")}</p>`;
+      } else if (profileSyncState === "error") {
+        el.innerHTML = `<p class="lb-profile-stats-empty">${t("discordVerifyError")} <button type="button" id="lb-profile-sync-retry" class="lb-gate-retry">${t("profileSyncRetry")}</button></p>`;
+        document.querySelector("#lb-profile-sync-retry")?.addEventListener("click", () => {
+          if (currentSession) checkDiscordMembership(currentSession);
+        });
+      } else {
+        el.innerHTML = `<p class="lb-profile-stats-empty">${t("profileSyncing")}</p>`;
+      }
       const tierEl = document.querySelector("#lb-profile-tier");
       if (tierEl) tierEl.innerHTML = "";
       const streakEl = document.querySelector("#lb-profile-streak");
@@ -789,7 +807,16 @@ import { calculatePoints } from "./points.mjs";
     if (!el) return;
     const playerId = currentPlayerId();
     if (!playerId) {
-      el.innerHTML = `<p class="lb-profile-stats-empty">${t("profileLoginPrompt")}</p>`;
+      if (!currentSession) {
+        el.innerHTML = `<p class="lb-profile-stats-empty">${t("profileLoginPrompt")}</p>`;
+      } else if (profileSyncState === "error") {
+        el.innerHTML = `<p class="lb-profile-stats-empty">${t("discordVerifyError")} <button type="button" id="lb-profile-history-retry" class="lb-gate-retry">${t("profileSyncRetry")}</button></p>`;
+        document.querySelector("#lb-profile-history-retry")?.addEventListener("click", () => {
+          if (currentSession) checkDiscordMembership(currentSession);
+        });
+      } else {
+        el.innerHTML = `<p class="lb-profile-stats-empty">${t("profileSyncing")}</p>`;
+      }
       return;
     }
     const rows = bracketRows
@@ -1139,10 +1166,23 @@ import { calculatePoints } from "./points.mjs";
   }
 
   async function checkDiscordMembership(session) {
-    const { data, error } = await supabase.functions.invoke("discord-verify", {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
+    profileSyncState = "loading";
+    let ptr;
+    try {
+      ptr = await supabase.functions.invoke("discord-verify", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+    } catch (invokeError) {
+      ptr = { data: null, error: invokeError };
+    }
+    const { data, error } = ptr;
     console.log("[TIERLY DEBUG] discord-verify response:", JSON.stringify({ verified: data?.verified, hasPlayer: !!data?.player, playerKeys: data?.player ? Object.keys(data.player) : [], bio: data?.player?.bio, twitter: data?.player?.twitter_handle, telegram: data?.player?.telegram_handle, discord: data?.player?.discord_handle, instagram: data?.player?.instagram_handle, stellar_passport_url: data?.stellar_passport_url, error }));
+    if (error || !data?.player) {
+      console.error("[TIERLY] discord-verify failed:", error?.message || data?.error || "sin respuesta");
+      profileSyncState = currentPlayer ? "ready" : "error";
+    } else {
+      profileSyncState = "ready";
+    }
     syncCurrentPlayer(data?.player || currentPlayer, data?.stellar_passport_url || currentPassportUrl);
     if (!data?.player?.banner && localStorage.getItem("tellus-profile-banner")) {
       // Banner was picked in localStorage before this login (or while logged
@@ -1162,6 +1202,7 @@ import { calculatePoints } from "./points.mjs";
     if (!el) return;
     if (!session) {
       currentPlayer = null;
+      profileSyncState = "idle";
       renderProfileAvatar();
       renderProfileSummary();
       el.innerHTML = `<button id="lb-discord-login" class="lb-discord-btn">${t("loginDiscord")}</button>`;
@@ -1185,10 +1226,12 @@ import { calculatePoints } from "./points.mjs";
     renderAuth(session);
     supabase.auth.onAuthStateChange((event, newSession) => {
       // INITIAL_SESSION duplicates the getSession() call above; TOKEN_REFRESHED
-      // fires silently every ~hour and re-rendering would wipe an open edit
-      // panel / unsaved input and re-run checkDiscordMembership for nothing.
+      // fires silently on token renewal. We don't wipe an open edit panel for
+      // it, but if the first sync failed (e.g. stale token → 401) the renewed
+      // token is exactly when we should retry.
       if (event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") {
         currentSession = newSession;
+        if (newSession && profileSyncState === "error") checkDiscordMembership(newSession);
         return;
       }
       renderAuth(newSession);

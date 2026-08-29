@@ -451,8 +451,14 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
 
   // ---------------- Vista principal / ciclo de vida ----------------
   function renderChessView() {
-    if (!bridge()?.player?.()) {
+    const b = bridge();
+    if (!b?.session?.()) {
       if (container()) container().innerHTML = `<p class="lb-chess-empty">${esc(t("chessLogin"))}</p>`;
+      if (titleEl()) titleEl().textContent = t("navChess");
+      return;
+    }
+    if (!b?.player?.()) {
+      if (container()) container().innerHTML = `<p class="lb-chess-empty">${esc(t("chessSyncError"))}</p>`;
       if (titleEl()) titleEl().textContent = t("navChess");
       return;
     }
