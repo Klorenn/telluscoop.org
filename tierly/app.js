@@ -1086,6 +1086,8 @@ import { calculatePoints } from "./points.mjs";
     console.log("[TIERLY DEBUG] currentPlayer after sync:", JSON.stringify({ bio: currentPlayer?.bio, twitter: currentPlayer?.twitter_handle, telegram: currentPlayer?.telegram_handle, discord: currentPlayer?.discord_handle, instagram: currentPlayer?.instagram_handle, stellar_passport_url: currentPlayer?.stellar_passport_url }));
     renderProfileAvatar();
     renderProfileSummary();
+    renderProfileStats();
+    renderProfileHistory();
   }
 
   function renderAuth(session) {
@@ -1115,7 +1117,16 @@ import { calculatePoints } from "./points.mjs";
   async function initAuth() {
     const { data: { session } } = await supabase.auth.getSession();
     renderAuth(session);
-    supabase.auth.onAuthStateChange((_event, newSession) => renderAuth(newSession));
+    supabase.auth.onAuthStateChange((event, newSession) => {
+      // INITIAL_SESSION duplicates the getSession() call above; TOKEN_REFRESHED
+      // fires silently every ~hour and re-rendering would wipe an open edit
+      // panel / unsaved input and re-run checkDiscordMembership for nothing.
+      if (event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") {
+        currentSession = newSession;
+        return;
+      }
+      renderAuth(newSession);
+    });
   }
 
   function switchView(view) {
