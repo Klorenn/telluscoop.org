@@ -35,7 +35,7 @@ import { calculatePoints } from "./points.mjs";
       tierDescBronze: "Everyone starts here. Rack up points in events to start climbing.",
       tierDescSilver: "You've shown you're consistent on the leaderboard.",
       tierDescGold: "A standout player, among the server's best.",
-      tierDescPlatinum: "Elite level — few players make it this far.",
+      tierDescPlatinum: "Elite level: few players make it this far.",
       tierDescDiamond: "The highest rank. Reserved for the season's very best.",
       profileHistoryEmpty: "No matches played yet.",
       playerBackBtn: "← Back to leaderboard",
@@ -74,7 +74,7 @@ import { calculatePoints } from "./points.mjs";
       settingsTitle: "Settings",
       settingsLangLabel: "Language",
       settingsThemeLabel: "Theme", themeLight: "Light", themeDark: "Dark",
-      settingsAbout: "Tierly is the Discord verification bot for this leaderboard — it only checks server membership, it never reads or posts messages.",
+      settingsAbout: "Tierly is the Discord verification bot for this leaderboard. It only checks server membership, it never reads or posts messages.",
       eventLive: "LIVE", eventUpcoming: "UPCOMING", eventPast: "COMPLETED",
       promoTitle1: "Climb the ranks.", promoTitle2: "Become legendary.",
       promoBody: "Compete in events and earn exclusive rewards.", promoExplore: "Explore Events",
@@ -94,7 +94,7 @@ import { calculatePoints } from "./points.mjs";
       passportLinked: "Stellar Passport profile ↗",
       passportResultsLabel: "Also on Stellar Passport",
       passportNoMatches: "No matches found",
-      discordJoinBody: "You must join the Tellus Discord server to participate — Tierly checks your membership before unlocking anything.",
+      discordJoinBody: "You must join the Tellus Discord server to participate. Tierly checks your membership before unlocking anything.",
       discordJoinBtn: "Join Tellus Discord",
       discordVerifyBtn: "I already joined · Verify",
       discordChecking: "Checking your membership…",
@@ -135,23 +135,23 @@ import { calculatePoints } from "./points.mjs";
       chessTutorialObjectiveTitle: "Goal",
       chessTutorialObjectiveBody: "Win by checkmate: trap the opponent's king so it cannot escape, be blocked, or captured. A draw happens by stalemate, agreement, or the 50-move rule.",
       chessTutorialBotTitle: "Play vs the bot",
-      chessTutorialBotBody: "Choose Easy, Medium or Hard and press Start. The bot is powered by Stockfish — each difficulty thinks for longer and plays stronger games.",
+      chessTutorialBotBody: "Choose Easy, Medium or Hard and press Start. The bot is powered by Stockfish. Each difficulty thinks for longer and plays stronger games.",
       chessTutorialPvpTitle: "Challenge a player",
       chessTutorialPvpBody: "Type a player's username to send a challenge. They accept or decline from their My games list. White always moves first.",
       chessTutorialControlsTitle: "Controls",
       chessTutorialControlsBody: "Drag a piece to the destination (or tap the piece, then tap the square). Dots show your legal moves. To castle, move the king two squares toward the rook.",
       chessTutorialScoresTitle: "Scoring",
-      chessTutorialScoresBody: "Winning a bot game places you 1st, 2nd or 3rd depending on the difficulty. PvP awards 1st place to the winner — draws split 3rd place. Games count toward the season ranking.",
+      chessTutorialScoresBody: "Winning a bot game places you 1st, 2nd or 3rd depending on the difficulty. PvP awards 1st place to the winner. Draws split 3rd place. Games count toward the season ranking.",
       chessTutorialGotIt: "Got it",
       chessCoachTitle: "Coach",
-      chessCoachOpening: "Develop your pieces and fight for the center — knights and bishops before the queen.",
+      chessCoachOpening: "Develop your pieces and fight for the center. Knights and bishops before the queen.",
       chessCoachDevelop: "Bring your pieces out. Aim to castle early to protect your king.",
-      chessCoachCenter: "Control the center — d4/e4 and d5/e5 are the most valuable squares early on.",
+      chessCoachCenter: "Control the center. d4/e4 and d5/e5 are the most valuable squares early on.",
       chessCoachMiddle: "Look for checks, captures and threats. If you leave a piece hanging, your opponent will take it.",
-      chessCoachMaterial: "Count material before trading — only trade when it favors you.",
+      chessCoachMaterial: "Count material before trading. Only trade when it favors you.",
       chessCoachKing: "Keep your king safe. Castle early and don't loosen the pawns around it.",
       chessCoachEnd: "Endgames are about the king: activate it before the queens come off.",
-      chessCoachPromote: "Push passed pawns — a pawn on the 7th rank is almost a queen.",
+      chessCoachPromote: "Push passed pawns. A pawn on the 7th rank is almost a queen.",
       chessCoachCheck: "You're in check! Move, block or capture the checking piece.",
       lbBack: "Back",
     },
@@ -181,7 +181,7 @@ import { calculatePoints } from "./points.mjs";
       tierDescBronze: "Todos empiezan aquí. Gana puntos en eventos para empezar a subir.",
       tierDescSilver: "Ya has demostrado constancia en el ranking.",
       tierDescGold: "Un jugador destacado, entre los mejores del servidor.",
-      tierDescPlatinum: "Nivel de élite — pocos jugadores llegan tan lejos.",
+      tierDescPlatinum: "Nivel de élite: pocos jugadores llegan tan lejos.",
       tierDescDiamond: "El rango más alto. Reservado para los mejores de la temporada.",
       profileHistoryEmpty: "Todavía no has jugado ninguna partida.",
       playerBackBtn: "← Volver al ranking",
@@ -220,7 +220,7 @@ import { calculatePoints } from "./points.mjs";
       settingsTitle: "Configuración",
       settingsLangLabel: "Idioma",
       settingsThemeLabel: "Tema", themeLight: "Claro", themeDark: "Oscuro",
-      settingsAbout: "Tierly es el bot de verificación de Discord de este leaderboard — solo confirma tu membresía del server, nunca lee ni postea mensajes.",
+      settingsAbout: "Tierly es el bot de verificación de Discord de este leaderboard. Solo confirma tu membresía del server, nunca lee ni postea mensajes.",
       eventLive: "EN VIVO", eventUpcoming: "PRÓXIMO", eventPast: "FINALIZADO",
       promoTitle1: "Sube en el ranking.", promoTitle2: "Conviértete en leyenda.",
       promoBody: "Compite en eventos y gana premios exclusivos.", promoExplore: "Ver eventos",
@@ -240,7 +240,7 @@ import { calculatePoints } from "./points.mjs";
       passportLinked: "Perfil de Stellar Passport ↗",
       passportResultsLabel: "También en Stellar Passport",
       passportNoMatches: "No encontramos coincidencias",
-      discordJoinBody: "Debes unirte al servidor de Discord de Tellus para participar — Tierly comprueba tu membresía antes de desbloquear cualquier cosa.",
+      discordJoinBody: "Debes unirte al servidor de Discord de Tellus para participar. Tierly comprueba tu membresía antes de desbloquear cualquier cosa.",
       discordJoinBtn: "Unirse al Discord de Tellus",
       discordVerifyBtn: "Ya me uní · Verificar",
       discordChecking: "Comprobando tu membresía…",
@@ -281,7 +281,7 @@ import { calculatePoints } from "./points.mjs";
       chessTutorialObjectiveTitle: "Objetivo",
       chessTutorialObjectiveBody: "Ganas por jaque mate: atrapa al rey rival para que no pueda escapar, bloquear ni ser capturado. Hay empate por ahogado, acuerdo o regla de las 50 jugadas.",
       chessTutorialBotTitle: "Jugar contra el bot",
-      chessTutorialBotBody: "Elige Fácil, Medio o Difícil y toca Empezar. El bot corre Stockfish — cada dificultad piensa más tiempo y juega mejor.",
+      chessTutorialBotBody: "Elige Fácil, Medio o Difícil y toca Empezar. El bot corre Stockfish. Cada dificultad piensa más tiempo y juega mejor.",
       chessTutorialPvpTitle: "Desafiar a un jugador",
       chessTutorialPvpBody: "Ingresa el usuario de un jugador para enviarle un desafío. Lo acepta o rechaza desde sus partidas. Las blancas siempre mueven primero.",
       chessTutorialControlsTitle: "Controles",
@@ -290,14 +290,14 @@ import { calculatePoints } from "./points.mjs";
       chessTutorialScoresBody: "Ganar contra el bot te coloca 1º, 2º o 3º según la dificultad. En PvP el ganador obtiene el 1º puesto; los empates reparten el 3º. Las partidas suman para el ranking de la temporada.",
       chessTutorialGotIt: "Entendido",
       chessCoachTitle: "Coach",
-      chessCoachOpening: "Desarrolla tus piezas y disputa el centro — caballos y alfiles antes que la dama.",
+      chessCoachOpening: "Desarrolla tus piezas y disputa el centro. Caballos y alfiles antes que la dama.",
       chessCoachDevelop: "Saca tus piezas. Busca enrocar temprano para proteger a tu rey.",
-      chessCoachCenter: "Controla el centro — d4/e4 y d5/e5 son las casillas más valiosas al inicio.",
+      chessCoachCenter: "Controla el centro. d4/e4 y d5/e5 son las casillas más valiosas al inicio.",
       chessCoachMiddle: "Piensa en jaques, capturas y amenazas. Si dejas una pieza colgando, el rival se la lleva.",
-      chessCoachMaterial: "Cuenta el material antes de cambiar — sólo cambia cuando te favorezca.",
+      chessCoachMaterial: "Cuenta el material antes de cambiar. Solo cambia cuando te favorezca.",
       chessCoachKing: "Mantén seguro a tu rey. Enroca temprano y no aflojes los peones que lo protegen.",
       chessCoachEnd: "En los finales manda el rey: actívalo antes de que salgan las damas.",
-      chessCoachPromote: "Empuja los peones pasados — un peón en la séptima fila está a un paso de la dama.",
+      chessCoachPromote: "Empuja los peones pasados. Un peón en la séptima fila está a un paso de la dama.",
       chessCoachCheck: "¡Estás en jaque! Mueve, bloquea o captura la pieza que te ataca.",
       lbBack: "Volver",
     },
@@ -469,7 +469,7 @@ import { calculatePoints } from "./points.mjs";
               <span class="lb-rank-badge${tierClass}">${rank}</span>
               <span class="lb-rank-player">
                 ${renderImageWithFallback(row.avatar_url, row.display_name)}
-                <span class="lb-rank-name">${esc(row.display_name || "—")}${row.discord_member ? CHECK_ICON : ""}</span>
+<span class="lb-rank-name">${esc(row.display_name || "")}${row.discord_member ? CHECK_ICON : ""}</span>
                 ${playerTier.icon ? `<img src="${playerTier.icon}" alt="" class="lb-rank-tier-icon" />` : ""}
               </span>
               <span class="lb-rank-points">${row.total_points}</span>
@@ -498,7 +498,7 @@ import { calculatePoints } from "./points.mjs";
             <span class="lb-rank-badge">${playerTier.icon ? `<img src="${playerTier.icon}" alt="${esc(t(TIER_LABEL_KEY[playerTier.tierId] || ""))}" class="lb-rank-tier-icon" />` : ""}</span>
             <span class="lb-rank-player">
               ${renderImageWithFallback(row.avatar_url, row.display_name)}
-              <span class="lb-rank-name">${esc(row.display_name || "—")}${row.discord_member ? CHECK_ICON : ""}</span>
+              <span class="lb-rank-name">${esc(row.display_name || "")}${row.discord_member ? CHECK_ICON : ""}</span>
             </span>
             <span class="lb-rank-points">${row.total_points}</span>
           </div>`;
@@ -570,7 +570,7 @@ import { calculatePoints } from "./points.mjs";
     summaryEl.innerHTML = `
       <div class="lb-profile-summary-block">
         <div class="lb-profile-summary-head">
-          <strong class="lb-profile-summary-name">${esc(viewingPlayer.display_name || "—")}</strong>${viewingPlayer.discord_member ? CHECK_ICON : ""}
+          <strong class="lb-profile-summary-name">${esc(viewingPlayer.display_name || "")}</strong>${viewingPlayer.discord_member ? CHECK_ICON : ""}
         </div>
         ${viewingPlayer.bio ? `<p class="lb-profile-summary-bio">${esc(viewingPlayer.bio)}</p>` : ""}
       </div>`;
@@ -583,7 +583,7 @@ import { calculatePoints } from "./points.mjs";
     statsEl.innerHTML = `
       <div class="lb-stat-card">
         <span class="lb-stat-icon"><i data-lucide="trophy"></i></span>
-        <div><span class="lb-stat-label">${t("profileStatRank")}</span><strong>${rank ? `#${rank}` : "—"}</strong></div>
+        <div><span class="lb-stat-label">${t("profileStatRank")}</span><strong>${rank ? `#${rank}` : ""}</strong></div>
       </div>
       <div class="lb-stat-card">
         <span class="lb-stat-icon"><i data-lucide="star"></i></span>
@@ -627,7 +627,7 @@ import { calculatePoints } from "./points.mjs";
         <h3>${esc(rows[0].event_name)}</h3>
         <span class="lb-event-date">${esc(fmtEventDate(rows[0].event_date))}</span>
       </div>
-      <ul>${rows.map((r) => `<li>${esc(r.game)} — ${esc(r.display_name || "—")} — ${r.match_status}${r.placement ? ` (#${r.placement})` : ""}</li>`).join("")}</ul>`;
+      <ul>${rows.map((r) => `<li>${esc(r.game)} · ${esc(r.display_name || "")} · ${r.match_status}${r.placement ? ` (#${r.placement})` : ""}</li>`).join("")}</ul>`;
   }
 
   async function loadLatestBracket() {
@@ -648,7 +648,7 @@ import { calculatePoints } from "./points.mjs";
     rewardsRows = error || !data ? [] : data;
     const el = document.querySelector("#lb-rewards");
     if (!rewardsRows.length) { el.innerHTML = `<p class="lb-empty">${t("empty")}</p>`; return; }
-    el.innerHTML = `<ul>${rewardsRows.map((r) => `<li>${esc(r.display_name || "—")} — ${esc(r.description)}</li>`).join("")}</ul>`;
+    el.innerHTML = `<ul>${rewardsRows.map((r) => `<li>${esc(r.display_name || "")} · ${esc(r.description)}</li>`).join("")}</ul>`;
   }
 
   function renderStats() {
@@ -787,7 +787,7 @@ import { calculatePoints } from "./points.mjs";
     el.innerHTML = `
       <div class="lb-stat-card">
         <span class="lb-stat-icon"><i data-lucide="trophy"></i></span>
-        <div><span class="lb-stat-label">${t("profileStatRank")}</span><strong>${rank ? `#${rank}` : "—"}</strong></div>
+        <div><span class="lb-stat-label">${t("profileStatRank")}</span><strong>${rank ? `#${rank}` : ""}</strong></div>
       </div>
       <div class="lb-stat-card">
         <span class="lb-stat-icon"><i data-lucide="star"></i></span>
@@ -889,7 +889,7 @@ import { calculatePoints } from "./points.mjs";
     }
     el.innerHTML = rows.map((r) => `
       <div class="lb-profile-history-row">
-        <span class="lb-rank-badge">${r.placement ? `#${r.placement}` : "—"}</span>
+        <span class="lb-rank-badge">${r.placement ? `#${r.placement}` : ""}</span>
         <span class="lb-profile-history-event">${esc(r.event_name)} <span class="lb-profile-history-date">· ${esc(fmtEventDate(r.event_date))}</span></span>
         <span class="lb-profile-history-points">+${calculatePoints(r.placement)}</span>
       </div>`).join("");
@@ -926,7 +926,7 @@ import { calculatePoints } from "./points.mjs";
       <div class="lb-mini-card">
         <div class="lb-mini-head"><span>${t("topRewardLabel")}</span></div>
         ${latestReward
-          ? `<strong>${esc(latestReward.description)}</strong><span class="lb-mini-sub">${esc(latestReward.display_name || "—")}</span>`
+          ? `<strong>${esc(latestReward.description)}</strong><span class="lb-mini-sub">${esc(latestReward.display_name || "")}</span>`
           : `<i data-lucide="gift" class="lb-mini-empty-icon"></i><span class="lb-mini-sub">${t("emptyRewardTitle")}</span>`}
         <button class="lb-mini-btn" data-view="rewards">${t("viewRewards")} →</button>
       </div>
@@ -967,7 +967,7 @@ import { calculatePoints } from "./points.mjs";
     el.innerHTML = fulfilled.map((r) => `
       <div class="lb-activity-row">
         <i data-lucide="gift"></i>
-        <span>${esc(r.display_name || "—")} ${t("activityReward")} <strong>${esc(r.description)}</strong></span>
+        <span>${esc(r.display_name || "")} ${t("activityReward")} <strong>${esc(r.description)}</strong></span>
       </div>`).join("");
     window.lucide?.createIcons();
   }
@@ -1191,7 +1191,7 @@ import { calculatePoints } from "./points.mjs";
           const data = await res.json();
           if (token === suggestToken) renderSuggestions(data.builders || []);
         } catch {
-          // Silent — suggestions are best-effort.
+          // Silent. Suggestions are best-effort.
         }
       }, 300);
     });
@@ -1411,7 +1411,7 @@ import { calculatePoints } from "./points.mjs";
       const data = await res.json();
       if (token === passportSearchToken) renderPassportResults(data.builders || []);
     } catch {
-      // Silent — Passport results are a bonus on top of the local ranking search.
+      // Silent. Passport results are a bonus on top of the local ranking search.
     }
   }
 
@@ -1504,7 +1504,7 @@ import { calculatePoints } from "./points.mjs";
       };
     }
   } catch {
-    // Ignore corrupt localStorage value — defaults already set above.
+    // Ignore corrupt localStorage value. Defaults already set above.
   }
 
   function saveBannerFit() {

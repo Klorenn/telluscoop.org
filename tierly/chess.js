@@ -1,4 +1,4 @@
-// tierly/chess.js — Módulo de ajedrez Tierly (sin bundler).
+// tierly/chess.js · Módulo de ajedrez Tierly (sin bundler).
 // - Bot vs Stockfish (tres dificultades) y PvP por Supabase Realtime.
 // - Anti-cheat: el browser nunca decide un resultado. Cada movimiento
 //   (humano Y bot) se POSTea al edge function /functions/v1/chess, que lo
@@ -357,7 +357,7 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
             </div>
           </div>
           ${finished
-            ? `<p class="lb-chess-finished">${t("chessFinished")} — <strong>${t(current.winner === "draw" ? "chessDraw" : (current.winner === current.myColor ? "chessYouWin" : "chessYouLose"))}</strong></p>`
+            ? `<p class="lb-chess-finished">${t("chessFinished")} · <strong>${t(current.winner === "draw" ? "chessDraw" : (current.winner === current.myColor ? "chessYouWin" : "chessYouLose"))}</strong></p>`
             : `<button type="button" id="lb-chess-resign" class="lb-chess-btn lb-chess-btn-danger">${t("chessResign")}</button>`}
           <button type="button" id="lb-chess-back" class="lb-chess-btn">← ${t("lbBack")}</button>
         </div>

@@ -1,5 +1,5 @@
 // Category-level content templates for Tellus Resources tool detail pages (resources/tool.html).
-// One set of templated strings per category id — reused across every tool in that
+// One set of templated strings per category id, reused across every tool in that
 // category with the tool's own name/tags/free-tier text substituted in.
 // Wording/structure verified against https://itsfree.dev/es tool detail pages
 // (InsForge, Vercel, Groq, Clerk, Deno Deploy checked directly) then extended to the
@@ -77,7 +77,7 @@ window.TELLUS_DEV_CATEGORY_CONTENT = {
     },
     caveat2: {
       es: "Mide por separado storage, cómputo, lecturas/escrituras, backups e inactividad; rara vez comparten el mismo límite.",
-      en: "Measure storage, compute, reads/writes, backups and idle policies separately — they rarely share the same limit.",
+      en: "Measure storage, compute, reads/writes, backups and idle policies separately. They rarely share the same limit.",
     },
     idealFor: {
       es: "Prototipos, backends y cargas que necesitan persistencia gestionada",
@@ -117,7 +117,7 @@ window.TELLUS_DEV_CATEGORY_CONTENT = {
     },
     caveat2: {
       es: "La plataforma puede ser gratis mientras la inferencia se factura en otro proveedor. Trata ambas cuotas por separado.",
-      en: "The platform itself may be free while inference is billed by another provider — track both quotas separately.",
+      en: "The platform itself may be free while inference is billed by another provider. Track both quotas separately.",
     },
     idealFor: {
       es: "Prototipos con LLM, experimentos, evaluaciones y observabilidad de IA",
@@ -197,7 +197,7 @@ window.TELLUS_DEV_CATEGORY_CONTENT = {
     },
     caveat2: {
       es: "Los límites de envíos/día suelen ser más estrictos que los de envíos/mes; planifica picos de tráfico con eso en mente.",
-      en: "Daily sending limits are usually stricter than monthly ones — plan for traffic spikes with that in mind.",
+      en: "Daily sending limits are usually stricter than monthly ones. Plan for traffic spikes with that in mind.",
     },
     idealFor: {
       es: "Emails transaccionales, formularios y notificaciones para proyectos pequeños",
@@ -237,7 +237,7 @@ window.TELLUS_DEV_CATEGORY_CONTENT = {
     },
     caveat2: {
       es: "La retención de logs y eventos gratuita suele ser corta; exporta lo importante antes de que expire.",
-      en: "Free log and event retention is usually short — export anything important before it expires.",
+      en: "Free log and event retention is usually short. Export anything important before it expires.",
     },
     idealFor: {
       es: "Errores, uptime, logs y alertas para proyectos en producción",
@@ -277,7 +277,7 @@ window.TELLUS_DEV_CATEGORY_CONTENT = {
     },
     caveat2: {
       es: "Los minutos o créditos gratis suelen ser por repos privados; los públicos casi siempre corren aparte.",
-      en: "Free minutes or credits are usually scoped to private repos — public ones almost always run separately.",
+      en: "Free minutes or credits are usually scoped to private repos. Public ones almost always run separately.",
     },
     idealFor: {
       es: "Pipelines de test, build y despliegue para repos personales o de equipo",
@@ -317,7 +317,7 @@ window.TELLUS_DEV_CATEGORY_CONTENT = {
     },
     caveat2: {
       es: "Los eventos gratis se cuentan distinto en cada herramienta; compáralos sobre el mismo volumen antes de decidir.",
-      en: "Free event quotas are counted differently by each tool — compare them at the same volume before deciding.",
+      en: "Free event quotas are counted differently by each tool. Compare them at the same volume before deciding.",
     },
     idealFor: {
       es: "Analítica de producto o web para validar uso real",
@@ -357,7 +357,7 @@ window.TELLUS_DEV_CATEGORY_CONTENT = {
     },
     caveat2: {
       es: "Las cuotas gratis suelen medirse en peticiones o ejecuciones/mes; vigila los picos, no solo el promedio.",
-      en: "Free quotas are usually measured in requests or runs per month — watch the spikes, not just the average.",
+      en: "Free quotas are usually measured in requests or runs per month. Watch the spikes, not just the average.",
     },
     idealFor: {
       es: "Mocks, automatizaciones y APIs de utilidad para prototipos",
@@ -397,7 +397,7 @@ window.TELLUS_DEV_CATEGORY_CONTENT = {
     },
     caveat2: {
       es: "Los archivos o proyectos compartidos gratis suelen tener un tope bajo; contá cuántos vas a necesitar en simultáneo.",
-      en: "Free shared files or projects usually have a low cap — count how many you'll actually need at once.",
+      en: "Free shared files or projects usually have a low cap. Count how many you'll actually need at once.",
     },
     idealFor: {
       es: "Diseño de UI, prototipado y producción de assets visuales",
@@ -407,8 +407,8 @@ window.TELLUS_DEV_CATEGORY_CONTENT = {
 
   security: {
     shortVersionExtra: {
-      es: "Ayuda a detectar riesgos de seguridad —secretos, dependencias o headers— antes de que lleguen a producción.",
-      en: "It helps catch security risks — secrets, dependencies or headers — before they reach production.",
+      es: "Ayuda a detectar riesgos de seguridad: secretos, dependencias o headers antes de que lleguen a producción.",
+      en: "It helps catch security risks: secrets, dependencies or headers before they reach production.",
     },
     useCases: {
       es: [
@@ -437,7 +437,7 @@ window.TELLUS_DEV_CATEGORY_CONTENT = {
     },
     caveat2: {
       es: "Un plan gratis para uso individual no siempre cubre a un equipo completo; revisa el límite de miembros.",
-      en: "A free plan for individual use doesn't always cover a full team — check the member limit.",
+      en: "A free plan for individual use doesn't always cover a full team. Check the member limit.",
     },
     idealFor: {
       es: "Detección de secretos, dependencias y hardening básico de seguridad",
@@ -477,7 +477,7 @@ window.TELLUS_DEV_CATEGORY_CONTENT = {
     },
     caveat2: {
       es: "Los planes gratis suelen limitar historial, integraciones o tableros; medí eso contra el uso real del equipo.",
-      en: "Free plans usually cap history, integrations or boards — measure that against your team's real usage.",
+      en: "Free plans usually cap history, integrations or boards. Measure that against your team's real usage.",
     },
     idealFor: {
       es: "Tareas, documentos y comunicación para equipos chicos",
@@ -517,7 +517,7 @@ window.TELLUS_DEV_CATEGORY_CONTENT = {
     },
     caveat2: {
       es: "Los límites de peticiones API y usuarios editoriales gratis suelen ser el primer techo real; medilos por separado.",
-      en: "Free API request limits and editorial seats are usually the first real ceiling — measure them separately.",
+      en: "Free API request limits and editorial seats are usually the first real ceiling. Measure them separately.",
     },
     idealFor: {
       es: "CMS headless para blogs, sitios de contenido y multi-plataforma",
@@ -557,7 +557,7 @@ window.TELLUS_DEV_CATEGORY_CONTENT = {
     },
     caveat2: {
       es: "Storage, transformaciones y ancho de banda casi nunca comparten la misma cuota gratis; revisa los tres por separado.",
-      en: "Storage, transformations and bandwidth almost never share the same free quota — check all three separately.",
+      en: "Storage, transformations and bandwidth almost never share the same free quota. Check all three separately.",
     },
     idealFor: {
       es: "Subida, transformación y entrega de imagen o vídeo",

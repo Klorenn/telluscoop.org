@@ -1,4 +1,4 @@
-// Foundation system — refined, microinteractions, scroll reveals
+// Foundation system · refined, microinteractions, scroll reveals
 const { useState, useEffect, useRef, useCallback } = React;
 
 // === Hooks ===
@@ -213,7 +213,7 @@ const FoundationSystem = () => {
   ];
 
   const playlists = [
-    { title: 'Hola Stellar — Aprende Stellar desde cero', list: 'PLLgyZ3kOWK4O-Lp1oRBUWGGbuW9ksLQc-', vid: 'RfRx7C5twi0', url: 'https://www.youtube.com/watch?v=RfRx7C5twi0&list=PLLgyZ3kOWK4O-Lp1oRBUWGGbuW9ksLQc-&index=3' },
+    { title: 'Hola Stellar · Aprende Stellar desde cero', list: 'PLLgyZ3kOWK4O-Lp1oRBUWGGbuW9ksLQc-', vid: 'RfRx7C5twi0', url: 'https://www.youtube.com/watch?v=RfRx7C5twi0&list=PLLgyZ3kOWK4O-Lp1oRBUWGGbuW9ksLQc-&index=3' },
     { title: 'Guía Completa de Stellar Quest', list: 'PLLgyZ3kOWK4OfidwhewcUJOsr2WG3j0nv', vid: '-rSLo0rioaM' },
     { title: 'Talleres', list: 'PLLgyZ3kOWK4MJeY7lqpYJ91K5kYSTqj5z', vid: 'X2md53SSNOA' },
     { title: 'Charlas Educativas', list: 'PLLgyZ3kOWK4MZk7iDpfQfwDLNtD5VPeX8', vid: 'hLtreVEM1yo' },
@@ -565,8 +565,8 @@ const FoundationSystem = () => {
           {[
             { url: 'https://twitter.com/Stellar_Chile/status/2039151468893093980', label: 'Programa de Embajadores Stellar Chile' },
             { url: 'https://twitter.com/TellusCoop/status/2030682502063439923', label: 'Embajadores en Colombia' },
-            { url: 'https://twitter.com/TellusCoop/status/2028927037713297638', label: 'Stellar Barrio — cowork Santiago' },
-            { url: 'https://twitter.com/TellusCoop/status/2016526731960553968', label: 'Hola Stellar — cursos en YouTube' },
+            { url: 'https://twitter.com/TellusCoop/status/2028927037713297638', label: 'Stellar Barrio · cowork Santiago' },
+            { url: 'https://twitter.com/TellusCoop/status/2016526731960553968', label: 'Hola Stellar · cursos en YouTube' },
           ].map((t, i) => (
             <Reveal key={i} delay={i * 80} className="fs-tweet-wrap">
               <blockquote className="twitter-tweet" data-dnt="true" data-lang="es">

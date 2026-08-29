@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tellus Resources — Resource</title>
+  <title>Tellus Resources · Resource</title>
 
-  <!-- SEO — this template is client-rendered (one file serves every /resources/tools/:slug via
+  <!-- SEO: this template is client-rendered (one file serves every /resources/tools/:slug via
        vercel.json rewrite), so per-tool title/description are set client-side in render()
        below for the browser tab + share preview once JS runs; these tags stay as the static
        fallback non-JS crawlers see. og:url intentionally points at /resources (not a real per-slug
@@ -17,7 +17,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://telluscoop.org/resources" />
   <meta property="og:site_name" content="Tellus Cooperative" />
-  <meta property="og:title" content="Tellus Resources — Resource" />
+  <meta property="og:title" content="Tellus Resources · Resource" />
   <meta property="og:description" content="Resource profile from the Tellus Resources catalog: free plan, use cases, and alternatives." />
   <meta property="og:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
   <meta property="og:image:width" content="1774" />
@@ -29,7 +29,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@TellusCoop" />
   <meta name="twitter:creator" content="@TellusCoop" />
-  <meta name="twitter:title" content="Tellus Resources — Resource" />
+  <meta name="twitter:title" content="Tellus Resources · Resource" />
   <meta name="twitter:description" content="Resource profile from the Tellus Resources catalog: free plan, use cases, and alternatives." />
   <meta name="twitter:image" content="https://telluscoop.org/uploads/ChatGPT%20Image%20Jul%2029%2C%202026%2C%2012_10_56%20PM.png" />
 
@@ -215,7 +215,7 @@
     .td-numbered-item p { margin: 0; font-size: 15px; line-height: 1.6; opacity: 0.85; padding-top: 2px; }
 
     /* Try-this-first: a connected step flow (tutorial feel), distinct from the
-       scannable index chips above — solid circles linked by a rail so it reads
+       scannable index chips above, solid circles linked by a rail so it reads
        as "do this, then this" rather than a flat list of options. */
     .td-steps { display: flex; flex-direction: column; margin-top: 6px; }
     .td-step { display: flex; gap: 16px; }
@@ -311,7 +311,7 @@
       .td-alt-card:hover { transform: none; }
     }
 
-    /* Footer — ported from foundation.jsx's <footer className="fs-footer"> / foundation.css .fs-footer* */
+    /* Footer: ported from foundation.jsx's <footer className="fs-footer"> / foundation.css .fs-footer* */
     .dv-footer {
       border-top: 1px solid var(--sand-muted);
       background: var(--sand-soft);
@@ -457,7 +457,7 @@
 (function () {
   var UI = {
     es: {
-      title: function (name) { return (name ? name + " — " : "") + "Tellus Resources"; },
+      title: function (name) { return (name ? name + " · " : "") + "Tellus Resources"; },
       breadcrumbHome: "Directorio",
       liveEyebrow: "Vista previa",
       liveHeading: "Web oficial",
@@ -502,7 +502,7 @@
       footerCopyright: "© 2026 Tellus Cooperative Foundation · New York, NY",
     },
     en: {
-      title: function (name) { return (name ? name + " — " : "") + "Tellus Resources"; },
+      title: function (name) { return (name ? name + " · " : "") + "Tellus Resources"; },
       breadcrumbHome: "Directory",
       liveEyebrow: "Live preview",
       liveHeading: "Official site",
@@ -605,7 +605,7 @@
   }
 
   // Site-wide Tellus footer static text (brand/programs/community/follow columns + bottom
-  // bar) — shared between the normal render() and the 404-ish renderNotFound() path so both
+  // bar) shared between the normal render() and the 404-ish renderNotFound() path so both
   // keep the real footer fully translated instead of duplicating this block twice.
   function renderFooterStatic() {
     document.getElementById("dv-footer-brand-text").textContent = t("footerBrand");
@@ -627,7 +627,7 @@
   // resolves, for a nicer tab/share preview when JS runs. Crawlers that don't execute JS still
   // see the static fallback tags baked into <head> (this is a client-rendered template serving
   // every /resources/tools/:slug from one file, so real per-tool OG would need a build step or a
-  // serverless function this repo doesn't have — out of scope here).
+  // serverless function this repo doesn't have; out of scope here).
   function updateMetaTags(title, description) {
     document.title = title;
     [
@@ -772,8 +772,8 @@
           '<div class="eyebrow">' + escapeHtml(t("caveatsEyebrow")) + '</div>' +
           '<h2>' + escapeHtml(t("caveatsHeading")) + '</h2>' +
           '<div class="td-caveats">' +
-            '<div class="td-caveat"><span class="mark">—</span><p>' + escapeHtml(caveat1) + '</p></div>' +
-            '<div class="td-caveat"><span class="mark">—</span><p>' + escapeHtml(caveat2) + '</p></div>' +
+            '<div class="td-caveat"><span class="mark">·</span><p>' + escapeHtml(caveat1) + '</p></div>' +
+            '<div class="td-caveat"><span class="mark">·</span><p>' + escapeHtml(caveat2) + '</p></div>' +
           '</div>' +
         '</div>' +
       '</article>';

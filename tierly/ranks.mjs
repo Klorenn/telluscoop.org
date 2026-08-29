@@ -1,7 +1,7 @@
 // Difficulty curve mirrors calculatePoints (10/6/3/1 per event): each tier
 // roughly doubles/steps up from the previous one, and each tier splits into
 // 3 divisions (I → III) with their own threshold, so climbing stays hard but
-// reachable over a season. platinum/diamond icons pending — see NEXT_SESSION.md.
+// reachable over a season. platinum/diamond icons pending, see NEXT_SESSION.md.
 export const GAMING_TIERS = [
   { id: "bronze", icon: "/tierly/ranks/bronze.png", divisions: [0, 170, 340] },
   { id: "silver", icon: "/tierly/ranks/silver.png", divisions: [500, 670, 840] },
@@ -11,7 +11,7 @@ export const GAMING_TIERS = [
 ];
 
 // Flattened, ascending list of every rank (tier + division), each with its
-// own point minimum — e.g. bronze 1 at 0, bronze 2 at 170, silver 1 at 500...
+// own point minimum, e.g. bronze 1 at 0, bronze 2 at 170, silver 1 at 500...
 export const GAMING_RANKS = GAMING_TIERS.flatMap((tier) =>
   tier.divisions.map((min, i) => ({ tierId: tier.id, icon: tier.icon, division: i + 1, min })),
 );
