@@ -99,6 +99,9 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
     const el = container();
     if (!el) return;
     el.innerHTML = `
+      <div class="lb-chess-lobby-head">
+        <button type="button" id="lb-chess-howto" class="lb-chess-btn">${t("chessHowTo")}</button>
+      </div>
       <div class="lb-chess-grid">
         <div class="lb-chess-card">
           <h3>${t("chessBotTitle")}</h3>
@@ -128,6 +131,7 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
     });
     el.querySelector("#lb-chess-start-bot").addEventListener("click", () => startBotGame());
     el.querySelector("#lb-chess-challenge").addEventListener("click", () => submitChallenge());
+    el.querySelector("#lb-chess-howto").addEventListener("click", () => openTutorial());
     const input = el.querySelector("#lb-chess-opponent");
     input.addEventListener("keydown", (event) => { if (event.key === "Enter") submitChallenge(); });
 
@@ -207,6 +211,46 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
     const result = await invoke({ action: "start_bot", difficulty: selectedDifficulty });
     if (result.data?.game) openGame(result.data.game);
     else setLobbyError(result.error);
+  }
+
+  // ---------------- Tutorial ---------------
+  function openTutorial() {
+    const dialog = document.querySelector("#lb-chess-tutorial");
+    if (!dialog) return;
+    document.querySelector("#lb-chess-tutorial-title").textContent = t("chessTutorialTitle");
+    document.querySelector("#lb-chess-tutorial-body").innerHTML = `
+      <div class="lb-chess-tutorial-section">
+        <h3>${t("chessTutorialObjectiveTitle")}</h3>
+        <p>${t("chessTutorialObjectiveBody")}</p>
+      </div>
+      <div class="lb-chess-tutorial-section">
+        <h3>${t("chessTutorialBotTitle")}</h3>
+        <p>${t("chessTutorialBotBody")}</p>
+      </div>
+      <div class="lb-chess-tutorial-section">
+        <h3>${t("chessTutorialPvpTitle")}</h3>
+        <p>${t("chessTutorialPvpBody")}</p>
+      </div>
+      <div class="lb-chess-tutorial-section">
+        <h3>${t("chessTutorialControlsTitle")}</h3>
+        <p>${t("chessTutorialControlsBody")}</p>
+      </div>
+      <div class="lb-chess-tutorial-section">
+        <h3>${t("chessTutorialScoresTitle")}</h3>
+        <p>${t("chessTutorialScoresBody")}</p>
+      </div>`;
+    document.querySelector("#lb-chess-tutorial-gotit").textContent = t("chessTutorialGotIt");
+    dialog.showModal();
+  }
+
+  function wireTutorialDialog() {
+    const dialog = document.querySelector("#lb-chess-tutorial");
+    if (!dialog) return;
+    dialog.querySelector("#lb-chess-tutorial-close").addEventListener("click", () => dialog.close());
+    dialog.querySelector("#lb-chess-tutorial-gotit").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) dialog.close();
+    });
   }
 
   // ---------------- Tablero / partida en curso ----------------
@@ -305,6 +349,13 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
         <div class="lb-chess-board-wrap"><div class="cg-wrap" id="lb-chess-board"></div></div>
         <div class="lb-chess-panel">
           <p class="lb-chess-status" id="lb-chess-status"></p>
+          <div class="lb-chess-coach" id="lb-chess-coach">
+            <img src="/tierly/streak/negro.png" alt="" class="lb-chess-coach-cat lb-chess-coach-cat-img" id="lb-chess-coach-cat" />
+            <div class="lb-chess-coach-body">
+              <strong>${t("chessCoachTitle")}</strong>
+              <p id="lb-chess-coach-text"></p>
+            </div>
+          </div>
           ${finished
             ? `<p class="lb-chess-finished">${t("chessFinished")} — <strong>${t(current.winner === "draw" ? "chessDraw" : (current.winner === current.myColor ? "chessYouWin" : "chessYouLose"))}</strong></p>`
             : `<button type="button" id="lb-chess-resign" class="lb-chess-btn lb-chess-btn-danger">${t("chessResign")}</button>`}
@@ -357,6 +408,56 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
     } else {
       setStatus(t("chessWaitingOpponent"));
     }
+    renderCoachTip();
+  }
+
+  const V = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+
+  function pieceCount(chess) {
+    let n = 0;
+    for (const { type } of chess.board().flat().filter(Boolean)) n += (V[type] || 0);
+    return n;
+  }
+
+  function myPieces(chess) {
+    const color = chess.turn() === "w" ? "w" : "b";
+    return chess.board().flat().filter((p) => p && p.color === color);
+  }
+
+  function coachTipKey(chess) {
+    if (chess.isCheck()) return "chessCoachCheck";
+    const total = pieceCount(chess);
+    if (total <= 16) return "chessCoachEnd";
+    if (chess.moveNumber() <= 6) return "chessCoachOpening";
+    const minors = myPieces(chess).filter((p) => ["b", "n"].includes(p.type)).length;
+    if (minors === 0 && total < 34) return "chessCoachPromote";
+    if (chess.moveNumber() <= 11) return "chessCoachDevelop";
+    if (minors < 2) return "chessCoachKing";
+    const myQueens = myPieces(chess).filter((p) => p.type === "q").length;
+    const enemyQueens = chess.board().flat().filter((p) => p && p.color !== chess.turn() && p.type === "q").length;
+    if (myQueens === enemyQueens && myQueens < 2) return "chessCoachMaterial";
+    return "chessCoachMiddle";
+  }
+
+  const COACH_CAT = {
+    chessCoachCheck: "/tierly/streak/dorado.png",
+    chessCoachEnd: "/tierly/streak/tuxedo.png",
+    chessCoachPromote: "/tierly/streak/tuxedo.png",
+    chessCoachOpening: "/tierly/streak/negro.png",
+    chessCoachDevelop: "/tierly/streak/negro.png",
+    chessCoachCenter: "/tierly/streak/naranjo.png",
+    chessCoachMiddle: "/tierly/streak/naranjo.png",
+    chessCoachMaterial: "/tierly/streak/naranjo.png",
+    chessCoachKing: "/tierly/streak/naranjo.png",
+  };
+
+  function renderCoachTip() {
+    const el = document.querySelector("#lb-chess-coach-text");
+    if (!el || !current) return;
+    const key = coachTipKey(current.chess);
+    el.textContent = t(key);
+    const cat = document.querySelector("#lb-chess-coach-cat");
+    if (cat) cat.src = COACH_CAT[key] || COACH_CAT.chessCoachOpening;
   }
 
   function applyServerPosition(fen, winner, gameOver) {
@@ -499,6 +600,7 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
     window.addEventListener("DOMContentLoaded", () => {
       console.log("[CHESS] módulo de ajedrez inicializado");
     });
+    wireTutorialDialog();
     if (!section) return;
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {

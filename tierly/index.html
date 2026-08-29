@@ -706,6 +706,35 @@
     .lb-chess-layout { display: flex; flex-direction: column; gap: 18px; }
     .lb-chess-board-wrap { display: flex; justify-content: center; }
     #lb-chess-board { width: 100%; max-width: 520px; aspect-ratio: 1 / 1; margin: 0 auto; }
+    .lb-chess-lobby-head { display: flex; justify-content: flex-end; margin-bottom: 4px; }
+    .lb-chess-tutorial {
+      border: none; border-radius: 18px; background: var(--card); color: var(--ink);
+      padding: 22px 24px; max-width: 560px; width: min(90vw, 560px); box-shadow: var(--card-shadow);
+    }
+    .lb-chess-tutorial::backdrop { background: rgba(15,35,30,0.45); }
+    .lb-chess-tutorial-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .lb-chess-tutorial-head h2 { font-family: var(--serif); font-size: 22px; color: var(--ink); margin: 0; }
+    .lb-chess-tutorial-title-wrap { display: flex; align-items: center; gap: 12px; }
+    .lb-chess-tutorial-cat { width: 52px; height: 52px; object-fit: contain; flex-shrink: 0; }
+    .lb-chess-modal-close {
+      background: transparent; border: none; color: var(--ink-dim); font-size: 22px; cursor: pointer;
+      line-height: 1; padding: 4px 8px; border-radius: 8px;
+    }
+    .lb-chess-modal-close:hover { background: var(--hover-bg); }
+    .lb-chess-tutorial-body { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+    .lb-chess-tutorial-section h3 { font-family: var(--serif); font-size: 15px; color: var(--ink); margin: 0 0 4px; }
+    .lb-chess-tutorial-section p { font-size: 13.5px; color: var(--ink-dim); line-height: 1.55; margin: 0; }
+    .lb-chess-coach {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--chip-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 12px 14px;
+    }
+    .lb-chess-coach-cat { width: 48px; height: 48px; object-fit: contain; flex-shrink: 0; }
+    .lb-chess-coach-body { min-width: 0; }
+    .lb-chess-coach strong {
+      display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--ink-dim); margin-bottom: 4px;
+    }
+    .lb-chess-coach p { margin: 0; font-size: 13.5px; color: var(--ink); line-height: 1.5; }
 
     @media (max-width: 960px) {
       .lb-content-grid { flex-direction: column; }
@@ -867,10 +896,22 @@
         <button type="button" id="lb-crop-modal-apply" class="lb-crop-modal-apply"></button>
       </div>
     </dialog>
+
+    <dialog id="lb-chess-tutorial" class="lb-chess-tutorial">
+      <div class="lb-chess-tutorial-head">
+        <div class="lb-chess-tutorial-title-wrap">
+          <img src="/tierly/streak/negro.png" alt="" class="lb-chess-tutorial-cat" id="lb-chess-tutorial-cat" />
+          <h2 id="lb-chess-tutorial-title"></h2>
+        </div>
+        <button id="lb-chess-tutorial-close" type="button" class="lb-chess-modal-close" aria-label="close">&times;</button>
+      </div>
+      <div id="lb-chess-tutorial-body" class="lb-chess-tutorial-body"></div>
+      <button id="lb-chess-tutorial-gotit" type="button" class="lb-chess-btn lb-chess-btn-primary"></button>
+    </dialog>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"></script>
-  <script type="module" src="/tierly/chess.js?v=20260829-07"></script>
-  <script type="module" src="/tierly/app.js?v=20260829-07"></script>
+  <script type="module" src="/tierly/chess.js?v=20260829-08"></script>
+  <script type="module" src="/tierly/app.js?v=20260829-08"></script>
 </body>
 </html>

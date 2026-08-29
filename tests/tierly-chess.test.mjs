@@ -174,6 +174,48 @@ test("chess strings exist in both locales, including lbBack for the back button"
   assert.match(app, /lbBack: "Volver"/);
 });
 
+test("the tutorial dialog teaches the game in both locales", () => {
+  assert.match(page, /dialog id="lb-chess-tutorial"/);
+  assert.match(page, /id="lb-chess-tutorial-body"/);
+  assert.match(chessJs, /function openTutorial\(\)/);
+  assert.match(chessJs, /id="lb-chess-howto"/);
+  assert.match(chessJs, /dialog\.showModal\(\)/);
+  assert.match(app, /chessHowTo: "How to play"/);
+  assert.match(app, /chessHowTo: "Cómo jugar"/);
+  assert.match(app, /chessTutorialObjectiveBody: "Win by checkmate/);
+  assert.match(app, /chessTutorialObjectiveBody: "Ganas por jaque mate/);
+});
+
+test("the in-game coach gives contextual advice from a difficulty-aware key", () => {
+  assert.match(chessJs, /id="lb-chess-coach"/);
+  assert.match(chessJs, /function coachTipKey\(chess\)/);
+  assert.match(chessJs, /function renderCoachTip\(\)/);
+  assert.match(chessJs, /if \(chess\.isCheck\(\)\) return "chessCoachCheck"/);
+  assert.match(app, /chessCoachTitle: "Coach"/);
+  assert.match(app, /chessCoachCheck: "You're in check/);
+  assert.match(app, /chessCoachCheck: "¡Estás en jaque!/);
+});
+
+test("the mascot cats teach the tutorial and the coach", async () => {
+  assert.match(page, /id="lb-chess-tutorial-cat"/);
+  assert.match(page, /class="lb-chess-tutorial-cat"/);
+  assert.match(chessJs, /COACH_CAT = \{/);
+  assert.match(chessJs, /\/tierly\/streak\/negro\.png/);
+  assert.match(chessJs, /\/tierly\/streak\/naranjo\.png/);
+  assert.match(chessJs, /\/tierly\/streak\/tuxedo\.png/);
+  assert.match(chessJs, /\/tierly\/streak\/dorado\.png/);
+  const catFiles = [
+    "../tierly/streak/negro.png",
+    "../tierly/streak/naranjo.png",
+    "../tierly/streak/tuxedo.png",
+    "../tierly/streak/dorado.png",
+  ];
+  for (const f of catFiles) {
+    const i = await stat(new URL(f, import.meta.url));
+    assert.ok(i.size > 100_000, `${f} must exist and be a real image`);
+  }
+});
+
 test("chess.js recomputes legal moves with chess.js and drives Stockfish on a worker", () => {
   assert.match(chessJs, /import \{ Chess \} from "https:\/\/cdn\.jsdelivr\.net\/npm\/chess\.js@1\.4\.0\/dist\/esm\/chess\.js"/);
   assert.match(chessJs, /import \{ Chessground \} from "https:\/\/cdn\.jsdelivr\.net\/npm\/chessground@9\.2\.1\/dist\/chessground\.min\.js"/);
