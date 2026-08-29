@@ -458,7 +458,7 @@ Deno.serve(async (request) => {
       );
       return json(
         { error: memberResponse.status === 401 || memberResponse.status === 403
-          ? "El bot de Discord perdió acceso — avisá al staff."
+          ? `El bot de Discord perdió acceso (HTTP ${memberResponse.status}) — avisá al staff.`
           : "No se pudo verificar la membresía" },
         502,
       );
