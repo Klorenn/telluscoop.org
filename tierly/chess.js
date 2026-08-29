@@ -101,6 +101,7 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
     el.innerHTML = `
       <div class="lb-chess-lobby-head">
         <button type="button" id="lb-chess-howto" class="lb-chess-btn">${t("chessHowTo")}</button>
+        <span class="lb-chess-lobby-rating" id="lb-chess-lobby-rating">${t("chessRating")}: <strong>…</strong></span>
       </div>
       <div class="lb-chess-grid">
         <div class="lb-chess-card">
@@ -149,6 +150,10 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
     const list = document.querySelector("#lb-chess-mygames");
     if (!list) return;
     const result = await invoke({ action: "my_games" });
+    if (result.data?.rating) {
+      const ratingEl = document.querySelector("#lb-chess-lobby-rating strong");
+      if (ratingEl) ratingEl.textContent = result.data.rating.rating;
+    }
     const games = result.data?.games || [];
     if (result.error || !games.length) {
       list.innerHTML = `<p class="lb-chess-empty">${esc(t("chessEmpty"))}</p>`;
@@ -238,6 +243,14 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
       <div class="lb-chess-tutorial-section">
         <h3>${t("chessTutorialScoresTitle")}</h3>
         <p>${t("chessTutorialScoresBody")}</p>
+        <div class="lb-chess-scores">
+          <div class="lb-chess-scores-row lb-chess-scores-head"><span></span><span>${t("chessPtsWin")}</span><span>${t("chessPtsDraw")}</span><span>${t("chessPtsLoss")}</span></div>
+          <div class="lb-chess-scores-row"><span>${difficultyLabel("easy")}</span><span>10</span><span>3</span><span>1</span></div>
+          <div class="lb-chess-scores-row"><span>${difficultyLabel("medium")}</span><span>20</span><span>3</span><span>1</span></div>
+          <div class="lb-chess-scores-row"><span>${difficultyLabel("hard")}</span><span>25</span><span>3</span><span>1</span></div>
+          <div class="lb-chess-scores-row"><span>${t("chessPvp")}</span><span>25${t("chessStreak")}</span><span>5</span><span>1</span></div>
+        </div>
+        <p class="lb-chess-scores-note">${t("chessTutorialRatingBody")}</p>
       </div>`;
     document.querySelector("#lb-chess-tutorial-gotit").textContent = t("chessTutorialGotIt");
     dialog.showModal();
@@ -254,7 +267,7 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
   }
 
   // ---------------- Tablero / partida en curso ----------------
-  function openGame(game) {
+  function openGame(game, extra = {}) {
     const me = bridgePlayerId();
     const isWhite = game.white_player_id === me;
     const isBlack = game.black_player_id === me;
@@ -273,6 +286,8 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
       chess: new Chess(game.fen || START_FEN),
       lastFrom: null,
       lastTo: null,
+      scoring: extra.scoring || null,
+      myRating: extra.rating?.rating ?? null,
     };
     try {
       localStorage.setItem("tierly-chess-last", JSON.stringify({ id: game.id, mode: game.mode }));
@@ -318,7 +333,10 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
 
   async function reloadGameState(gameId) {
     const result = await invoke({ action: "state", id: gameId });
-    if (result.data?.game) openGame(result.data.game);
+    if (result.data?.game) openGame(result.data.game, {
+      scoring: result.data.scoring,
+      rating: result.data.rating,
+    });
   }
 
   function isMyTurn() {
@@ -340,6 +358,18 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
     return dests;
   }
 
+  function finishedLine() {
+    const myId = bridgePlayerId();
+    const mine = current.scoring?.[myId];
+    if (!mine) return "";
+    const delta = mine.rating_after - mine.rating_before;
+    const sign = delta >= 0 ? "+" : "";
+    const points = Number.isInteger(mine.points) && mine.points > 0
+      ? t("chessPointsEarnedPos").replace("{points}", mine.points)
+      : t("chessPointsEarnedNeg").replace("{points}", mine.points);
+    return `<span class="lb-chess-earned"> · ${points} · ${t("chessRating")} ${mine.rating_before}→${mine.rating_after} (${sign}${delta})</span>`;
+  }
+
   function renderGame() {
     const el = container();
     if (!el) return;
@@ -357,8 +387,9 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
             </div>
           </div>
           ${finished
-            ? `<p class="lb-chess-finished">${t("chessFinished")} · <strong>${t(current.winner === "draw" ? "chessDraw" : (current.winner === current.myColor ? "chessYouWin" : "chessYouLose"))}</strong></p>`
+            ? `<p class="lb-chess-finished">${t("chessFinished")} · <strong>${t(current.winner === "draw" ? "chessDraw" : (current.winner === current.myColor ? "chessYouWin" : "chessYouLose"))}</strong>${finishedLine()}</p>`
             : `<button type="button" id="lb-chess-resign" class="lb-chess-btn lb-chess-btn-danger">${t("chessResign")}</button>`}
+          <p class="lb-chess-rating" id="lb-chess-rating">${t("chessRating")}: ${current.myRating ?? "–"}</p>
           <button type="button" id="lb-chess-back" class="lb-chess-btn">← ${t("lbBack")}</button>
         </div>
       </div>`;
@@ -490,6 +521,11 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
     if (result.error) { setStatus(result.error); syncBoard(); return; }
     current.lastFrom = from;
     current.lastTo = to;
+    if (result.data.scoring) {
+      current.scoring = result.data.scoring;
+      const myId = bridgePlayerId();
+      current.myRating = result.data.scoring[myId]?.rating_after ?? current.myRating;
+    }
     applyServerPosition(result.data.fen, result.data.winner, result.data.gameOver);
     if (!result.data.gameOver && isEngineTurn()) await botTurn();
   }
@@ -500,6 +536,11 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
     if (result.error) { setStatus(result.error); return; }
     current.winner = result.data.winner;
     current.finished = true;
+    if (result.data.scoring) {
+      current.scoring = result.data.scoring;
+      const myId = bridgePlayerId();
+      current.myRating = result.data.scoring[myId]?.rating_after ?? current.myRating;
+    }
     syncBoard();
   }
 
@@ -569,6 +610,11 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
     if (!current || current.finished || !isEngineTurn()) return;
     const result = await invoke({ action: "move", id: current.gameId, from: move.from, to: move.to, promotion: move.promotion });
     if (result.error) { setStatus(result.error); return; }
+    if (result.data.scoring) {
+      current.scoring = result.data.scoring;
+      const myId = bridgePlayerId();
+      current.myRating = result.data.scoring[myId]?.rating_after ?? current.myRating;
+    }
     applyServerPosition(result.data.fen, result.data.winner, result.data.gameOver);
   }
 

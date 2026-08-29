@@ -21,9 +21,75 @@ const corsFor = (origin: string | null) => ({
 // valida contra el spec.
 const BOT_PLACEMENTS = { win_hard: 1, win_medium: 2, win_easy: 3, draw: 3, loss: 4 };
 
-const GAME_SELECT = [
+// Puntos explícitos por partida (el browser nunca decide el resultado): bot
+// easy=10, medium=20, hard=25; empate=3 (bot) o 5 (PvP); derrota=1. En PvP el
+// ganador suma 25 + bono de racha (+2 por victoria consecutiva, máx +10).
+type Difficulty = "easy" | "medium" | "hard";
+
+function difficultyOf(value: string | null | undefined): Difficulty {
+  return value === "easy" || value === "hard" ? value : "medium";
+}
+
+const BOT_WIN_POINTS: Record<Difficulty, number> = { easy: 10, medium: 20, hard: 25 };
+const PVP_WIN_POINTS = 25;
+const PVP_DRAW_POINTS = 5;
+const BOT_DRAW_POINTS = 3;
+const LOSS_POINTS = 1;
+const STREAK_BONUS_STEP = 2;
+const STREAK_BONUS_MAX = 10;
+
+// Rating Elo de ajedrez. Piso inicial 1200, K=32. Los bots tienen rating fijo
+// por dificultad para que ganarle al difícil suba más Elo que al fácil.
+const ELO_START = 1200;
+const ELO_K = 32;
+const ELO_FLOOR = 100;
+const BOT_RATINGS: Record<Difficulty, number> = { easy: 800, medium: 1000, hard: 1200 };
+
+// Resultado de una partida jugada con blancas/negras: ganar=1, empate=0.5, perder=0.
+function gameScore(winner: "white" | "black" | "draw", color: "white" | "black"): number {
+  if (winner === "draw") return 0.5;
+  return winner === color ? 1 : 0;
+}
+
+// Probabilidad esperada de ganar (fórmula de Elo estándar).
+function expectedScore(rating: number, opponent: number): number {
+  return 1 / (1 + Math.pow(10, (opponent - rating) / 400));
+}
+
+function eloDelta(rating: number, opponent: number, score: number): number {
+  return Math.round(ELO_K * (score - expectedScore(rating, opponent)));
+}
+
+// Racha actual: victorias PvP consecutivas del jugador antes de ESTA partida.
+async function pvpStreak(
+  admin: ReturnType<typeof createClient>,
+  playerId: string,
+): Promise<number> {
+  const { data, error } = await admin
+    .from("gaming_chess_games")
+    .select("winner, white_player_id")
+    .eq("mode", "pvp")
+    .eq("status", "finished")
+    .or(`white_player_id.eq.${playerId},black_player_id.eq.${playerId}`)
+    .order("finished_at", { ascending: false })
+    .limit(30);
+  if (error || !data) return 0;
+  let streak = 0;
+  for (const game of data) {
+    if (game.winner === "draw") break;
+    const wonAsWhite = game.white_player_id === playerId && game.winner === "white";
+    const wonAsBlack = game.white_player_id !== playerId && game.winner === "black";
+    if (!wonAsWhite && !wonAsBlack) break;
+    streak += 1;
+  }
+  return streak;
+}
+
+// Aplica un movimiento legal de from -> to. Si el destino solo admite
+  const GAME_SELECT = [
   "id",
   "tournament_id",
+  "match_id",
   "white_player_id",
   "black_player_id",
   "mode",
@@ -104,13 +170,15 @@ async function ensureTournament(admin: ReturnType<typeof createClient>): Promise
 // finalizeGame: única vía de puntaje. Inserta 'pending' y recién después hace
 // update a 'confirmed' para que dispare recalculate_gaming_score() — el
 // browser nunca decide el resultado, lo decide chess.js acá en el server.
+// Calcula puntos explícitos (por dificultad / PvP / racha) y el Elo de cada
+// jugador, guarda todo y devuelve el resumen para que el cliente lo muestre.
 async function finalizeGame(
   admin: ReturnType<typeof createClient>,
   userId: string,
   game: { id: string; mode: string; bot_difficulty: string | null; white_player_id: string; black_player_id: string | null; fen: string; pgn: string | null },
   chess: Chess,
   result: { winner: "white" | "black" | "draw" },
-) {
+): Promise<Record<string, { points: number; rating_before: number; rating_after: number }>> {
   const tournamentId = await ensureTournament(admin);
 
   const { data: match, error: matchError } = await admin
@@ -120,27 +188,103 @@ async function finalizeGame(
     .single();
   if (matchError || !match) throw new Error("No se pudo crear la partida");
 
-  const participants: Array<{ match_id: string; player_id: string; placement: number }> = [];
+  async function readRating(playerId: string): Promise<number> {
+    const { data } = await admin
+      .from("gaming_chess_ratings")
+      .select("rating")
+      .eq("player_id", playerId)
+      .maybeSingle();
+    return data?.rating ?? ELO_START;
+  }
+
+  async function writeRating(playerId: string, rating: number, result: "win" | "draw" | "loss") {
+    const { data } = await admin
+      .from("gaming_chess_ratings")
+      .select("best_rating, games_played, wins, draws, losses")
+      .eq("player_id", playerId)
+      .maybeSingle();
+    const best = Math.max(data?.best_rating ?? rating, rating);
+    const games_played = (data?.games_played ?? 0) + 1;
+    const wins = (data?.wins ?? 0) + (result === "win" ? 1 : 0);
+    const draws = (data?.draws ?? 0) + (result === "draw" ? 1 : 0);
+    const losses = (data?.losses ?? 0) + (result === "loss" ? 1 : 0);
+    await admin.from("gaming_chess_ratings").upsert({
+      player_id: playerId,
+      rating,
+      best_rating: best,
+      games_played,
+      wins,
+      draws,
+      losses,
+    });
+  }
+
+  const participants: Array<{ match_id: string; player_id: string; placement: number; points_awarded: number; rating_before: number; rating_after: number }> = [];
+  const scoring: Record<string, { points: number; rating_before: number; rating_after: number }> = {};
+
   if (game.mode === "bot") {
     const key = result.winner === "white"
-      ? `win_${game.bot_difficulty}`
+      ? `win_${difficultyOf(game.bot_difficulty)}`
       : result.winner === "draw"
         ? "draw"
         : "loss";
+    const points = result.winner === "white"
+      ? BOT_WIN_POINTS[difficultyOf(game.bot_difficulty)]
+      : result.winner === "draw"
+        ? BOT_DRAW_POINTS
+        : LOSS_POINTS;
+    const before = await readRating(game.white_player_id);
+    const opponent = BOT_RATINGS[difficultyOf(game.bot_difficulty)];
+    const score = gameScore(result.winner, "white");
+    const after = Math.max(ELO_FLOOR, before + eloDelta(before, opponent, score));
+    await writeRating(game.white_player_id, after, result.winner === "white" ? "win" : result.winner === "draw" ? "draw" : "loss");
     participants.push({
       match_id: match.id,
       player_id: game.white_player_id,
       placement: BOT_PLACEMENTS[key] ?? BOT_PLACEMENTS.loss,
+      points_awarded: points,
+      rating_before: before,
+      rating_after: after,
     });
+    scoring[game.white_player_id] = { points, rating_before: before, rating_after: after };
   } else {
     if (result.winner === "draw") {
-      participants.push({ match_id: match.id, player_id: game.white_player_id, placement: 3 });
-      participants.push({ match_id: match.id, player_id: game.black_player_id!, placement: 3 });
+      for (const playerId of [game.white_player_id, game.black_player_id!]) {
+        const before = await readRating(playerId);
+        const opponent = playerId === game.white_player_id
+          ? await readRating(game.black_player_id!)
+          : await readRating(game.white_player_id);
+        const score = 0.5;
+        const after = Math.max(ELO_FLOOR, before + eloDelta(before, opponent, score));
+        await writeRating(playerId, after, "draw");
+        participants.push({
+          match_id: match.id,
+          player_id: playerId,
+          placement: 3,
+          points_awarded: PVP_DRAW_POINTS,
+          rating_before: before,
+          rating_after: after,
+        });
+        scoring[playerId] = { points: PVP_DRAW_POINTS, rating_before: before, rating_after: after };
+      }
     } else {
       const winId = result.winner === "white" ? game.white_player_id : game.black_player_id;
       const loseId = result.winner === "white" ? game.black_player_id : game.white_player_id;
-      participants.push({ match_id: match.id, player_id: winId!, placement: 1 });
-      participants.push({ match_id: match.id, player_id: loseId!, placement: 4 });
+      const streak = await pvpStreak(admin, winId!);
+      const bonus = Math.min(streak, STREAK_BONUS_MAX / STREAK_BONUS_STEP) * STREAK_BONUS_STEP;
+      const winPoints = PVP_WIN_POINTS + bonus;
+      const winBefore = await readRating(winId!);
+      const loseBefore = await readRating(loseId!);
+      const winScore = 1;
+      const loseScore = 0;
+      const winAfter = Math.max(ELO_FLOOR, winBefore + eloDelta(winBefore, loseBefore, winScore));
+      await writeRating(winId!, winAfter, "win");
+      const loseAfter = Math.max(ELO_FLOOR, loseBefore + eloDelta(loseBefore, winBefore, loseScore));
+      await writeRating(loseId!, loseAfter, "loss");
+      participants.push({ match_id: match.id, player_id: winId!, placement: 1, points_awarded: winPoints, rating_before: winBefore, rating_after: winAfter });
+      participants.push({ match_id: match.id, player_id: loseId!, placement: 4, points_awarded: LOSS_POINTS, rating_before: loseBefore, rating_after: loseAfter });
+      scoring[winId!] = { points: winPoints, rating_before: winBefore, rating_after: winAfter };
+      scoring[loseId!] = { points: LOSS_POINTS, rating_before: loseBefore, rating_after: loseAfter };
     }
   }
 
@@ -160,10 +304,13 @@ async function finalizeGame(
       winner: result.winner,
       fen: chess.fen(),
       pgn: chess.pgn(),
+      match_id: match.id,
       finished_at: new Date().toISOString(),
     })
     .eq("id", game.id);
   if (gameError) throw new Error("No se pudo cerrar la partida de ajedrez");
+
+  return scoring;
 }
 
 // Realtime: un canal por partida para que el otro jugador vea los movimientos
@@ -341,7 +488,29 @@ Deno.serve(async (request) => {
 
       const { data: game } = await admin.from("gaming_chess_games").select(GAME_SELECT).eq("id", gameId).maybeSingle();
       if (!game) return json({ error: "Esa partida no existe" }, 404);
-      return json({ game });
+
+      const { data: rating } = await admin
+        .from("gaming_chess_ratings")
+        .select("rating, best_rating, games_played, wins, draws, losses")
+        .eq("player_id", playerId)
+        .maybeSingle();
+
+      let scoring: Record<string, { points: number; rating_before: number; rating_after: number }> = {};
+      if (game.status === "finished" && game.match_id) {
+        const { data: participants } = await admin
+          .from("gaming_match_participants")
+          .select("player_id, points_awarded, rating_before, rating_after")
+          .eq("match_id", game.match_id);
+        for (const p of participants ?? []) {
+          scoring[p.player_id] = {
+            points: p.points_awarded,
+            rating_before: p.rating_before,
+            rating_after: p.rating_after,
+          };
+        }
+      }
+
+      return json({ game, scoring, rating: rating ?? { rating: ELO_START, best_rating: ELO_START, games_played: 0, wins: 0, draws: 0, losses: 0 } });
     }
 
     if (action === "my_games") {
@@ -360,7 +529,15 @@ Deno.serve(async (request) => {
       const games = [...(mine.data ?? []), ...(theirs.data ?? [])].sort((a, b) =>
         String(b.created_at).localeCompare(String(a.created_at)),
       );
-      return json({ games });
+      const { data: rating } = await admin
+        .from("gaming_chess_ratings")
+        .select("rating, best_rating, games_played, wins, draws, losses")
+        .eq("player_id", playerId)
+        .maybeSingle();
+      return json({
+        games,
+        rating: rating ?? { rating: ELO_START, best_rating: ELO_START, games_played: 0, wins: 0, draws: 0, losses: 0 },
+      });
     }
 
     if (action === "move") {
@@ -392,15 +569,16 @@ Deno.serve(async (request) => {
 
       const result = gameResult(chess);
       if (result) {
+        let scoring: Record<string, { points: number; rating_before: number; rating_after: number }> = {};
         try {
-          await finalizeGame(admin, user.id, game, chess, result);
+          scoring = await finalizeGame(admin, user.id, game, chess, result);
         } catch (finalizeError) {
           console.error(finalizeError);
           return json({ error: "Error al procesar la partida" }, 500);
         }
         await broadcast(supabase, gameId, "move", { fen: chess.fen(), from, to, winner: result.winner });
         await broadcast(supabase, gameId, "status", { status: "finished", winner: result.winner });
-        return json({ fen: chess.fen(), pgn: chess.pgn(), winner: result.winner, gameOver: true });
+        return json({ fen: chess.fen(), pgn: chess.pgn(), winner: result.winner, gameOver: true, scoring });
       }
 
       const { error: updateError } = await admin
@@ -429,14 +607,15 @@ Deno.serve(async (request) => {
       const chess = loadChess(game);
       const mySide = game.white_player_id === playerId ? "white" : "black";
       const result = { winner: mySide === "white" ? ("black" as const) : ("white" as const) };
+      let scoring: Record<string, { points: number; rating_before: number; rating_after: number }> = {};
       try {
-        await finalizeGame(admin, user.id, game, chess, result);
+        scoring = await finalizeGame(admin, user.id, game, chess, result);
       } catch (finalizeError) {
         console.error(finalizeError);
         return json({ error: "Error al procesar la partida" }, 500);
       }
       await broadcast(supabase, gameId, "status", { status: "finished", winner: result.winner });
-      return json({ winner: result.winner, gameOver: true });
+      return json({ winner: result.winner, gameOver: true, scoring });
     }
 
     return json({ error: "Acción desconocida" }, 400);

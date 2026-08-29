@@ -104,14 +104,46 @@ test("bot difficulty maps to the exact spec placements", () => {
 
 test("PvP awards 1/4 for winner/loser and 3/3 for a draw", () => {
   assert.match(edge, /const winId = result\.winner === "white" \? game\.white_player_id : game\.black_player_id;/);
-  assert.match(edge, /player_id: (winId|loseId)!, placement: (1|4) \}/);
-  assert.match(edge, /player_id: game\.black_player_id!, placement: 3 \}/);
+  assert.match(edge, /player_id: winId!, placement: 1,/);
+  assert.match(edge, /player_id: loseId!, placement: 4,/);
+  assert.match(edge, /player_id: playerId,\s*placement: 3,/);
 });
 
 test("gameplay state changes broadcast over a per-game chess topic", () => {
   assert.match(edge, /const topic = `chess:\$\{gameId\}`;/);
   assert.match(edge, /realtime\.channel\(topic, \{ config: \{ broadcast: \{ self: false \} \} \}\)/);
   assert.match(edge, /channel\.send\(\{ type: "broadcast", event, payload \}\)/);
+});
+
+test("bot wins award explicit points per difficulty and Elo moves", () => {
+  assert.match(edge, /BOT_WIN_POINTS: Record<Difficulty, number> = \{ easy: 10, medium: 20, hard: 25 \}/);
+  assert.match(edge, /PVP_WIN_POINTS = 25/);
+  assert.match(edge, /PVP_DRAW_POINTS = 5/);
+  assert.match(edge, /BOT_DRAW_POINTS = 3/);
+  assert.match(edge, /LOSS_POINTS = 1/);
+  assert.match(edge, /BOT_RATINGS: Record<Difficulty, number> = \{ easy: 800, medium: 1000, hard: 1200 \}/);
+  assert.match(edge, /ELO_START = 1200/);
+  assert.match(edge, /ELO_K = 32/);
+  assert.match(edge, /expectedScore\(rating: number, opponent: number\)/);
+  assert.match(edge, /points_awarded: points,/);
+  assert.match(edge, /rating_before: before,/);
+  assert.match(edge, /rating_after: after,/);
+});
+
+test("PvP winner points include a streak bonus capped at +10", () => {
+  assert.match(edge, /STREAK_BONUS_STEP = 2/);
+  assert.match(edge, /STREAK_BONUS_MAX = 10/);
+  assert.match(edge, /function pvpStreak\(/);
+  assert.match(edge, /Math\.min\(streak, STREAK_BONUS_MAX \/ STREAK_BONUS_STEP\) \* STREAK_BONUS_STEP/);
+  assert.match(edge, /const winPoints = PVP_WIN_POINTS \+ bonus;/);
+});
+
+test("the edge stores chess ratings and returns scoring for state and my_games", () => {
+  assert.match(edge, /from\("gaming_chess_ratings"\)/);
+  assert.match(edge, /\.upsert\(\{/);
+  assert.match(edge, /action === "state"/);
+  assert.match(edge, /action === "my_games"/);
+  assert.match(edge, /scoring\[p\.player_id\] = \{/);
 });
 
 test("duplicate challenges are checked both ways and the players' turn order is enforced", () => {
@@ -186,6 +218,16 @@ test("the tutorial dialog teaches the game in both locales", () => {
   assert.match(app, /chessTutorialObjectiveBody: "Ganas por jaque mate/);
 });
 
+test("the tutorial teaches the points table and the chess rating", () => {
+  assert.match(chessJs, /class="lb-chess-scores"/);
+  assert.match(chessJs, /chessPtsWin/);
+  assert.match(app, /chessPtsWin: "Win"/);
+  assert.match(app, /chessPtsWin: "Victoria"/);
+  assert.match(app, /chessTutorialRatingBody: "Your chess rating moves/);
+  assert.match(app, /chessTutorialRatingBody: "Tu rating de ajedrez se mueve/);
+  assert.match(app, /chessRating: "Rating"/);
+});
+
 test("the in-game coach gives contextual advice from a difficulty-aware key", () => {
   assert.match(chessJs, /id="lb-chess-coach"/);
   assert.match(chessJs, /function coachTipKey\(chess\)/);
@@ -227,6 +269,19 @@ test("the coach panel sits beside the board and the cat animates while it coache
   assert.match(page, /\.lb-chess-coach\.is-my-turn \.lb-chess-coach-cat \{ animation: lbCoachBounce/);
   assert.match(chessJs, /classList\.toggle\("is-my-turn", isMyTurn\(\) && !current\.finished\)/);
   assert.match(chessJs, /classList\.add\("pop"\)/);
+});
+
+test("the finished overlay shows earned points and the rating delta", () => {
+  assert.match(chessJs, /function finishedLine\(\)/);
+  assert.match(chessJs, /current\.scoring\?\.\[myId\]/);
+  assert.match(chessJs, /class="lb-chess-earned"/);
+  assert.match(chessJs, /rating_before\}→/);
+});
+
+test("the lobby and the in-game panel surface the player rating", () => {
+  assert.match(chessJs, /id="lb-chess-lobby-rating"/);
+  assert.match(chessJs, /id="lb-chess-rating"/);
+  assert.match(chessJs, /result\.data\.rating\.rating/);
 });
 
 test("chess.js recomputes legal moves with chess.js and drives Stockfish on a worker", () => {

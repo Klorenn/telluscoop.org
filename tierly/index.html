@@ -703,6 +703,14 @@
     }
     .lb-chess-empty, .lb-chess-status, .lb-chess-error, .lb-chess-finished { font-size: 13.5px; color: var(--ink-dim); }
     .lb-chess-error { color: #B05A1E; }
+    .lb-chess-earned { font-weight: 600; color: var(--teal-bright); }
+    .lb-chess-rating { font-size: 12.5px; color: var(--ink-dim); font-family: var(--mono); }
+    .lb-chess-lobby-rating { font-size: 13px; color: var(--ink-dim); }
+    .lb-chess-scores { display: grid; grid-template-columns: repeat(4, auto); gap: 4px 14px; margin: 10px 0 8px; }
+    .lb-chess-scores-row { display: contents; }
+    .lb-chess-scores-row > span { font-size: 12.5px; color: var(--ink); padding: 3px 8px; border-radius: 6px; background: var(--chip-bg); }
+    .lb-chess-scores-head > span { font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 10.5px; color: var(--ink-dim); background: transparent; }
+    .lb-chess-scores-note { font-size: 12px; font-style: italic; }
     .lb-chess-layout { display: flex; flex-direction: column; gap: 18px; }
     .lb-chess-board-wrap { display: flex; justify-content: center; }
     #lb-chess-board { width: 100%; max-width: 520px; aspect-ratio: 1 / 1; margin: 0 auto; }
@@ -937,7 +945,7 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"></script>
-  <script type="module" src="/tierly/chess.js?v=20260829-08"></script>
-  <script type="module" src="/tierly/app.js?v=20260829-08"></script>
+  <script type="module" src="/tierly/chess.js?v=20260829-09"></script>
+  <script type="module" src="/tierly/app.js?v=20260829-09"></script>
 </body>
 </html>
