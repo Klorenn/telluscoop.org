@@ -35,6 +35,8 @@ create table public.gaming_racer_best_times (
   updated_at timestamptz not null default now(),
   unique (player_id, track_id, simulation_version)
 );
+create trigger gaming_racer_best_times_touch before update on public.gaming_racer_best_times
+for each row execute function public.touch_updated_at();
 create index gaming_racer_best_times_player_track_version_idx on public.gaming_racer_best_times(player_id, track_id, simulation_version);
 
 create table public.gaming_racer_reward_policy (

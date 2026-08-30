@@ -10,8 +10,13 @@ test("racer runs are private, stateful, and cannot produce two matches", () => {
   assert.match(migration, /ticket_hash text not null unique/);
   assert.match(migration, /status text not null check \(status in \('issued', 'submitted', 'validated', 'rejected', 'expired'\)\)/);
   assert.match(migration, /match_id uuid unique references public\.gaming_matches/);
-  assert.match(migration, /alter table public\.gaming_racer_runs enable row level security/);
-  assert.match(migration, /revoke all on table public\.gaming_racer_runs from anon, authenticated/);
+  for (const table of ["gaming_racer_runs", "gaming_racer_best_times", "gaming_racer_reward_policy"]) {
+    assert.match(migration, new RegExp(`alter table public\\.${table} enable row level security`));
+    assert.match(migration, new RegExp(`revoke all on table public\\.${table} from anon, authenticated`));
+    assert.match(migration, new RegExp(`grant all on table public\\.${table} to service_role`));
+    assert.doesNotMatch(migration, new RegExp(`grant .*public\\.${table} to (anon|authenticated)`));
+  }
+  assert.doesNotMatch(migration, /create policy gaming_racer_/);
 });
 
 test("racer reward policy captures the owner-approved non-zero awards and ticket cap", () => {
@@ -28,4 +33,9 @@ test("server simulation exports the browser parity contract without ambient auth
   }
   assert.match(simulation, /export const CANONICAL_RESULT/);
   assert.doesNotMatch(simulation, /Math\.random|Date\.now|performance\.now|requestAnimationFrame|document|window|fetch\(/);
+});
+
+test("racer best times use the standard updated_at touch trigger", () => {
+  assert.match(migration, /create trigger gaming_racer_best_times_touch before update on public\.gaming_racer_best_times/);
+  assert.match(migration, /for each row execute function public\.touch_updated_at\(\)/);
 });
