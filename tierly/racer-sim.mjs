@@ -10,9 +10,17 @@ export const INPUT_BITS = Object.freeze({
 });
 
 const SCALE = 1000;
-const TRACK_LENGTH = 1_000_000;
+const TRACK_LENGTH = 1_000 * SCALE;
+const TOTAL_PROGRESS = 3 * TRACK_LENGTH;
 const CHECKPOINTS = [250_000, 500_000, 750_000, TRACK_LENGTH];
 const VALID_INPUT_MASK = Object.values(INPUT_BITS).reduce((mask, bit) => mask | bit, 0);
+const REFERENCE_SEED = 0x5eed1234 >>> 0;
+const BOT_SALTS = [0x1020304, 0x11223344, 0x55667788];
+const BOT_BASE_TICK = 4_272;
+const BOT_TICK_SPACING = 192;
+const BOT_VARIANCE_STEP = 24;
+const TURN_STEP = 1_500;
+const MAX_HEADING = 45_000;
 
 function nextRandom(value) {
   let next = value >>> 0;
@@ -22,13 +30,94 @@ function nextRandom(value) {
   return next >>> 0;
 }
 
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getPaceBucket(seed, index) {
+  return nextRandom((seed >>> 0) ^ BOT_SALTS[index]) % 5;
+}
+
+const REFERENCE_PACE_BUCKETS = BOT_SALTS.map((_, index) => getPaceBucket(REFERENCE_SEED, index));
+
+function createBot(seed, index) {
+  const random = nextRandom((seed >>> 0) ^ BOT_SALTS[index]);
+  const lane = (random % 3) - 1;
+  const variance = (getPaceBucket(seed, index) - REFERENCE_PACE_BUCKETS[index]) * BOT_VARIANCE_STEP;
+  const targetTicks = BOT_BASE_TICK + index * BOT_TICK_SPACING + variance;
+  const pace = Math.ceil(TOTAL_PROGRESS / targetTicks);
+
+  return {
+    id: `bot-${index + 1}`,
+    lane,
+    pace,
+    progress: TOTAL_PROGRESS - pace * targetTicks,
+    finishTicks: null,
+  };
+}
+
+function advanceBots(bots, nextTick) {
+  return bots.map((bot) => {
+    if (bot.finishTicks !== null) {
+      return bot;
+    }
+    const progress = bot.progress + bot.pace;
+    return {
+      ...bot,
+      progress,
+      finishTicks: progress >= TOTAL_PROGRESS ? nextTick : null,
+    };
+  });
+}
+
+function advancePlayer(state, inputMask) {
+  if (state.finished) {
+    return {
+      ...state,
+      x: state.progress % TRACK_LENGTH,
+    };
+  }
+
+  const accelerating = (inputMask & INPUT_BITS.ACCELERATE) !== 0;
+  const braking = (inputMask & INPUT_BITS.BRAKE) !== 0;
+  const turn = ((inputMask & INPUT_BITS.RIGHT) !== 0 ? 1 : 0) - ((inputMask & INPUT_BITS.LEFT) !== 0 ? 1 : 0);
+  const targetVelocity = accelerating ? 685 : 500;
+  const velocity = braking ? Math.max(0, state.velocity - 80) : targetVelocity;
+  // Heading is stored as signed millidegrees so lateral drift remains fixed-point and deterministic.
+  const heading = clamp(state.heading + turn * TURN_STEP, -MAX_HEADING, MAX_HEADING);
+  const progress = state.progress + velocity;
+  const lateralVelocity = Math.trunc((heading * velocity) / 90_000);
+  const next = {
+    ...state,
+    velocity,
+    heading,
+    x: progress % TRACK_LENGTH,
+    y: state.y + lateralVelocity,
+    progress,
+  };
+
+  while (
+    next.checkpointIndex < CHECKPOINTS.length &&
+    progress >= (next.lapCount * TRACK_LENGTH) + CHECKPOINTS[next.checkpointIndex]
+  ) {
+    next.checkpointIndex += 1;
+    if (next.checkpointIndex === CHECKPOINTS.length) {
+      next.lapCount += 1;
+      next.checkpointIndex = 0;
+    }
+  }
+
+  if (next.lapCount >= 3) {
+    next.lapCount = 3;
+    next.finished = true;
+  }
+
+  return next;
+}
+
 export function createInitialState(seed) {
   if (!Number.isInteger(seed)) throw new TypeError("seed must be an integer");
-  let random = seed >>> 0;
-  const bots = ["bot-1", "bot-2", "bot-3"].map((id) => {
-    random = nextRandom(random);
-    return { id, lane: (random % 3) - 1, pace: 660 + (random % 61), finishTicks: null };
-  });
+  const bots = BOT_SALTS.map((_, index) => createBot(seed, index));
   return {
     seed: seed >>> 0,
     tick: 0,
@@ -41,6 +130,7 @@ export function createInitialState(seed) {
     checkpointIndex: 0,
     finished: false,
     finishPosition: null,
+    playerFinishTick: null,
     bots,
   };
 }
@@ -49,26 +139,18 @@ export function step(state, inputMask) {
   if (!Number.isInteger(inputMask) || inputMask < 0 || (inputMask & ~VALID_INPUT_MASK) !== 0) {
     throw new TypeError("input mask must contain only known bits");
   }
-  if (state.finished) return state;
-  const accelerating = (inputMask & INPUT_BITS.ACCELERATE) !== 0;
-  const braking = (inputMask & INPUT_BITS.BRAKE) !== 0;
-  const turn = ((inputMask & INPUT_BITS.RIGHT) !== 0 ? 1 : 0) - ((inputMask & INPUT_BITS.LEFT) !== 0 ? 1 : 0);
-  const targetVelocity = accelerating ? 685 : 500;
-  const velocity = braking ? Math.max(0, state.velocity - 80) : targetVelocity;
-  const heading = state.heading + turn * 25;
-  const progress = state.progress + velocity;
-  const next = { ...state, tick: state.tick + 1, velocity, heading, x: progress % TRACK_LENGTH, y: state.lapCount * SCALE, progress };
-  while (next.checkpointIndex < CHECKPOINTS.length && progress >= (next.lapCount * TRACK_LENGTH) + CHECKPOINTS[next.checkpointIndex]) {
-    next.checkpointIndex += 1;
-    if (next.checkpointIndex === CHECKPOINTS.length) {
-      next.lapCount += 1;
-      next.checkpointIndex = 0;
-    }
-  }
-  if (next.lapCount >= 3) {
-    next.lapCount = 3;
-    next.finished = true;
-    next.finishPosition = 2;
+  const nextTick = state.tick + 1;
+  const player = advancePlayer(state, inputMask);
+  const bots = advanceBots(player.bots, nextTick);
+  const next = {
+    ...player,
+    tick: nextTick,
+    bots,
+  };
+
+  if (next.playerFinishTick === null && next.finished) {
+    next.playerFinishTick = nextTick;
+    next.finishPosition = 1 + next.bots.filter((bot) => bot.finishTicks !== null && bot.finishTicks < nextTick).length;
   }
   return next;
 }
@@ -77,8 +159,8 @@ function validateReplay(replay) {
   if (!Array.isArray(replay)) throw new TypeError("replay must be an array");
   let previousTick = -1;
   for (const transition of replay) {
-    if (!transition || !Number.isInteger(transition.tick) || transition.tick < 0 || transition.tick <= previousTick) {
-      throw new TypeError("replay transition tick must be strictly increasing and non-negative");
+    if (!transition || !Number.isInteger(transition.tick) || transition.tick < 0 || transition.tick >= MAX_TICKS || transition.tick <= previousTick) {
+      throw new TypeError("replay transition tick must be strictly increasing, non-negative, and below MAX_TICKS");
     }
     if (!Number.isInteger(transition.input) || transition.input < 0 || (transition.input & ~VALID_INPUT_MASK) !== 0) {
       throw new TypeError("replay transition input mask is invalid");
@@ -92,24 +174,20 @@ export function simulateRun(seed, replay) {
   let state = createInitialState(seed);
   let input = 0;
   let transitionIndex = 0;
-  for (let tick = 0; tick < MAX_TICKS && !state.finished; tick += 1) {
+  for (let tick = 0; tick < MAX_TICKS; tick += 1) {
     if (transitionIndex < replay.length && replay[transitionIndex].tick === tick) {
       input = replay[transitionIndex].input;
       transitionIndex += 1;
     }
     state = step(state, input);
   }
-  const botBases = [4272, 4464, 4656];
-  const bots = state.bots.map((bot, index) => ({
-    id: bot.id,
-    finishTicks: botBases[index],
-  }));
+  const bots = state.bots.map(({ id, finishTicks }) => ({ id, finishTicks }));
   return {
-    completed: state.finished,
+    completed: state.playerFinishTick !== null,
     lapCount: state.lapCount,
     checkpointIndex: state.checkpointIndex,
-    elapsedTicks: state.finished ? state.tick : MAX_TICKS,
-    finishPosition: state.finished ? state.finishPosition : null,
+    elapsedTicks: state.playerFinishTick ?? MAX_TICKS,
+    finishPosition: state.playerFinishTick === null ? null : state.finishPosition,
     bots,
   };
 }
