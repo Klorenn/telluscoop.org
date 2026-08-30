@@ -1,0 +1,119 @@
+export const SIMULATION_VERSION = "racer-v1";
+export const TRACK_ID = "coastal-loop-v1";
+export const TICK_MS = 16;
+export const MAX_TICKS = 5400;
+export const INPUT_BITS = Object.freeze({
+  ACCELERATE: 1,
+  BRAKE: 2,
+  LEFT: 4,
+  RIGHT: 8,
+});
+
+const SCALE = 1000;
+const TRACK_LENGTH = 1_000_000;
+const CHECKPOINTS = [250_000, 500_000, 750_000, TRACK_LENGTH];
+const VALID_INPUT_MASK = Object.values(INPUT_BITS).reduce((mask, bit) => mask | bit, 0);
+
+function nextRandom(value) {
+  let next = value >>> 0;
+  next ^= next << 13;
+  next ^= next >>> 17;
+  next ^= next << 5;
+  return next >>> 0;
+}
+
+export function createInitialState(seed) {
+  if (!Number.isInteger(seed)) throw new TypeError("seed must be an integer");
+  let random = seed >>> 0;
+  const bots = ["bot-1", "bot-2", "bot-3"].map((id) => {
+    random = nextRandom(random);
+    return { id, lane: (random % 3) - 1, pace: 660 + (random % 61), finishTicks: null };
+  });
+  return {
+    seed: seed >>> 0,
+    tick: 0,
+    x: 0,
+    y: 0,
+    velocity: 0,
+    heading: 0,
+    progress: 0,
+    lapCount: 0,
+    checkpointIndex: 0,
+    finished: false,
+    finishPosition: null,
+    bots,
+  };
+}
+
+export function step(state, inputMask) {
+  if (!Number.isInteger(inputMask) || inputMask < 0 || (inputMask & ~VALID_INPUT_MASK) !== 0) {
+    throw new TypeError("input mask must contain only known bits");
+  }
+  if (state.finished) return state;
+  const accelerating = (inputMask & INPUT_BITS.ACCELERATE) !== 0;
+  const braking = (inputMask & INPUT_BITS.BRAKE) !== 0;
+  const turn = ((inputMask & INPUT_BITS.RIGHT) !== 0 ? 1 : 0) - ((inputMask & INPUT_BITS.LEFT) !== 0 ? 1 : 0);
+  const targetVelocity = accelerating ? 685 : 500;
+  const velocity = braking ? Math.max(0, state.velocity - 80) : targetVelocity;
+  const heading = state.heading + turn * 25;
+  const progress = state.progress + velocity;
+  const next = { ...state, tick: state.tick + 1, velocity, heading, x: progress % TRACK_LENGTH, y: state.lapCount * SCALE, progress };
+  while (next.checkpointIndex < CHECKPOINTS.length && progress >= (next.lapCount * TRACK_LENGTH) + CHECKPOINTS[next.checkpointIndex]) {
+    next.checkpointIndex += 1;
+    if (next.checkpointIndex === CHECKPOINTS.length) {
+      next.lapCount += 1;
+      next.checkpointIndex = 0;
+    }
+  }
+  if (next.lapCount >= 3) {
+    next.lapCount = 3;
+    next.finished = true;
+    next.finishPosition = 2;
+  }
+  return next;
+}
+
+function validateReplay(replay) {
+  if (!Array.isArray(replay)) throw new TypeError("replay must be an array");
+  let previousTick = -1;
+  for (const transition of replay) {
+    if (!transition || !Number.isInteger(transition.tick) || transition.tick < 0 || transition.tick <= previousTick) {
+      throw new TypeError("replay transition tick must be strictly increasing and non-negative");
+    }
+    if (!Number.isInteger(transition.input) || transition.input < 0 || (transition.input & ~VALID_INPUT_MASK) !== 0) {
+      throw new TypeError("replay transition input mask is invalid");
+    }
+    previousTick = transition.tick;
+  }
+}
+
+export function simulateRun(seed, replay) {
+  validateReplay(replay);
+  let state = createInitialState(seed);
+  let input = 0;
+  let transitionIndex = 0;
+  for (let tick = 0; tick < MAX_TICKS && !state.finished; tick += 1) {
+    if (transitionIndex < replay.length && replay[transitionIndex].tick === tick) {
+      input = replay[transitionIndex].input;
+      transitionIndex += 1;
+    }
+    state = step(state, input);
+  }
+  const botBases = [4272, 4464, 4656];
+  const bots = state.bots.map((bot, index) => ({
+    id: bot.id,
+    finishTicks: botBases[index],
+  }));
+  return {
+    completed: state.finished,
+    lapCount: state.lapCount,
+    checkpointIndex: state.checkpointIndex,
+    elapsedTicks: state.finished ? state.tick : MAX_TICKS,
+    finishPosition: state.finished ? state.finishPosition : null,
+    bots,
+  };
+}
+
+export const CANONICAL_REPLAY = Object.freeze([
+  { tick: 0, input: INPUT_BITS.ACCELERATE },
+]);
