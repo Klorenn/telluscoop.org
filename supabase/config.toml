@@ -391,6 +391,9 @@ verify_jwt = false
 [functions.chess]
 verify_jwt = false
 
+[functions.racer]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
