@@ -10,24 +10,7 @@ import {
 } from "./simulation.ts";
 
 type DbClient = ReturnType<typeof createClient<any, "public", any>>;
-type Policy = {
-  finish_points: number;
-  bot_win_bonus_points: number;
-  personal_best_bonus_points: number;
-  max_active_tickets: number;
-};
-type RacerRun = {
-  id: string;
-  player_id: string;
-  track_id: string;
-  simulation_version: string;
-  seed: number;
-  ticket_hash: string;
-  status: string;
-  expires_at: string;
-  result: Record<string, unknown> | null;
-  match_id: string | null;
-};
+type RpcPayload = Record<string, unknown>;
 
 const ALLOWED_ORIGINS = ["https://telluscoop.org", "https://www.telluscoop.org"];
 const LOCAL_ORIGIN = /^https?:\/\/(?:localhost|127\.0\.0\.1):\d+$/;
@@ -93,17 +76,6 @@ function publicLog(details: Record<string, unknown>) {
   console.info("racer_event", details);
 }
 
-async function readRun(admin: DbClient, runId: string, playerId: string): Promise<RacerRun | null> {
-  const { data, error } = await admin
-    .from("gaming_racer_runs")
-    .select("id, player_id, track_id, simulation_version, seed, ticket_hash, status, expires_at, result, match_id")
-    .eq("id", runId)
-    .eq("player_id", playerId)
-    .maybeSingle();
-  if (error) throw error;
-  return (data as RacerRun | null) ?? null;
-}
-
 function randomToken(): string {
   const bytes = new Uint8Array(TICKET_BYTES);
   crypto.getRandomValues(bytes);
@@ -121,15 +93,6 @@ function randomSeed(): number {
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function deterministicMatchId(runId: string): Promise<string> {
-  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`racer:${runId}`)));
-  const uuidBytes = Array.from(digest.slice(0, 16));
-  uuidBytes[6] = (uuidBytes[6] & 0x0f) | 0x40;
-  uuidBytes[8] = (uuidBytes[8] & 0x3f) | 0x80;
-  const hex = uuidBytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
 }
 
 function forbiddenAuthorityField(body: JsonBody): string | null {
@@ -160,62 +123,30 @@ function parseReplay(value: unknown, rawBytes: number): ReplayTransition[] {
   }) as ReplayTransition[];
 }
 
-async function loadPolicy(admin: DbClient): Promise<Policy> {
-  const { data, error } = await admin
-    .from("gaming_racer_reward_policy")
-    .select("finish_points, bot_win_bonus_points, personal_best_bonus_points, max_active_tickets")
-    .eq("track_id", TRACK_ID)
-    .eq("simulation_version", SIMULATION_VERSION)
-    .single();
-  if (error || !data) throw new Error("policy_missing");
-  return data as Policy;
-}
-
 async function startRun(admin: DbClient, playerId: string) {
-  const policy = await loadPolicy(admin);
   const now = new Date();
-  const nowIso = now.toISOString();
-
-  await admin
-    .from("gaming_racer_runs")
-    .update({ status: "expired", expired_at: nowIso })
-    .eq("player_id", playerId)
-    .eq("status", "issued")
-    .lt("expires_at", nowIso);
-
-  const { count, error: countError } = await admin
-    .from("gaming_racer_runs")
-    .select("id", { count: "exact", head: true })
-    .eq("player_id", playerId)
-    .eq("status", "issued")
-    .gte("expires_at", nowIso);
-  if (countError) throw countError;
-  if ((count ?? 0) >= policy.max_active_tickets) {
-    return { error: "too_many_active_tickets", status: 429 };
-  }
-
   const opaqueTicket = randomToken();
   const ticketHash = await sha256Hex(opaqueTicket);
   const seed = randomSeed();
   const expiresAt = new Date(now.getTime() + TICKET_TTL_MS).toISOString();
-  const { data: run, error } = await admin
-    .from("gaming_racer_runs")
-    .insert({
-      player_id: playerId,
-      track_id: TRACK_ID,
-      simulation_version: SIMULATION_VERSION,
-      seed,
-      ticket_hash: ticketHash,
-      status: "issued",
-      expires_at: expiresAt,
-      input_limits: INPUT_LIMITS,
-    })
-    .select("id")
-    .single();
-  if (error || !run) throw error ?? new Error("run_create_failed");
+  const { data, error } = await admin.rpc("issue_gaming_racer_run" as never, {
+    p_player_id: playerId,
+    p_track_id: TRACK_ID,
+    p_simulation_version: SIMULATION_VERSION,
+    p_seed: seed,
+    p_ticket_hash: ticketHash,
+    p_expires_at: expiresAt,
+    p_input_limits: INPUT_LIMITS,
+  } as never);
+  if (error || !data) throw error ?? new Error("run_create_failed");
+
+  const issued = data as RpcPayload;
+  if (issued.status === "too_many_active_tickets") return { error: "too_many_active_tickets", status: 429 };
+  if (issued.status === "policy_missing") return { error: "Política de carrera no configurada", status: 500 };
+  if (issued.status !== "issued" || typeof issued.run_id !== "string") throw new Error("run_create_failed");
 
   publicLog({
-    run_id: (run as { id: string }).id,
+    run_id: issued.run_id,
     player_id: playerId,
     simulation_version: SIMULATION_VERSION,
     track_id: TRACK_ID,
@@ -223,7 +154,7 @@ async function startRun(admin: DbClient, playerId: string) {
   });
 
   return {
-    run_id: (run as { id: string }).id,
+    run_id: issued.run_id,
     opaque_ticket: opaqueTicket,
     track_id: TRACK_ID,
     simulation_version: SIMULATION_VERSION,
@@ -233,15 +164,7 @@ async function startRun(admin: DbClient, playerId: string) {
   };
 }
 
-function pointsFor(policy: Policy, result: { finishPosition: number | null }, personalBest: boolean): number {
-  let total = policy.finish_points;
-  if (result.finishPosition === 1) total += policy.bot_win_bonus_points;
-  if (personalBest) total += policy.personal_best_bonus_points;
-  return total;
-}
-
-function storedResult(row: { result?: Record<string, unknown> | null }) {
-  const result = row.result ?? {};
+function storedResult(result: RpcPayload) {
   return {
     status: "validated",
     completed: Boolean(result.completed),
@@ -252,6 +175,18 @@ function storedResult(row: { result?: Record<string, unknown> | null }) {
   };
 }
 
+function rejectedResult(result: RpcPayload) {
+  return {
+    status: "rejected",
+    completed: false,
+    elapsed_ticks: 0,
+    finish_position: null,
+    points_awarded: 0,
+    personal_best: false,
+    rejection_code: typeof result.rejection_code === "string" ? result.rejection_code : "replay_invalid",
+  };
+}
+
 async function rejectRun(
   admin: DbClient,
   runId: string,
@@ -259,12 +194,12 @@ async function rejectRun(
   code: string,
   startedAt: number,
 ) {
-  await admin
-    .from("gaming_racer_runs")
-    .update({ status: code === "ticket_expired" ? "expired" : "rejected", rejection_reason: code, expired_at: code === "ticket_expired" ? new Date().toISOString() : null })
-    .eq("id", runId)
-    .eq("player_id", playerId)
-    .in("status", ["issued", "submitted"]);
+  const { data, error } = await admin.rpc("reject_gaming_racer_run" as never, {
+    p_run_id: runId,
+    p_player_id: playerId,
+    p_rejection_reason: code,
+  } as never);
+  if (error) throw error;
   publicLog({
     run_id: runId,
     player_id: playerId,
@@ -274,89 +209,9 @@ async function rejectRun(
     rejection_code: code,
     simulation_ms: Date.now() - startedAt,
   });
-  return { status: "rejected", completed: false, elapsed_ticks: 0, finish_position: null, points_awarded: 0, personal_best: false, rejection_code: code };
-}
-
-async function creditRun(
-  admin: DbClient,
-  userId: string,
-  run: { id: string; player_id: string; track_id: string; simulation_version: string; match_id: string | null },
-  elapsedTicks: number,
-  finishPosition: number | null,
-  policy: Policy,
-) {
-  const { data: best } = await admin
-    .from("gaming_racer_best_times")
-    .select("best_elapsed_ticks")
-    .eq("player_id", run.player_id)
-    .eq("track_id", run.track_id)
-    .eq("simulation_version", run.simulation_version)
-    .maybeSingle();
-  const personalBest = !best || elapsedTicks < best.best_elapsed_ticks;
-  const resultForPoints = { finishPosition };
-  const pointsAwarded = pointsFor(policy, resultForPoints, personalBest);
-  const tournamentId = await ensureTournament(admin);
-  const matchId = await deterministicMatchId(run.id);
-
-  // Legacy source contract: .insert({ tournament_id: tournamentId, status: "pending" })
-  const { data: match, error: matchError } = await admin
-    .from("gaming_matches")
-    .upsert({ id: matchId, tournament_id: tournamentId, status: "pending" }, { onConflict: "id" })
-    .select("id")
-    .single();
-  if (matchError || !match) throw matchError ?? new Error("match_create_failed");
-
-  // Legacy source contract: from("gaming_match_participants").insert
-  const { error: participantError } = await admin.from("gaming_match_participants").upsert({
-    match_id: matchId,
-    player_id: run.player_id,
-    placement: finishPosition ?? 4,
-    points_awarded: pointsAwarded,
-  }, { onConflict: "match_id,player_id" });
-  if (participantError) throw participantError;
-
-  if (personalBest) {
-    await admin.from("gaming_racer_best_times").upsert({
-      player_id: run.player_id,
-      track_id: run.track_id,
-      simulation_version: run.simulation_version,
-      best_elapsed_ticks: elapsedTicks,
-      run_id: run.id,
-      updated_at: new Date().toISOString(),
-    });
-  }
-
-  const result = {
-    status: "validated",
-    completed: true,
-    elapsed_ticks: elapsedTicks,
-    finish_position: finishPosition,
-    points_awarded: pointsAwarded,
-    personal_best: personalBest,
-  };
-
-  const { error: runError } = await admin
-    .from("gaming_racer_runs")
-    .update({ status: "validated", validated_at: new Date().toISOString(), result, match_id: matchId })
-    .eq("id", run.id)
-    .eq("player_id", run.player_id)
-    .in("status", ["submitted", "validated"])
-    .or(`match_id.is.null,match_id.eq.${matchId}`); // match_id is(null): idempotent credit guard.
-  if (runError) throw runError;
-
-  const { error: confirmError } = await admin
-    .from("gaming_matches")
-    .update({ status: "confirmed", confirmed_by: userId, confirmed_at: new Date().toISOString() })
-    .eq("id", matchId);
-  if (confirmError) throw confirmError;
-
-  return result;
-}
-
-async function ensureTournament(admin: DbClient): Promise<string> {
-  const { data, error } = await admin.rpc("ensure_gaming_season_tournament" as never, { p_game: "Racer" } as never);
-  if (error || !data) throw new Error("No se pudo asegurar el torneo Racer");
-  return data as string;
+  const rejected = (data as RpcPayload | null) ?? { rejection_code: code };
+  if (rejected.status === "validated") return storedResult(rejected);
+  return rejectedResult(rejected);
 }
 
 async function submitRun(
@@ -381,51 +236,49 @@ async function submitRun(
   }
 
   const ticketHash = await sha256Hex(opaqueTicket);
-  const run = await readRun(admin, runId, playerId);
-  if (!run) return { error: "ticket_invalid", status: 404 };
-  if (run.status === "validated") return storedResult(run);
-  if (run.ticket_hash !== ticketHash) return await rejectRun(admin, run.id, playerId, "ticket_reused", startedAt);
-  if (run.status !== "issued") return await rejectRun(admin, run.id, playerId, "ticket_reused", startedAt);
-  if (new Date(run.expires_at).getTime() <= Date.now()) return await rejectRun(admin, run.id, playerId, "ticket_expired", startedAt);
-  if (run.track_id !== TRACK_ID || run.simulation_version !== SIMULATION_VERSION) {
-    return await rejectRun(admin, run.id, playerId, "ticket_invalid", startedAt);
+  const { data: claimData, error: claimError } = await admin.rpc("claim_gaming_racer_run" as never, {
+    p_run_id: runId,
+    p_player_id: playerId,
+    p_ticket_hash: ticketHash,
+    p_now: new Date().toISOString(),
+  } as never);
+  if (claimError) throw claimError;
+  const claimed = (claimData as RpcPayload | null) ?? {};
+  if (claimed.status === "ticket_invalid") return { error: "ticket_invalid", status: 404 };
+  if (claimed.status === "validated") return storedResult(claimed);
+  if (claimed.status === "rejected") return rejectedResult(claimed);
+  if (claimed.status === "conflict") return { error: "submit_conflict", status: 409 };
+  if (claimed.status !== "submitted") return { error: "ticket_invalid", status: 400 };
+  if (claimed.track_id !== TRACK_ID || claimed.simulation_version !== SIMULATION_VERSION) {
+    return await rejectRun(admin, runId, playerId, "ticket_invalid", startedAt);
   }
-
-  const { error: submitError } = await admin
-    .from("gaming_racer_runs")
-    .update({ status: "submitted", submitted_at: new Date().toISOString() })
-    .eq("id", run.id)
-    .eq("player_id", playerId)
-    .eq("status", "issued")
-    .eq("ticket_hash", ticketHash);
-  if (submitError) throw submitError;
-  const refreshedRun = await readRun(admin, run.id, playerId);
-  if (refreshedRun?.status === "validated" && refreshedRun.result) return storedResult(refreshedRun);
 
   let result;
   try {
-    result = simulateRun(Number(run.seed), replay);
+    result = simulateRun(Number(claimed.seed), replay);
   } catch {
-    return await rejectRun(admin, run.id, playerId, "replay_invalid", startedAt);
+    return await rejectRun(admin, runId, playerId, "replay_invalid", startedAt);
   }
   if (!result.completed || result.elapsedTicks > MAX_TICKS || result.finishPosition === null) {
-    return await rejectRun(admin, run.id, playerId, "run_incomplete", startedAt);
+    return await rejectRun(admin, runId, playerId, "run_incomplete", startedAt);
   }
 
-  const policy = await loadPolicy(admin);
-  const credited = await creditRun(admin, userId, {
-    id: run.id,
-    player_id: playerId,
-    track_id: run.track_id,
-    simulation_version: run.simulation_version,
-    match_id: run.match_id,
-  }, result.elapsedTicks, result.finishPosition, policy);
+  const { data: finalData, error: finalError } = await admin.rpc("finalize_gaming_racer_run" as never, {
+    p_run_id: runId,
+    p_player_id: playerId,
+    p_completed: result.completed,
+    p_elapsed_ticks: result.elapsedTicks,
+    p_finish_position: result.finishPosition,
+    p_confirmed_by: userId,
+  } as never);
+  if (finalError || !finalData) throw finalError ?? new Error("racer_finalize_failed");
+  const credited = storedResult(finalData as RpcPayload);
 
   publicLog({
-    run_id: run.id,
+    run_id: runId,
     player_id: playerId,
-    simulation_version: run.simulation_version,
-    track_id: run.track_id,
+    simulation_version: claimed.simulation_version,
+    track_id: claimed.track_id,
     outcome: "validated",
     simulation_ms: Date.now() - startedAt,
     points_awarded: credited.points_awarded,

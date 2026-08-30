@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const migration = readFileSync("supabase/migrations/20260829150000_add_racer_runs.sql", "utf8");
+const atomicMigration = readFileSync("supabase/migrations/20260830183000_add_racer_atomic_rpcs.sql", "utf8");
 const simulation = readFileSync("supabase/functions/racer/simulation.ts", "utf8");
 const edge = readFileSync("supabase/functions/racer/index.ts", "utf8");
 const supabaseConfig = readFileSync("supabase/config.toml", "utf8");
@@ -55,17 +56,31 @@ test("racer authenticates, limits replay authority, and uses tickets", () => {
 });
 
 test("racer credits exactly through a confirmed gaming match", () => {
-  assert.match(edge, /\.insert\(\{ tournament_id: tournamentId, status: "pending" \}\)/);
-  assert.match(edge, /from\("gaming_match_participants"\)\.insert/);
-  assert.match(edge, /\.update\(\{ status: "confirmed"/);
-  assert.match(edge, /match_id.*is\(null\)/);
+  assert.match(edge, /rpc\("issue_gaming_racer_run"/);
+  assert.match(edge, /rpc\("claim_gaming_racer_run"/);
+  assert.match(edge, /rpc\("finalize_gaming_racer_run"/);
+  assert.match(edge, /rpc\("reject_gaming_racer_run"/);
+  assert.doesNotMatch(edge, /from\("gaming_matches"\)/);
+  assert.doesNotMatch(edge, /from\("gaming_match_participants"\)/);
+  assert.doesNotMatch(edge, /from\("gaming_racer_best_times"\)/);
+  assert.doesNotMatch(edge, /\.upsert\(\{[^}]*status: "pending"/);
 });
 
-test("racer credit path derives one stable match identity per run and reuses it on retries", () => {
-  assert.match(edge, /async function deterministicMatchId\(runId: string\)/);
-  assert.match(edge, /const matchId = await deterministicMatchId\(run\.id\)/);
-  assert.match(edge, /\.upsert\(\{ id: matchId, tournament_id: tournamentId, status: "pending" \}/);
-  assert.match(edge, /from\("gaming_match_participants"\)\.upsert\(\{/);
-  assert.match(edge, /const refreshedRun = await readRun\(admin, run\.id, playerId\)/);
-  assert.match(edge, /if \(refreshedRun\?\.status === "validated" && refreshedRun\.result\) return storedResult\(refreshedRun\);/);
+test("racer start and submit are serialized in security definer RPCs", () => {
+  assert.match(atomicMigration, /create or replace function public\.issue_gaming_racer_run\(/);
+  assert.match(atomicMigration, /create or replace function public\.claim_gaming_racer_run\(/);
+  assert.match(atomicMigration, /create or replace function public\.finalize_gaming_racer_run\(/);
+  assert.match(atomicMigration, /create or replace function public\.reject_gaming_racer_run\(/);
+  assert.match(atomicMigration, /security definer/g);
+  assert.match(atomicMigration, /set search_path = ''/g);
+  assert.match(atomicMigration, /pg_advisory_xact_lock\(hashtextextended\(p_player_id::text, 0\)\)/);
+  assert.match(atomicMigration, /for update/);
+  assert.match(atomicMigration, /max_active_tickets/);
+  assert.match(atomicMigration, /elapsed_ticks < v_best\.best_elapsed_ticks/);
+  assert.match(atomicMigration, /public\.ensure_gaming_season_tournament\('Racer'\)/);
+  assert.match(atomicMigration, /insert into public\.gaming_matches[\s\S]*status\)[\s\S]*values[\s\S]*'pending'/);
+  assert.match(atomicMigration, /insert into public\.gaming_match_participants/);
+  assert.match(atomicMigration, /update public\.gaming_matches[\s\S]*status = 'confirmed'/);
+  assert.match(atomicMigration, /revoke all on function public\.finalize_gaming_racer_run/);
+  assert.match(atomicMigration, /grant execute on function public\.finalize_gaming_racer_run[\s\S]*to service_role/);
 });
