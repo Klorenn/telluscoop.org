@@ -2855,7 +2855,8 @@
             <span style="color:var(--muted);font-size:.85rem;max-width:260px;word-break:break-all">${esc(preview.content)}</span>
             <div class="form-foot" style="justify-content:start">
               <button class="button button-secondary" type="button" data-copy-text="${esc(preview.content)}">Copiar enlace</button>
-              <button class="button button-secondary" type="button" data-qr-download>${icon("download")} Descargar PNG</button>
+              <button class="button button-secondary" type="button" data-qr-download="png">${icon("download")} Descargar PNG</button>
+              <button class="button button-secondary" type="button" data-qr-download="svg">${icon("download")} Descargar SVG</button>
               ${state.preview ? "" : `<button class="button button-primary" type="button" id="qr-save">${icon("save")} Guardar en el banco</button>`}
             </div>
           </div>
@@ -2868,7 +2869,8 @@
           <p style="margin:0 0 .5rem;color:var(--muted);font-size:.8rem;word-break:break-all">${esc(q.content)}</p>
           <div class="form-foot" style="justify-content:start">
             <button class="table-link" data-copy-text="${esc(q.content)}">Copiar</button>
-            <button class="table-link" data-qr-download>${icon("download")} PNG</button>
+            <button class="table-link" data-qr-download="png">${icon("download")} PNG</button>
+            <button class="table-link" data-qr-download="svg">${icon("download")} SVG</button>
             ${state.preview ? "" : `<button class="table-link" data-qr-delete="${esc(q.id)}" style="color:var(--red)">Borrar</button>`}
           </div>
         </article>`).join("")}</div>` : `<div class="empty">Todavía no guardaste códigos QR.</div>`}`;
@@ -2916,6 +2918,21 @@
     document.querySelectorAll("[data-qr-download]").forEach((button) => button.addEventListener("click", () => {
       const canvas = button.closest("section, article")?.querySelector(".qr-canvas");
       if (!canvas) return;
+      const format = button.dataset.qrDownload;
+      if (format === "svg") {
+        const content = canvas.dataset.qrContent;
+        if (!content) return;
+        window.QRCode.toString(content, { type: "svg", width: 180, margin: 1 }, (err, svg) => {
+          if (err) return console.error(err);
+          const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "qr.svg";
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+        return;
+      }
       const a = document.createElement("a");
       a.href = canvas.toDataURL("image/png");
       a.download = "qr.png";
