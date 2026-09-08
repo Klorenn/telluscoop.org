@@ -99,30 +99,38 @@ import { Chessground } from "https://cdn.jsdelivr.net/npm/chessground@9.2.1/dist
     const el = container();
     if (!el) return;
     el.innerHTML = `
-      <div class="lb-chess-lobby-head">
-        <button type="button" id="lb-chess-howto" class="lb-chess-btn">${t("chessHowTo")}</button>
-        <span class="lb-chess-lobby-rating" id="lb-chess-lobby-rating">${t("chessRating")}: <strong>…</strong></span>
-      </div>
-      <div class="lb-chess-grid">
-        <div class="lb-chess-card">
-          <h3>${t("chessBotTitle")}</h3>
-          <div class="lb-chess-difficulty" id="lb-chess-difficulty">
-            ${DIFFICULTY_ORDER.map((d) =>
-              `<button type="button" data-difficulty="${d}" class="lb-chess-chip${selectedDifficulty === d ? " is-active" : ""}">${difficultyLabel(d)}</button>`).join("")}
-          </div>
-          <button type="button" id="lb-chess-start-bot" class="lb-chess-btn lb-chess-btn-primary">${t("chessStart")}</button>
+      <div class="lb-chess-lobby-shell">
+        <div class="lb-chess-lobby-head">
+          <span class="lb-chess-lobby-rating" id="lb-chess-lobby-rating">${t("chessRating")}: <strong>…</strong></span>
+          <button type="button" id="lb-chess-howto" class="lb-chess-btn">${t("chessHowTo")}</button>
         </div>
-        <div class="lb-chess-card">
-          <h3>${t("chessChallengeTitle")}</h3>
-          <div class="lb-chess-challenge">
-            <input id="lb-chess-opponent" class="lb-chess-input" placeholder="${esc(t("chessChallengePlaceholder"))}" autocomplete="off" />
-            <button type="button" id="lb-chess-challenge" class="lb-chess-btn lb-chess-btn-primary">${t("chessChallengeBtn")}</button>
+        <div class="lb-chess-lobby-body">
+          <div class="lb-chess-lobby-main">
+            <div class="lb-chess-grid">
+              <div class="lb-chess-card">
+                <h3>${t("chessBotTitle")}</h3>
+                <div class="lb-chess-difficulty" id="lb-chess-difficulty">
+                  ${DIFFICULTY_ORDER.map((d) =>
+                    `<button type="button" data-difficulty="${d}" class="lb-chess-chip${selectedDifficulty === d ? " is-active" : ""}">${difficultyLabel(d)}</button>`).join("")}
+                </div>
+                <button type="button" id="lb-chess-start-bot" class="lb-chess-btn lb-chess-btn-primary">${t("chessStart")}</button>
+              </div>
+              <div class="lb-chess-card">
+                <h3>${t("chessChallengeTitle")}</h3>
+                <div class="lb-chess-challenge">
+                  <input id="lb-chess-opponent" class="lb-chess-input" placeholder="${esc(t("chessChallengePlaceholder"))}" autocomplete="off" />
+                  <button type="button" id="lb-chess-challenge" class="lb-chess-btn lb-chess-btn-primary">${t("chessChallengeBtn")}</button>
+                </div>
+              </div>
+            </div>
           </div>
+          <aside class="lb-chess-lobby-activity">
+            <h3 class="lb-chess-mygames-title">${t("chessMyGames")}</h3>
+            <div id="lb-chess-mygames" class="lb-chess-mygames" aria-live="polite">${esc(t("chessLoading"))}</div>
+          </aside>
         </div>
-      </div>
-      <h3 class="lb-chess-mygames-title">${t("chessMyGames")}</h3>
-      <div id="lb-chess-mygames" class="lb-chess-mygames">${esc(t("chessLoading"))}</div>
-      <p id="lb-chess-error" class="lb-chess-error" hidden></p>`;
+        <p id="lb-chess-error" class="lb-chess-error" hidden></p>
+      </div>`;
 
     el.querySelectorAll("[data-difficulty]").forEach((btn) => {
       btn.addEventListener("click", () => {

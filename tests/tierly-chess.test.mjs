@@ -284,6 +284,18 @@ test("the lobby and the in-game panel surface the player rating", () => {
   assert.match(chessJs, /result\.data\.rating\.rating/);
 });
 
+test("the chess lobby keeps its status, play choices and activity in one responsive app shell", () => {
+  assert.match(chessJs, /class="lb-chess-lobby-shell"/);
+  assert.match(chessJs, /class="lb-chess-lobby-main"/);
+  assert.match(chessJs, /class="lb-chess-lobby-activity"/);
+  assert.match(page, /\.lb-chess-lobby-shell \{[\s\S]*max-width: 1080px/);
+  assert.match(page, /\.lb-chess-lobby-body \{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(280px, 0\.72fr\)/);
+  assert.match(page, /#lb-chess-title \{ width: 100%; max-width: 1080px; margin: 0 auto 18px; \}/);
+  assert.match(page, /@media \(max-width: 860px\) \{[\s\S]*\.lb-chess-lobby-body \{ grid-template-columns: 1fr; \}/);
+  assert.doesNotMatch(chessJs, /<aside class="lb-chess-lobby-activity" aria-live="polite">/);
+  assert.match(chessJs, /id="lb-chess-mygames" class="lb-chess-mygames" aria-live="polite"/);
+});
+
 test("chess.js recomputes legal moves with chess.js and drives Stockfish on a worker", () => {
   assert.match(chessJs, /import \{ Chess \} from "https:\/\/cdn\.jsdelivr\.net\/npm\/chess\.js@1\.4\.0\/dist\/esm\/chess\.js"/);
   assert.match(chessJs, /import \{ Chessground \} from "https:\/\/cdn\.jsdelivr\.net\/npm\/chessground@9\.2\.1\/dist\/chessground\.min\.js"/);

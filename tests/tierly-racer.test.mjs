@@ -3,10 +3,22 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const migration = readFileSync("supabase/migrations/20260829150000_add_racer_runs.sql", "utf8");
-const atomicMigration = readFileSync("supabase/migrations/20260830183000_add_racer_atomic_rpcs.sql", "utf8");
+const atomicMigrationRaw = readFileSync("supabase/migrations/20260830183000_add_racer_atomic_rpcs.sql", "utf8");
+const tournamentMigrationRaw = readFileSync("supabase/migrations/20260830193000_serialize_racer_tournament.sql", "utf8");
+const atomicMigration = stripSqlComments(`${atomicMigrationRaw}\n${tournamentMigrationRaw}`);
 const simulation = readFileSync("supabase/functions/racer/simulation.ts", "utf8");
 const edge = readFileSync("supabase/functions/racer/index.ts", "utf8");
 const supabaseConfig = readFileSync("supabase/config.toml", "utf8");
+
+function stripSqlComments(sql) {
+  return sql.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--.*$/gm, "");
+}
+
+function functionBody(sql, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const matches = [...sql.matchAll(new RegExp(`create or replace function public\\.${escaped}\\([\\s\\S]*?as \\$\\$([\\s\\S]*?)\\$\\$;`, "g"))];
+  return matches.at(-1)?.[1] ?? "";
+}
 
 test("racer runs are private, stateful, and cannot produce two matches", () => {
   assert.match(migration, /create table public\.gaming_racer_runs/);
@@ -67,20 +79,40 @@ test("racer credits exactly through a confirmed gaming match", () => {
 });
 
 test("racer start and submit are serialized in security definer RPCs", () => {
+  const issueBody = functionBody(atomicMigration, "issue_gaming_racer_run");
+  const claimBody = functionBody(atomicMigration, "claim_gaming_racer_run");
+  const finalizeBody = functionBody(atomicMigration, "finalize_gaming_racer_run");
+  const rejectBody = functionBody(atomicMigration, "reject_gaming_racer_run");
+
   assert.match(atomicMigration, /create or replace function public\.issue_gaming_racer_run\(/);
   assert.match(atomicMigration, /create or replace function public\.claim_gaming_racer_run\(/);
   assert.match(atomicMigration, /create or replace function public\.finalize_gaming_racer_run\(/);
   assert.match(atomicMigration, /create or replace function public\.reject_gaming_racer_run\(/);
   assert.match(atomicMigration, /security definer/g);
   assert.match(atomicMigration, /set search_path = ''/g);
-  assert.match(atomicMigration, /pg_advisory_xact_lock\(hashtextextended\(p_player_id::text, 0\)\)/);
-  assert.match(atomicMigration, /for update/);
-  assert.match(atomicMigration, /max_active_tickets/);
-  assert.match(atomicMigration, /elapsed_ticks < v_best\.best_elapsed_ticks/);
-  assert.match(atomicMigration, /public\.ensure_gaming_season_tournament\('Racer'\)/);
-  assert.match(atomicMigration, /insert into public\.gaming_matches[\s\S]*status\)[\s\S]*values[\s\S]*'pending'/);
-  assert.match(atomicMigration, /insert into public\.gaming_match_participants/);
-  assert.match(atomicMigration, /update public\.gaming_matches[\s\S]*status = 'confirmed'/);
+  assert.match(issueBody, /pg_advisory_xact_lock\(hashtextextended\(p_player_id::text, 0\)\)/);
+  assert.match(issueBody, /max_active_tickets/);
+  assert.match(issueBody, /insert into public\.gaming_racer_runs/);
+  assert.match(claimBody, /for update/);
+  assert.match(claimBody, /set status = 'submitted'/);
+  assert.match(rejectBody, /for update/);
+  assert.match(finalizeBody, /for update/);
+  assert.match(finalizeBody, /p_elapsed_ticks < v_best\.best_elapsed_ticks/);
+  assert.match(finalizeBody, /public\.ensure_gaming_season_tournament\('Racer'\)/);
+  assert.match(finalizeBody, /insert into public\.gaming_matches[\s\S]*status\)[\s\S]*values[\s\S]*'pending'/);
+  assert.match(finalizeBody, /insert into public\.gaming_match_participants/);
+  assert.match(finalizeBody, /update public\.gaming_matches[\s\S]*status = 'confirmed'/);
   assert.match(atomicMigration, /revoke all on function public\.finalize_gaming_racer_run/);
   assert.match(atomicMigration, /grant execute on function public\.finalize_gaming_racer_run[\s\S]*to service_role/);
+});
+
+test("racer tournament creation is serialized for the current season", () => {
+  const finalizeBody = functionBody(atomicMigration, "finalize_gaming_racer_run");
+  assert.match(finalizeBody, /pg_advisory_xact_lock\(hashtextextended\('gaming_tournament:Racer:' \|\| public\.gaming_season_start\(\)::text, 0\)\)/);
+  assert.match(finalizeBody, /v_tournament_id := public\.ensure_gaming_season_tournament\('Racer'\)/);
+  assert.ok(
+    finalizeBody.indexOf("pg_advisory_xact_lock(hashtextextended('gaming_tournament:Racer:'") <
+      finalizeBody.indexOf("v_tournament_id := public.ensure_gaming_season_tournament('Racer')"),
+    "finalize must acquire the season tournament lock before ensuring the Racer tournament",
+  );
 });

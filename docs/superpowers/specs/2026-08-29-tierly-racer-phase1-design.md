@@ -1,4 +1,4 @@
-# Tierly Racer — diseño de Fase 1
+t# Tierly Racer — diseño de Fase 1
 
 Estado: aprobado para planificación e implementación  
 Fecha: 2026-08-29

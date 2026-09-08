@@ -659,10 +659,23 @@
     .lb-settings-lang button.is-active { background: var(--teal-bright); border-color: transparent; color: #fff; }
     .lb-settings-about { color: var(--ink-dim); font-size: 13.5px; max-width: 52ch; line-height: 1.6; }
 
-    .lb-chess-grid { display: flex; flex-direction: column; gap: 18px; max-width: 640px; }
+    .lb-chess-lobby-shell { width: 100%; max-width: 1080px; margin: 0 auto; }
+    #lb-chess-title { width: 100%; max-width: 1080px; margin: 0 auto 18px; }
+    .lb-chess-lobby-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      margin-bottom: 18px; padding: 0 2px 16px; border-bottom: 1px solid var(--card-border);
+    }
+    .lb-chess-lobby-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr); gap: 24px; align-items: start; }
+    .lb-chess-lobby-main { min-width: 0; }
+    .lb-chess-grid { display: grid; gap: 16px; }
     .lb-chess-card {
       background: var(--card); border: 1px solid var(--card-border); border-radius: 18px;
       padding: 20px 22px; box-shadow: var(--card-shadow);
+    }
+    .lb-chess-card h3 { margin: 0 0 12px; }
+    .lb-chess-lobby-activity {
+      background: var(--card); border: 1px solid var(--card-border); border-radius: 18px;
+      padding: 20px 22px; box-shadow: var(--card-shadow); min-height: 100%;
     }
     .lb-chess-difficulty { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
     .lb-chess-chip {
@@ -689,7 +702,7 @@
     .lb-chess-btn-danger { background: var(--clay); border-color: transparent; color: #fff; }
     .lb-chess-btn-danger:hover { background: var(--clay); filter: brightness(1.05); }
     .lb-chess-btn-small { padding: 6px 12px; font-size: 12px; }
-    .lb-chess-mygames-title { font-family: var(--serif); font-size: 16px; color: var(--ink); margin-bottom: 10px; }
+    .lb-chess-mygames-title { font-family: var(--serif); font-size: 16px; color: var(--ink); margin: 0 0 10px; }
     .lb-chess-mygames { display: flex; flex-direction: column; }
     .lb-chess-game-row {
       display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 0;
@@ -706,6 +719,7 @@
     .lb-chess-earned { font-weight: 600; color: var(--teal-bright); }
     .lb-chess-rating { font-size: 12.5px; color: var(--ink-dim); font-family: var(--mono); }
     .lb-chess-lobby-rating { font-size: 13px; color: var(--ink-dim); }
+    .lb-chess-lobby-rating strong { color: var(--ink); font-family: var(--mono); font-size: 15px; }
     .lb-chess-scores { display: grid; grid-template-columns: repeat(4, auto); gap: 4px 14px; margin: 10px 0 8px; }
     .lb-chess-scores-row { display: contents; }
     .lb-chess-scores-row > span { font-size: 12.5px; color: var(--ink); padding: 3px 8px; border-radius: 6px; background: var(--chip-bg); }
@@ -719,7 +733,6 @@
       .lb-chess-board-wrap { flex: 0 0 clamp(420px, 42vw, 560px); }
       .lb-chess-panel { flex: 0 0 260px; display: flex; flex-direction: column; gap: 14px; }
     }
-    .lb-chess-lobby-head { display: flex; justify-content: flex-end; margin-bottom: 4px; }
     .lb-chess-tutorial {
       border: none; border-radius: 18px; background: var(--card); color: var(--ink);
       padding: 22px 24px; max-width: 560px; width: min(90vw, 560px); box-shadow: var(--card-shadow);
@@ -776,6 +789,9 @@
       .lb-stats { grid-template-columns: repeat(2, 1fr); }
       .lb-secondary-grid { flex-direction: column; }
     }
+    @media (max-width: 860px) {
+      .lb-chess-lobby-body { grid-template-columns: 1fr; }
+    }
     @media (max-width: 720px) {
       .lb-shell { flex-direction: column; }
       .lb-sidebar { width: 100%; padding: 16px; position: static; height: auto; overflow-y: visible; }
@@ -784,6 +800,9 @@
       .lb-nav-item { width: auto; white-space: nowrap; }
       .lb-main { padding: 28px 20px 32px; }
       .lb-stats { grid-template-columns: 1fr 1fr; }
+      .lb-chess-lobby-head { align-items: flex-start; }
+      .lb-chess-challenge { flex-direction: column; }
+      .lb-chess-input, .lb-chess-challenge .lb-chess-btn { width: 100%; }
     }
   </style>
 </head>
@@ -945,7 +964,7 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"></script>
-  <script type="module" src="/tierly/chess.js?v=20260829-09"></script>
-  <script type="module" src="/tierly/app.js?v=20260829-09"></script>
+  <script type="module" src="/tierly/chess.js?v=20260829-10"></script>
+  <script type="module" src="/tierly/app.js?v=20260829-10"></script>
 </body>
 </html>
