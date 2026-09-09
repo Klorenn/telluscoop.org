@@ -2873,12 +2873,12 @@
     return `
       ${QR_STANDALONE ? `<div class="standalone-hero">
         <span class="eyebrow">Herramienta gratuita</span>
-        <h2>Generá tu código QR al instante</h2>
+        <h2>Genera tu código QR al instante</h2>
         <p>Para links de bio, flyers de eventos, tarjetas o cualquier texto. Sin registro, listo para descargar.</p>
       </div>` : `<div class="toolbar"><div><span class="eyebrow">${esc(state.org?.name || "")}</span><h2>Códigos QR</h2></div></div>`}
       <section class="card" style="margin-bottom:1.2rem">
         <h3>Generar un código QR</h3>
-        <p style="color:var(--muted);margin:.2rem 0 .8rem">Escribí el link o texto a codificar. Se genera al instante${state.session ? " y podés guardarlo en el banco para reusarlo" : ""}.</p>
+        <p style="color:var(--muted);margin:.2rem 0 .8rem">Escribe el link o texto a codificar. Se genera al instante${state.session ? " y puedes guardarlo en el banco para reutilizarlo" : ""}.</p>
         <form id="qr-form" class="form-grid">
           <div class="field"><label for="qr-label">Nombre</label><input id="qr-label" name="label" placeholder="ej: Bio link, Flyer evento" value="${esc(state.qrForm.label)}" /></div>
           <div class="field span-all"><label for="qr-content">Link o texto</label><input id="qr-content" name="content" placeholder="https://…" required value="${esc(state.qrForm.content)}" /></div>
