@@ -48,6 +48,7 @@
   };
   if (VALID_VIEWS.includes(requestedView)) state.view = requestedView;
   const QR_STANDALONE = requestedView === "qr";
+  if (QR_STANDALONE) document.title = "Tellus Cooperative QR Generator";
 
   const CHAINS = [
     { id: "stellar", label: "Stellar", docsUrl: "https://developers.stellar.org/docs" },
@@ -178,7 +179,7 @@
   }
 
   function renderLoading() {
-    const title = QR_STANDALONE ? "QR" : "Social Ops";
+    const title = QR_STANDALONE ? "Tellus Cooperative QR Generator" : "Social Ops";
     const sub = QR_STANDALONE ? "Preparando tu generador de QR…" : "Preparando tu radar de contenido…";
     $app.innerHTML = `<main aria-busy="true" aria-labelledby="loading-title" style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#f7f4ed;color:#183034;font-family:Inter,system-ui,sans-serif"><section style="width:min(420px,100%);padding:28px;border:1px solid #d9d2c7;border-radius:18px;background:#fffdf8;box-shadow:0 12px 32px rgba(24,48,52,.08)"><span style="display:block;color:#c75a2a;font:600 12px/1.2 monospace;letter-spacing:.12em;text-transform:uppercase">Tellus Cooperative</span><h1 id="loading-title" style="margin:10px 0 8px;font:600 30px/1.1 Georgia,serif">${title}</h1><p style="margin:0 0 22px;color:#607276;line-height:1.5">${sub}</p><div style="display:flex;align-items:center;gap:10px;color:#607276;font-size:14px"><span aria-hidden="true" style="display:block;width:20px;height:20px;flex:0 0 20px;border:2px solid #d9d2c7;border-top-color:#2f7478;border-radius:50%;animation:spin .8s linear infinite"></span><span>Cargando datos</span></div></section></main>`;
   }
@@ -364,7 +365,7 @@
         ${state.preview ? `<div class="preview-banner">Vista previa con datos de ejemplo — sin conexión a datos reales</div>` : ""}
         <div class="shell shell-standalone">
           <header class="standalone-header">
-            <div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> QR</div>
+            <div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> Tellus Cooperative QR Generator</div>
             <div class="sidebar-foot" style="display:flex;align-items:center;gap:.8rem">
               <span>${esc(state.preview ? "Vista previa" : state.session?.user?.email || "")}</span>
               ${state.session && !state.preview ? `<button class="button button-ghost" id="signout">${icon("log-out")} Salir</button>` : ""}
