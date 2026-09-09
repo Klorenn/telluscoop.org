@@ -41,7 +41,7 @@
       const styles = document.createElement("link");
       styles.id = "merch-catalog-styles";
       styles.rel = "stylesheet";
-      styles.href = "/merch/styles.css";
+      styles.href = "/merch/styles.css?v=20260909-02";
       document.head.appendChild(styles);
     }
     document.title = "Tellus Cooperative Merch";
