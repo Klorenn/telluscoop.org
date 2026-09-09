@@ -2862,7 +2862,7 @@
   function qrView() {
     const preview = state.qrPreview;
     return `
-      <div class="toolbar"><div><span class="eyebrow">${esc(state.org?.name || "")}</span><h2>Códigos QR</h2></div></div>
+      ${QR_STANDALONE ? "" : `<div class="toolbar"><div><span class="eyebrow">${esc(state.org?.name || "")}</span><h2>Códigos QR</h2></div></div>`}
       <section class="card" style="margin-bottom:1.2rem">
         <h3>Generar un código QR</h3>
         <p style="color:var(--muted);margin:.2rem 0 .8rem">Escribí el link o texto a codificar. Se genera al instante y podés guardarlo en el banco para reusarlo.</p>
