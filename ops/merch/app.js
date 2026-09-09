@@ -30,6 +30,12 @@
     if (!response.ok) throw new Error("catalog_unavailable");
     const html = await response.text();
     const parsed = new DOMParser().parseFromString(html, "text/html");
+    parsed.body.querySelectorAll("[src], [href]").forEach((element) => {
+      ["src", "href"].forEach((attribute) => {
+        const value = element.getAttribute(attribute);
+        if (value?.startsWith("../")) element.setAttribute(attribute, `/${value.slice(3)}`);
+      });
+    });
     app.innerHTML = parsed.body.innerHTML;
     if (!document.querySelector("#merch-catalog-styles")) {
       const styles = document.createElement("link");
