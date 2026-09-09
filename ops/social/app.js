@@ -8,6 +8,8 @@
 
   const $app = document.querySelector("#app");
   const PREVIEW = new URLSearchParams(location.search).get("preview") === "1";
+  const VALID_VIEWS = ["summary", "feed", "accounts", "repos", "articles", "memes", "guides", "qr"];
+  const requestedView = new URLSearchParams(location.search).get("view");
 
   const platformLabels = { x: "X", linkedin: "LinkedIn", instagram: "Instagram" };
   const repoStatusLabels = { inbox: "Bandeja", reviewed: "Revisado", shared: "Compartido", discarded: "Descartado" };
@@ -44,6 +46,7 @@
     followView: null, followTargets: [], listView: null,
     qrcodes: [], qrForm: { label: "", content: "" }, qrPreview: null,
   };
+  if (VALID_VIEWS.includes(requestedView)) state.view = requestedView;
 
   const CHAINS = [
     { id: "stellar", label: "Stellar", docsUrl: "https://developers.stellar.org/docs" },

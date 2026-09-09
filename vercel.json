@@ -4,6 +4,7 @@
     { "source": "/hub", "destination": "/hub/index.html" },
     { "source": "/resources", "destination": "/resources/index.html" },
     { "source": "/resources/tools/:slug", "destination": "/resources/tool.html" },
-    { "source": "/tierly", "destination": "/tierly/index.html" }
+    { "source": "/tierly", "destination": "/tierly/index.html" },
+    { "source": "/qr", "destination": "/ops/social/index.html?view=qr" }
   ]
 }
