@@ -6,6 +6,10 @@
     { "source": "/hub", "destination": "/hub/index.html" },
     { "source": "/resources", "destination": "/resources/index.html" },
     { "source": "/resources/tools/:slug", "destination": "/resources/tool.html" },
-    { "source": "/tierly", "destination": "/tierly/index.html" }
+    { "source": "/tierly", "destination": "/tierly/index.html" },
+    { "source": "/tools/qr-generator", "destination": "/ops/social/index.html" }
+  ],
+  "redirects": [
+    { "source": "/qr", "destination": "/tools/qr-generator", "type": 308 }
   ]
 }
