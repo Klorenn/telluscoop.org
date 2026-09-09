@@ -47,6 +47,7 @@
     qrcodes: [], qrForm: { label: "", content: "" }, qrPreview: null,
   };
   if (VALID_VIEWS.includes(requestedView)) state.view = requestedView;
+  const QR_STANDALONE = requestedView === "qr";
 
   const CHAINS = [
     { id: "stellar", label: "Stellar", docsUrl: "https://developers.stellar.org/docs" },
@@ -356,6 +357,24 @@
   }
 
   function renderShell() {
+    if (QR_STANDALONE) {
+      $app.innerHTML = `
+        ${state.preview ? `<div class="preview-banner">Vista previa con datos de ejemplo — sin conexión a datos reales</div>` : ""}
+        <div class="shell shell-standalone">
+          <header class="standalone-header">
+            <div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> QR</div>
+            <div class="sidebar-foot" style="display:flex;align-items:center;gap:.8rem">
+              <span>${esc(state.preview ? "Vista previa" : state.session?.user?.email || "")}</span>
+              ${state.preview ? "" : `<button class="button button-ghost" id="signout">${icon("log-out")} Salir</button>`}
+            </div>
+          </header>
+          <main class="main" id="main">${qrView()}</main>
+        </div>
+        ${state.langPrompt ? langPromptModal() : ""}`;
+      hydrateIcons();
+      wireShell();
+      return;
+    }
     $app.innerHTML = `
       ${state.preview ? `<div class="preview-banner">Vista previa con datos de ejemplo — sin conexión a datos reales</div>` : ""}
       <div class="shell">

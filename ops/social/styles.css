@@ -78,6 +78,11 @@ a { color: inherit; }
 .sidebar-foot .button-ghost:hover { background: rgba(255,255,255,.12); color: #fff; }
 .main { padding: clamp(1.2rem, 3vw, 2.4rem); max-width: 1200px; width: 100%; }
 
+.shell-standalone { display: block; min-height: 100vh; }
+.standalone-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--teal-dark); color: #fff; padding: 1rem clamp(1.2rem, 3vw, 2.4rem); }
+.standalone-header .sidebar-foot { margin-top: 0; }
+.shell-standalone .main { max-width: 720px; margin: 0 auto; }
+
 .toolbar { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1.4rem; }
 .toolbar h2 { font: 600 1.7rem/1.1 Fraunces, serif; margin: .3rem 0 0; }
 .filters { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 1.2rem; }
