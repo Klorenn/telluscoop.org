@@ -30,8 +30,8 @@
     if (!response.ok) throw new Error("catalog_unavailable");
     const html = await response.text();
     const parsed = new DOMParser().parseFromString(html, "text/html");
-    parsed.body.querySelectorAll("[src], [href]").forEach((element) => {
-      ["src", "href"].forEach((attribute) => {
+    parsed.body.querySelectorAll("[src], [href], [data]").forEach((element) => {
+      ["src", "href", "data"].forEach((attribute) => {
         const value = element.getAttribute(attribute);
         if (value?.startsWith("../")) element.setAttribute(attribute, `/${value.slice(3)}`);
       });
