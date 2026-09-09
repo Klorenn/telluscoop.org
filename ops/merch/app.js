@@ -31,6 +31,13 @@
     const html = await response.text();
     const parsed = new DOMParser().parseFromString(html, "text/html");
     app.innerHTML = parsed.body.innerHTML;
+    if (!document.querySelector("#merch-catalog-styles")) {
+      const styles = document.createElement("link");
+      styles.id = "merch-catalog-styles";
+      styles.rel = "stylesheet";
+      styles.href = "/merch/styles.css";
+      document.head.appendChild(styles);
+    }
     document.title = "Tellus Cooperative Merch";
   }
 
