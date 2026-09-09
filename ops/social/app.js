@@ -9,7 +9,7 @@
   const $app = document.querySelector("#app");
   const PREVIEW = new URLSearchParams(location.search).get("preview") === "1";
   const VALID_VIEWS = ["summary", "feed", "accounts", "repos", "articles", "memes", "guides", "qr"];
-  const requestedView = new URLSearchParams(location.search).get("view");
+  const requestedView = new URLSearchParams(location.search).get("view") || (location.pathname === "/qr" ? "qr" : null);
 
   const platformLabels = { x: "X", linkedin: "LinkedIn", instagram: "Instagram" };
   const repoStatusLabels = { inbox: "Bandeja", reviewed: "Revisado", shared: "Compartido", discarded: "Descartado" };
