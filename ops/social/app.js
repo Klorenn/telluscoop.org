@@ -367,7 +367,7 @@
             <div class="brand-mark"><img src="/uploads/TellusCooperative ICON.png" alt="" /> QR</div>
             <div class="sidebar-foot" style="display:flex;align-items:center;gap:.8rem">
               <span>${esc(state.preview ? "Vista previa" : state.session?.user?.email || "")}</span>
-              ${state.preview ? "" : `<button class="button button-ghost" id="signout">${icon("log-out")} Salir</button>`}
+              ${state.session && !state.preview ? `<button class="button button-ghost" id="signout">${icon("log-out")} Salir</button>` : ""}
             </div>
           </header>
           <main class="main" id="main">${qrView()}</main>
@@ -2881,12 +2881,12 @@
               <button class="button button-secondary" type="button" data-copy-text="${esc(preview.content)}">Copiar enlace</button>
               <button class="button button-secondary" type="button" data-qr-download="png">${icon("download")} Descargar PNG</button>
               <button class="button button-secondary" type="button" data-qr-download="svg">${icon("download")} Descargar SVG</button>
-              ${state.preview ? "" : `<button class="button button-primary" type="button" id="qr-save">${icon("save")} Guardar en el banco</button>`}
+              ${state.session && !state.preview ? `<button class="button button-primary" type="button" id="qr-save">${icon("save")} Guardar en el banco</button>` : ""}
             </div>
           </div>
         </div>
       </section>` : ""}
-      ${state.qrcodes.length ? `<div class="toolbar"><div><span class="eyebrow">Tu banco</span><h2>Códigos guardados</h2></div></div>
+      ${state.session ? (state.qrcodes.length ? `<div class="toolbar"><div><span class="eyebrow">Tu banco</span><h2>Códigos guardados</h2></div></div>
         <div class="grid grid-3" style="margin-bottom:1.4rem">${state.qrcodes.map((q) => `<article class="card">
           <canvas class="qr-canvas" data-qr-content="${esc(q.content)}" style="border-radius:8px;background:#fff;padding:8px;width:100%;max-width:180px"></canvas>
           <p style="margin:.6rem 0 .2rem;font-weight:600">${esc(q.label || "Sin nombre")}</p>
@@ -2897,7 +2897,7 @@
             <button class="table-link" data-qr-download="svg">${icon("download")} SVG</button>
             ${state.preview ? "" : `<button class="table-link" data-qr-delete="${esc(q.id)}" style="color:var(--red)">Borrar</button>`}
           </div>
-        </article>`).join("")}</div>` : `<div class="empty">Todavía no guardaste códigos QR.</div>`}`;
+        </article>`).join("")}</div>` : `<div class="empty">Todavía no guardaste códigos QR.</div>`) : ""}`;
   }
 
   function wireQr() {
@@ -2976,12 +2976,13 @@
     }
     const { data } = await supabase.auth.getSession();
     state.session = data.session;
-    if (!state.session) return renderAuth();
+    if (!state.session) return QR_STANDALONE ? renderShell() : renderAuth();
     try {
       await loadLiveData();
       renderShell();
     } catch (error) {
       console.error(error);
+      if (QR_STANDALONE) return renderShell();
       notify("No pudimos cargar los datos. Verificá tu acceso.", true);
       renderAuth();
     }
