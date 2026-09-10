@@ -44,7 +44,7 @@
     guideView: null, guideSocialPosts: null,
     metrics: [], goals: [], summaryBusy: false,
     followView: null, followTargets: [], listView: null,
-    qrcodes: [], qrForm: { label: "", content: "" }, qrPreview: null,
+    qrcodes: [], qrForm: { label: "", content: "", mode: "custom", file: "png", size: 600, body: "square", eye: "frame0", eyeBall: "ball0", bodyColor: "#173f42", bgColor: "#ffffff", eyeColor: "#173f42", logo: "", logoMode: "default", gradientColor1: "", gradientColor2: "", gradientType: "linear", gradientOnEyes: false, image: "", x: 0, y: 0, crop: false }, qrPreview: null,
   };
   if (VALID_VIEWS.includes(requestedView)) state.view = requestedView;
   const QR_STANDALONE = requestedView === "qr";
@@ -2879,22 +2879,34 @@
       <section class="card" style="margin-bottom:1.2rem">
         <h3>Generar un código QR</h3>
         <p style="color:var(--muted);margin:.2rem 0 .8rem">Escribe el link o texto a codificar. Se genera al instante${state.session ? " y puedes guardarlo en el banco para reutilizarlo" : ""}.</p>
-        <form id="qr-form" class="form-grid">
+        <form id="qr-form" class="form-grid qr-builder-form">
           <div class="field"><label for="qr-label">Nombre</label><input id="qr-label" name="label" placeholder="ej: Bio link, Flyer evento" value="${esc(state.qrForm.label)}" /></div>
           <div class="field span-all"><label for="qr-content">Link o texto</label><input id="qr-content" name="content" placeholder="https://…" required value="${esc(state.qrForm.content)}" /></div>
+          <div class="field"><label for="qr-mode">Tipo de QR</label><select id="qr-mode" name="mode"><option value="custom" ${state.qrForm.mode === "custom" ? "selected" : ""}>Custom QR</option><option value="transparent" ${state.qrForm.mode === "transparent" ? "selected" : ""}>QR transparente / sobre imagen</option></select></div>
+          <div class="field"><label for="qr-file">Formato</label><select id="qr-file" name="file">${["png", "svg", "pdf", "eps"].map((f) => `<option value="${f}" ${state.qrForm.file === f ? "selected" : ""}>${f.toUpperCase()}</option>`).join("")}</select></div>
+          <div class="field"><label for="qr-size">Tamaño (px)</label><input id="qr-size" name="size" type="number" min="100" max="2000" step="10" value="${esc(state.qrForm.size)}" /></div>
+          <div class="field"><label for="qr-body">Forma del cuerpo</label><select id="qr-body" name="body">${["square", "rounded", "circle", "dot", "rounded-pointed"].map((v) => `<option value="${v}" ${state.qrForm.body === v ? "selected" : ""}>${v}</option>`).join("")}</select></div>
+          <div class="field"><label for="qr-eye">Marco del ojo</label><select id="qr-eye" name="eye">${["frame0", "frame1", "frame2", "frame3", "frame4", "frame5", "frame14"].map((v) => `<option value="${v}" ${state.qrForm.eye === v ? "selected" : ""}>${v}</option>`).join("")}</select></div>
+          <div class="field"><label for="qr-eyeball">Centro del ojo</label><select id="qr-eyeball" name="eyeBall">${["ball0", "ball1", "ball2", "ball3", "ball5", "ball10", "ball16"].map((v) => `<option value="${v}" ${state.qrForm.eyeBall === v ? "selected" : ""}>${v}</option>`).join("")}</select></div>
+          <div class="field"><label for="qr-body-color">Color del QR</label><input id="qr-body-color" name="bodyColor" type="color" value="${esc(state.qrForm.bodyColor)}" /></div>
+          <div class="field"><label for="qr-bg-color">Color de fondo</label><input id="qr-bg-color" name="bgColor" type="color" value="${esc(state.qrForm.bgColor)}" /></div>
+          <div class="field"><label for="qr-eye-color">Color de ojos</label><input id="qr-eye-color" name="eyeColor" type="color" value="${esc(state.qrForm.eyeColor || state.qrForm.bodyColor)}" /></div>
+          <div class="field"><label for="qr-logo">Logo por URL</label><input id="qr-logo" name="logo" type="url" placeholder="https://…/logo.png" value="${esc(state.qrForm.logo)}" /></div>
+          <div class="field"><label for="qr-logo-file">O subir logo</label><input id="qr-logo-file" name="logoFile" type="file" accept="image/png,image/jpeg,image/svg+xml" /></div>
+          <div class="field"><label for="qr-logo-mode">Fondo del logo</label><select id="qr-logo-mode" name="logoMode"><option value="default" ${state.qrForm.logoMode === "default" ? "selected" : ""}>Con fondo</option><option value="clean" ${state.qrForm.logoMode === "clean" ? "selected" : ""}>Limpiar fondo</option></select></div>
+          <details class="field span-all"><summary>Gradiente y QR sobre imagen</summary><div class="form-grid qr-advanced"><div class="field"><label for="qr-gradient-1">Gradiente 1</label><input id="qr-gradient-1" name="gradientColor1" type="color" value="${esc(state.qrForm.gradientColor1 || state.qrForm.bodyColor)}" /></div><div class="field"><label for="qr-gradient-2">Gradiente 2</label><input id="qr-gradient-2" name="gradientColor2" type="color" value="${esc(state.qrForm.gradientColor2 || state.qrForm.bodyColor)}" /></div><div class="field"><label for="qr-gradient-type">Tipo</label><select id="qr-gradient-type" name="gradientType"><option value="linear">Lineal</option><option value="radial">Radial</option></select></div><div class="field"><label for="qr-image">Imagen de fondo (URL)</label><input id="qr-image" name="image" type="url" placeholder="https://…/foto.jpg" value="${esc(state.qrForm.image)}" /></div><div class="field"><label for="qr-image-file">O subir imagen</label><input id="qr-image-file" name="imageFile" type="file" accept="image/png,image/jpeg" /></div><div class="field"><label for="qr-x">Posición X</label><input id="qr-x" name="x" type="number" value="${esc(state.qrForm.x)}" /></div><div class="field"><label for="qr-y">Posición Y</label><input id="qr-y" name="y" type="number" value="${esc(state.qrForm.y)}" /></div><label class="check span-all"><input name="crop" type="checkbox" ${state.qrForm.crop ? "checked" : ""} /> Recortar al QR</label></div></details>
           <div class="form-foot span-all"><button class="button button-primary" type="submit" ${state.preview ? "disabled" : ""}>${icon("qr-code")} Generar</button></div>
         </form>
       </section>
       ${preview ? `<section class="card" style="margin-bottom:1.2rem">
         <h3>Vista previa${preview.label ? `: ${esc(preview.label)}` : ""}</h3>
         <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-top:.6rem">
-          <canvas class="qr-canvas" data-qr-content="${esc(preview.content)}" style="border-radius:8px;background:#fff;padding:8px"></canvas>
+          ${preview.image && ["png", "svg"].includes(preview.file) ? `<img class="qr-image-preview" src="${esc(preview.image)}" alt="Código QR generado" style="max-width:320px;max-height:320px;border-radius:8px;background:#fff;padding:8px" />` : preview.image ? `<div class="qr-file-preview"><span>${icon("file-down")} Archivo ${esc(String(preview.file || "").toUpperCase())} listo para descargar.</span></div>` : `<canvas class="qr-canvas" data-qr-content="${esc(preview.content)}" style="border-radius:8px;background:#fff;padding:8px"></canvas>`}
           <div style="display:flex;flex-direction:column;gap:.5rem">
             <span style="color:var(--muted);font-size:.85rem;max-width:260px;word-break:break-all">${esc(preview.content)}</span>
             <div class="form-foot" style="justify-content:start">
               <button class="button button-secondary" type="button" data-copy-text="${esc(preview.content)}">Copiar enlace</button>
-              <button class="button button-secondary" type="button" data-qr-download="png">${icon("download")} Descargar PNG</button>
-              <button class="button button-secondary" type="button" data-qr-download="svg">${icon("download")} Descargar SVG</button>
+              <button class="button button-secondary" type="button" data-qr-download="${esc(preview.file || "png")}">${icon("download")} Descargar ${(preview.file || "png").toUpperCase()}</button>
               ${state.session && !state.preview ? `<button class="button button-primary" type="button" id="qr-save">${icon("save")} Guardar en el banco</button>` : ""}
             </div>
           </div>
@@ -2920,15 +2932,25 @@
       if (!content) return;
       window.QRCode.toCanvas(canvas, content, { width: 180, margin: 1 }, (err) => { if (err) console.error(err); });
     });
-    document.querySelector("#qr-form")?.addEventListener("submit", (event) => {
+    document.querySelector("#qr-form")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (state.preview) return notify("La vista previa es de solo lectura.", true);
       const form = new FormData(event.target);
       const label = String(form.get("label") || "").trim();
       const content = String(form.get("content") || "").trim();
       if (!content) return;
-      state.qrForm = { label, content };
-      state.qrPreview = { label, content };
+      const qrForm = Object.fromEntries(form.entries());
+      qrForm.size = Number(qrForm.size) || 600; qrForm.x = Number(qrForm.x) || 0; qrForm.y = Number(qrForm.y) || 0; qrForm.crop = form.has("crop");
+      if (qrForm.logoFile instanceof File && qrForm.logoFile.size) qrForm.logo = await new Promise((resolve) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.readAsDataURL(qrForm.logoFile); });
+      delete qrForm.logoFile;
+      if (qrForm.imageFile instanceof File && qrForm.imageFile.size) qrForm.image = await new Promise((resolve) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.readAsDataURL(qrForm.imageFile); });
+      delete qrForm.imageFile;
+      state.qrForm = { ...state.qrForm, ...qrForm, label, content };
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`${cfg.supabaseUrl}/functions/v1/qrcode-monkey`, { method: "POST", headers: { "Content-Type": "application/json", apikey: cfg.supabasePublishableKey, ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) }, body: JSON.stringify({ ...qrForm, data: content, config: { body: qrForm.body, eye: qrForm.eye, eyeBall: qrForm.eyeBall, bodyColor: qrForm.bodyColor, bgColor: qrForm.bgColor, eye1Color: qrForm.eyeColor, eye2Color: qrForm.eyeColor, eye3Color: qrForm.eyeColor, eyeBall1Color: qrForm.eyeColor, eyeBall2Color: qrForm.eyeColor, eyeBall3Color: qrForm.eyeColor, logo: qrForm.logo || null, logoMode: qrForm.logoMode, gradientColor1: qrForm.gradientColor1 || null, gradientColor2: qrForm.gradientColor2 || null, gradientType: qrForm.gradientType, gradientOnEyes: qrForm.gradientOnEyes } }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.data) return notify(result.error || "No se pudo generar el código QR.", true);
+      state.qrPreview = { label, content, image: result.data, file: qrForm.file };
       renderShell();
     });
     document.querySelector("#qr-save")?.addEventListener("click", async () => {
@@ -2954,6 +2976,10 @@
       renderShell();
     }));
     document.querySelectorAll("[data-qr-download]").forEach((button) => button.addEventListener("click", () => {
+      const image = button.closest("section, article")?.querySelector(".qr-image-preview");
+      if (image?.src?.startsWith("data:")) {
+        const a = document.createElement("a"); a.href = image.src; a.download = `tellus-qr.${button.dataset.qrDownload || "png"}`; a.click(); return;
+      }
       const canvas = button.closest("section, article")?.querySelector(".qr-canvas");
       if (!canvas) return;
       const format = button.dataset.qrDownload;
@@ -2990,7 +3016,7 @@
     }
     const { data } = await supabase.auth.getSession();
     state.session = data.session;
-    if (!state.session) return QR_STANDALONE ? renderShell() : renderAuth();
+    if (!state.session) return renderAuth();
     try {
       await loadLiveData();
       renderShell();
