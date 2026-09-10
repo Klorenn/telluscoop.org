@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 
 const app = await readFile(new URL("../ops/social/app.js", import.meta.url), "utf8");
 const page = await readFile(new URL("../ops/social/index.html", import.meta.url), "utf8");
+const styles = await readFile(new URL("../ops/social/styles.css", import.meta.url), "utf8");
 const migration = await readFile(new URL("../supabase/migrations/20260717120000_create_social_analyzer.sql", import.meta.url), "utf8");
 const topicsMigration = await readFile(new URL("../supabase/migrations/20260717150000_create_social_topics.sql", import.meta.url), "utf8");
 const articlesMigration = await readFile(new URL("../supabase/migrations/20260717140000_create_articles.sql", import.meta.url), "utf8");
@@ -443,6 +444,44 @@ test("QR bank: codes are generated client-side, saved, downloaded, and deleted",
   assert.match(app, /data-qr-download/);
   assert.match(app, /data-qr-delete/);
   assert.match(page, /qrcode@[\d.]+\/build\/qrcode\.min\.js/);
+});
+
+test("QR generator is a Spanish local-first workspace without QRCode Monkey", () => {
+  assert.doesNotMatch(app, /QRCODE_MONKEY|qrcode-monkey|QRCodeMonkey/i);
+  assert.match(app, /Todo se genera en tu navegador/);
+  assert.match(app, /data-qr-live-preview/);
+  assert.match(app, /Generando código…/);
+  assert.match(app, /Descargar PNG/);
+  assert.match(styles, /position:\s*sticky/);
+});
+
+test("QR generator is URL-only and exposes only the reference design controls", () => {
+  const qrUi = app.slice(app.indexOf("function qrView()"), app.indexOf("function qrImage"));
+  assert.doesNotMatch(qrUi, /QR_TYPES|data-qr-type|qr-type-tabs/);
+  assert.doesNotMatch(qrUi, /colorMode|gradientColor|logoMode|wifiName|phone|subject|qr-fields/);
+  assert.match(qrUi, /name="content"[^>]+type="url"/);
+  assert.match(qrUi, /data-qr-\$\{group\}/);
+  assert.match(qrUi, /swatch\("body"/);
+  assert.match(qrUi, /swatch\("eye-frame"/);
+  assert.match(qrUi, /swatch\("eye-ball"/);
+  assert.match(qrUi, /Create QR Code/);
+  assert.match(qrUi, /data-qr-download="png"/);
+  assert.match(qrUi, /data-qr-download="svg"/);
+  assert.match(qrUi, /name="logo"[^>]+type="url"/);
+  assert.match(qrUi, /name="logoFile"[^>]+type="file"/);
+  assert.match(app, /MAX_QR_LOGO_BYTES/);
+  assert.match(styles, /\.qr-swatch-grid/);
+});
+
+test("QR generator reserves a central logo area and exposes only one QR color picker", () => {
+  const qrUi = app.slice(app.indexOf("function qrView()"), app.indexOf("function qrImage"));
+  assert.match(qrUi, /name="color"[^>]+type="color"/);
+  assert.match(qrUi, /name="logo"[^>]+type="url"/);
+  assert.doesNotMatch(qrUi, /name="background"|name="eyeColor"|name="gradient/);
+  assert.match(app, /QR_CENTER_PLACEHOLDER/);
+  assert.match(app, /image: form\.logo \|\| QR_CENTER_PLACEHOLDER/);
+  assert.match(app, /hideBackgroundDots:\s*true/);
+  assert.match(app, /color: foreground/);
 });
 
 test("articles hyperlink every mentioned entity to its official site, in both generate and rewrite flows", () => {
