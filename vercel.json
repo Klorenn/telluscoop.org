@@ -10,8 +10,5 @@
     { "source": "/tools/qr-generator", "destination": "/ops/social/index.html" },
     { "source": "/tools/fear-greed", "destination": "/tools/fear-greed/index.html" },
     { "source": "/tools/fear-greed/", "destination": "/tools/fear-greed/index.html" }
-  ],
-  "redirects": [
-    { "source": "/qr", "destination": "/tools/qr-generator", "permanent": true }
   ]
 }
