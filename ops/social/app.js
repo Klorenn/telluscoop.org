@@ -44,7 +44,7 @@
     guideView: null, guideSocialPosts: null,
     metrics: [], goals: [], summaryBusy: false,
     followView: null, followTargets: [], listView: null,
-    qrcodes: [], qrForm: { label: "", content: "", mode: "custom", file: "png", size: 600, body: "square", eye: "frame0", eyeBall: "ball0", bodyColor: "#173f42", bgColor: "#ffffff", eyeColor: "#173f42", logo: "", logoMode: "default", gradientColor1: "", gradientColor2: "", gradientType: "linear", gradientOnEyes: false, image: "", x: 0, y: 0, crop: false }, qrPreview: null,
+    qrcodes: [], qrForm: { label: "", type: "url", content: "", title: "", email: "", subject: "", phone: "", message: "", firstName: "", lastName: "", company: "", address: "", city: "", zip: "", country: "", wifiName: "", wifiPassword: "", wifiSecurity: "WPA", mode: "custom", file: "png", size: 600, body: "square", eye: "frame0", eyeBall: "ball0", bodyColor: "#173f42", bgColor: "#ffffff", eyeColor: "#173f42", logo: "", logoMode: "default", gradientColor1: "", gradientColor2: "", gradientType: "linear", gradientOnEyes: false, image: "", x: 0, y: 0, crop: false }, qrPreview: null,
   };
   if (VALID_VIEWS.includes(requestedView)) state.view = requestedView;
   const QR_STANDALONE = requestedView === "qr";
@@ -2868,7 +2868,7 @@
 
   // ---------- qr ----------
 
-  function qrView() {
+  function qrViewLegacy() {
     const preview = state.qrPreview;
     return `
       ${QR_STANDALONE ? `<div class="standalone-hero">
@@ -2883,7 +2883,7 @@
           <div class="field"><label for="qr-label">Nombre</label><input id="qr-label" name="label" placeholder="ej: Bio link, Flyer evento" value="${esc(state.qrForm.label)}" /></div>
           <div class="field span-all"><label for="qr-content">Link o texto</label><input id="qr-content" name="content" placeholder="https://…" required value="${esc(state.qrForm.content)}" /></div>
           <div class="field"><label for="qr-mode">Tipo de QR</label><select id="qr-mode" name="mode"><option value="custom" ${state.qrForm.mode === "custom" ? "selected" : ""}>Custom QR</option><option value="transparent" ${state.qrForm.mode === "transparent" ? "selected" : ""}>QR transparente / sobre imagen</option></select></div>
-          <div class="field"><label for="qr-file">Formato</label><select id="qr-file" name="file">${["png", "svg", "pdf", "eps"].map((f) => `<option value="${f}" ${state.qrForm.file === f ? "selected" : ""}>${f.toUpperCase()}</option>`).join("")}</select></div>
+          <div class="field"><label for="qr-file">Formato</label><select id="qr-file" name="file">${["png", "svg"].map((f) => `<option value="${f}" ${state.qrForm.file === f ? "selected" : ""}>${f.toUpperCase()}</option>`).join("")}</select></div>
           <div class="field"><label for="qr-size">Tamaño (px)</label><input id="qr-size" name="size" type="number" min="100" max="2000" step="10" value="${esc(state.qrForm.size)}" /></div>
           <div class="field"><label for="qr-body">Forma del cuerpo</label><select id="qr-body" name="body">${["square", "rounded", "circle", "dot", "rounded-pointed"].map((v) => `<option value="${v}" ${state.qrForm.body === v ? "selected" : ""}>${v}</option>`).join("")}</select></div>
           <div class="field"><label for="qr-eye">Marco del ojo</label><select id="qr-eye" name="eye">${["frame0", "frame1", "frame2", "frame3", "frame4", "frame5", "frame14"].map((v) => `<option value="${v}" ${state.qrForm.eye === v ? "selected" : ""}>${v}</option>`).join("")}</select></div>
@@ -2901,7 +2901,7 @@
       ${preview ? `<section class="card" style="margin-bottom:1.2rem">
         <h3>Vista previa${preview.label ? `: ${esc(preview.label)}` : ""}</h3>
         <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-top:.6rem">
-          ${preview.image && ["png", "svg"].includes(preview.file) ? `<img class="qr-image-preview" src="${esc(preview.image)}" alt="Código QR generado" style="max-width:320px;max-height:320px;border-radius:8px;background:#fff;padding:8px" />` : preview.image ? `<div class="qr-file-preview"><span>${icon("file-down")} Archivo ${esc(String(preview.file || "").toUpperCase())} listo para descargar.</span></div>` : `<canvas class="qr-canvas" data-qr-content="${esc(preview.content)}" style="border-radius:8px;background:#fff;padding:8px"></canvas>`}
+          ${preview.image ? `<img class="qr-image-preview" src="${esc(preview.image)}" alt="Código QR generado" style="max-width:320px;max-height:320px;border-radius:8px;background:#fff;padding:8px" />` : `<canvas class="qr-canvas" data-qr-content="${esc(preview.content)}" style="border-radius:8px;background:#fff;padding:8px"></canvas>`}
           <div style="display:flex;flex-direction:column;gap:.5rem">
             <span style="color:var(--muted);font-size:.85rem;max-width:260px;word-break:break-all">${esc(preview.content)}</span>
             <div class="form-foot" style="justify-content:start">
@@ -2926,7 +2926,79 @@
         </article>`).join("")}</div>` : `<div class="empty">Todavía no guardaste códigos QR.</div>`) : ""}`;
   }
 
+  const QR_TYPES = [["url", "URL"], ["text", "TEXT"], ["email", "EMAIL"], ["phone", "PHONE"], ["sms", "SMS"], ["vcard", "VCARD"], ["mecard", "MECARD"], ["location", "LOCATION"], ["facebook", "FACEBOOK"], ["twitter", "TWITTER"], ["youtube", "YOUTUBE"], ["wifi", "WIFI"], ["event", "EVENT"], ["bitcoin", "BITCOIN"], ["more", "MORE"]];
+  const QR_FIELDS = { url: [["content", "Your URL", "https://…"]], text: [["content", "Text", "Escribe tu texto"]], email: [["email", "Email", "nombre@ejemplo.com"], ["subject", "Subject", "Asunto"], ["message", "Message", "Mensaje"]], phone: [["phone", "Phone number", "+56 9 …"]], sms: [["phone", "Phone number", "+56 9 …"], ["message", "Message", "Mensaje"]], facebook: [["content", "Facebook URL", "https://facebook.com/…"]], twitter: [["content", "Twitter/X URL", "https://x.com/…"]], youtube: [["content", "YouTube URL", "https://youtube.com/…"]], location: [["address", "Address", "Dirección"], ["city", "City", "Ciudad"], ["country", "Country", "País"]], wifi: [["wifiName", "Network name", "Wi-Fi"], ["wifiPassword", "Password", "Contraseña"], ["wifiSecurity", "Security", "WPA"]], vcard: [["firstName", "First name", "Nombre"], ["lastName", "Last name", "Apellido"], ["company", "Company", "Empresa"], ["phone", "Phone", "+56 …"], ["email", "Email", "correo@…"], ["address", "Address", "Dirección"]], mecard: [["firstName", "Name", "Nombre"], ["phone", "Phone", "+56 …"], ["email", "Email", "correo@…"], ["address", "Address", "Dirección"]], event: [["title", "Event title", "Nombre del evento"], ["content", "Location / details", "Lugar y detalles"]], bitcoin: [["content", "Bitcoin address or URI", "bc1…"]], more: [["content", "Content", "https://…"]] };
+  function qrPayload(form) {
+    const value = (key) => String(form.get(key) || "").trim(), type = value("type") || state.qrForm.type || "url";
+    if (type === "email") return `mailto:${value("email")}${value("subject") || value("message") ? `?subject=${encodeURIComponent(value("subject"))}&body=${encodeURIComponent(value("message"))}` : ""}`;
+    if (type === "phone") return `tel:${value("phone")}`;
+    if (type === "sms") return `SMSTO:${value("phone")}:${value("message")}`;
+    if (type === "wifi") return `WIFI:T:${value("wifiSecurity") || "WPA"};S:${value("wifiName")};P:${value("wifiPassword")};;`;
+    if (type === "vcard") return `BEGIN:VCARD\nVERSION:3.0\nN:${value("lastName")};${value("firstName")}\nORG:${value("company")}\nTEL:${value("phone")}\nEMAIL:${value("email")}\nADR:;;${value("address")}\nEND:VCARD`;
+    if (type === "mecard") return `MECARD:N:${value("firstName")} ${value("lastName")};TEL:${value("phone")};EMAIL:${value("email")};ADR:${value("address")};;`;
+    if (type === "location") return `https://maps.google.com/?q=${encodeURIComponent([value("address"), value("city"), value("country")].filter(Boolean).join(", "))}`;
+    if (type === "event") return `BEGIN:VEVENT\nSUMMARY:${value("title")}\nLOCATION:${value("content")}\nEND:VEVENT`;
+    return value("content");
+  }
+  function qrFields(type, data) { return (QR_FIELDS[type] || QR_FIELDS.url).map(([name, label, placeholder]) => `<div class="field"><label for="qr-${name}">${label}</label><input id="qr-${name}" name="${name}" placeholder="${placeholder}" value="${esc(data[name] || "")}" ${name === "content" && type === "url" ? "required" : ""} /></div>`).join(""); }
+  function qrView() {
+    const preview = state.qrPreview, data = state.qrForm, type = data.type || "url";
+    return `<div class="qr-monkey-shell"><div class="qr-tool-head"><span class="eyebrow">Tellus Cooperative</span><h2>The local QR code generator</h2><p>Diseña, personaliza y descarga tu código QR. Todo se genera localmente.</p></div><nav class="qr-type-tabs" aria-label="QR content type">${QR_TYPES.map(([id, label]) => `<button type="button" class="${type === id ? "active" : ""}" data-qr-type="${id}">${label}</button>`).join("")}</nav><div class="qr-workspace"><section class="qr-controls"><form id="qr-form"><div class="qr-fold open"><button type="button" class="qr-fold-toggle" data-qr-fold="content"><span>◉</span> ENTER CONTENT <span>−</span></button><div class="qr-fold-body"><div class="field"><label for="qr-label">Nombre interno</label><input id="qr-label" name="label" placeholder="ej: Bio link" value="${esc(data.label)}" /></div><div class="qr-fields">${qrFields(type, data)}</div></div></div><div class="qr-fold"><button type="button" class="qr-fold-toggle" data-qr-fold="colors"><span>✦</span> SET COLORS <span>+</span></button><div class="qr-fold-body"><div class="qr-color-grid"><div class="field"><label>QR color</label><input name="bodyColor" type="color" value="${esc(data.bodyColor)}" /></div><div class="field"><label>Background</label><input name="bgColor" type="color" value="${esc(data.bgColor)}" /></div><div class="field"><label>Eye color</label><input name="eyeColor" type="color" value="${esc(data.eyeColor)}" /></div></div><label class="check"><input name="mode" value="transparent" type="checkbox" ${data.mode === "transparent" ? "checked" : ""}/> Fondo transparente</label></div></div><div class="qr-fold"><button type="button" class="qr-fold-toggle" data-qr-fold="logo"><span>▧</span> ADD LOGO IMAGE <span>+</span></button><div class="qr-fold-body"><div class="field"><label for="qr-logo">Logo URL</label><input id="qr-logo" name="logo" type="url" placeholder="https://…/logo.png" value="${esc(data.logo)}" /></div><div class="field"><label for="qr-logo-file">Upload logo</label><input id="qr-logo-file" name="logoFile" type="file" accept="image/png,image/jpeg,image/svg+xml" /></div></div></div><div class="qr-fold"><button type="button" class="qr-fold-toggle" data-qr-fold="design"><span>▦</span> CUSTOMIZE DESIGN <span>+</span></button><div class="qr-fold-body"><div class="qr-design-grid"><div class="field"><label>Body shape</label><select name="body">${["square", "rounded", "circle", "dot", "rounded-pointed"].map(v => `<option ${data.body === v ? "selected" : ""}>${v}</option>`).join("")}</select></div><div class="field"><label>Eye frame</label><select name="eye">${["frame0", "frame1", "frame2", "frame3", "frame4", "frame5"].map(v => `<option ${data.eye === v ? "selected" : ""}>${v}</option>`).join("")}</select></div><div class="field"><label>Export</label><select name="file"><option value="png">PNG</option><option value="svg">SVG</option></select></div></div></div></div><button class="button button-primary qr-create" type="submit">${icon("qr-code")} Create QR Code</button></form></section><section class="qr-preview-panel"><div class="qr-preview-label">PREVIEW</div>${preview ? `<h3>${esc(preview.label || "Your QR code")}</h3><img class="qr-image-preview" src="${esc(preview.image)}" alt="Código QR generado" />` : `<div class="qr-empty-preview"><span>QR</span><p>Completa el contenido y crea tu código</p></div>`}<div class="qr-downloads">${preview ? `<button class="button button-primary" data-qr-download="png">${icon("download")} Download PNG</button><button class="button button-secondary" data-qr-download="svg">.SVG</button>` : ""}</div></section></div>${state.session && !state.preview ? `<p class="qr-save-note">Los códigos generados se pueden guardar en tu banco Tellus.</p>` : ""}</div>`;
+  }
+
+  function qrImage(url) {
+    return new Promise((resolve, reject) => {
+      if (!url) return resolve(null);
+      const image = new Image();
+      image.crossOrigin = "anonymous";
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("No se pudo cargar la imagen"));
+      image.src = url;
+    });
+  }
+
+  async function createLocalQr(form, content) {
+    const size = Math.max(100, Math.min(2000, Number(form.size) || 600));
+    const foreground = form.gradientColor1 || form.bodyColor || "#173f42";
+    const background = form.mode === "transparent" ? "#00000000" : (form.bgColor || "#ffffff");
+    if (window.QRCodeStyling) {
+      const blob = await new window.QRCodeStyling({
+        width: size, height: size, data: content, margin: 8,
+        image: form.logo || undefined, imageOptions: { hideBackgroundDots: form.logoMode === "clean", imageSize: .22, margin: 6 },
+        dotsOptions: { type: ({ square: "square", rounded: "rounded", circle: "dots", dot: "dots", "rounded-pointed": "classy-rounded" })[form.body] || "square", color: foreground, gradient: form.gradientColor2 ? { type: form.gradientType === "radial" ? "radial" : "linear", colorStops: [{ offset: 0, color: foreground }, { offset: 1, color: form.gradientColor2 }] } : undefined },
+        cornersSquareOptions: { type: form.eye === "frame1" ? "dot" : form.eye === "frame2" ? "extra-rounded" : "square", color: form.eyeColor || foreground },
+        cornersDotOptions: { type: form.eyeBall === "ball1" ? "square" : form.eyeBall === "ball2" ? "rounded" : "dot", color: form.eyeColor || foreground },
+        backgroundOptions: { color: background === "#00000000" ? "transparent" : background, image: form.image || undefined, hideBackgroundDots: Boolean(form.crop) },
+      }).getRawData(form.file === "svg" || form.file === "pdf" || form.file === "eps" ? "svg" : "png");
+      const data = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob); });
+      return { data, file: form.file, mime: blob.type || "image/png" };
+    }
+    const qrOptions = { width: size, margin: 2, errorCorrectionLevel: "H", color: { dark: foreground, light: background } };
+    if (form.file === "svg") {
+      let svg = await new Promise((resolve, reject) => window.QRCode.toString(content, { type: "svg", width: size, margin: 2, color: { dark: foreground, light: background } }, (error, value) => error ? reject(error) : resolve(value)));
+      if (form.gradientColor2 && form.gradientColor2 !== foreground) {
+        const gradientId = "tellusQrGradient";
+        svg = svg.replace("</svg>", `<defs><linearGradient id="${gradientId}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${foreground}"/><stop offset="1" stop-color="${form.gradientColor2}"/></linearGradient></defs></svg>`).replaceAll(`fill="${foreground}"`, `fill="url(#${gradientId})"`);
+      }
+      if (form.logo) svg = svg.replace("</svg>", `<image href="${String(form.logo).replaceAll('"', '&quot;')}" x="${size * .4}" y="${size * .4}" width="${size * .2}" height="${size * .2}" preserveAspectRatio="xMidYMid meet"/></svg>`);
+      const mime = form.file === "svg" ? "image/svg+xml" : "image/svg+xml";
+      return { data: `data:${mime};charset=utf-8,${encodeURIComponent(svg)}`, file: form.file, mime };
+    }
+    const qrData = await new Promise((resolve, reject) => window.QRCode.toDataURL(content, qrOptions, (error, value) => error ? reject(error) : resolve(value)));
+    const canvas = document.createElement("canvas"); canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (form.image) {
+      try { const image = await qrImage(form.image); const scale = form.crop ? Math.max(size / image.width, size / image.height) : Math.min(size / image.width, size / image.height); const width = image.width * scale; const height = image.height * scale; ctx.drawImage(image, (size - width) / 2 + (Number(form.x) || 0), (size - height) / 2 + (Number(form.y) || 0), width, height); } catch (_) { ctx.fillStyle = background; ctx.fillRect(0, 0, size, size); }
+    } else if (form.gradientColor2 && form.gradientColor2 !== foreground) { const gradient = form.gradientType === "radial" ? ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size) : ctx.createLinearGradient(0, 0, size, size); gradient.addColorStop(0, foreground); gradient.addColorStop(1, form.gradientColor2); ctx.fillStyle = gradient; ctx.fillRect(0, 0, size, size); }
+    const qr = await qrImage(qrData); ctx.drawImage(qr, 0, 0, size, size);
+    if (form.logo) { try { const logo = await qrImage(form.logo); const logoSize = size * .2; if (form.logoMode !== "clean") { ctx.fillStyle = background === "#00000000" ? "#ffffff" : background; ctx.fillRect((size - logoSize * 1.2) / 2, (size - logoSize * 1.2) / 2, logoSize * 1.2, logoSize * 1.2); } ctx.drawImage(logo, (size - logoSize) / 2, (size - logoSize) / 2, logoSize, logoSize); } catch (_) {} }
+    const mime = form.file === "png" ? "image/png" : "application/octet-stream";
+    return { data: canvas.toDataURL(mime === "image/png" ? mime : "image/png"), file: form.file, mime };
+  }
+
   function wireQr() {
+    document.querySelectorAll("[data-qr-type]").forEach((button) => button.addEventListener("click", () => { state.qrForm.type = button.dataset.qrType; state.qrPreview = null; renderShell(); }));
+    document.querySelectorAll("[data-qr-fold]").forEach((button) => button.addEventListener("click", () => { button.closest(".qr-fold").classList.toggle("open"); }));
     document.querySelectorAll(".qr-canvas").forEach((canvas) => {
       const content = canvas.dataset.qrContent;
       if (!content) return;
@@ -2937,20 +3009,18 @@
       if (state.preview) return notify("La vista previa es de solo lectura.", true);
       const form = new FormData(event.target);
       const label = String(form.get("label") || "").trim();
-      const content = String(form.get("content") || "").trim();
+      const content = qrPayload(form);
       if (!content) return;
       const qrForm = Object.fromEntries(form.entries());
+      qrForm.type = form.get("type") || state.qrForm.type || "url";
+      if (!["png", "svg"].includes(qrForm.file)) qrForm.file = "png";
       qrForm.size = Number(qrForm.size) || 600; qrForm.x = Number(qrForm.x) || 0; qrForm.y = Number(qrForm.y) || 0; qrForm.crop = form.has("crop");
       if (qrForm.logoFile instanceof File && qrForm.logoFile.size) qrForm.logo = await new Promise((resolve) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.readAsDataURL(qrForm.logoFile); });
       delete qrForm.logoFile;
       if (qrForm.imageFile instanceof File && qrForm.imageFile.size) qrForm.image = await new Promise((resolve) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.readAsDataURL(qrForm.imageFile); });
       delete qrForm.imageFile;
       state.qrForm = { ...state.qrForm, ...qrForm, label, content };
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`${cfg.supabaseUrl}/functions/v1/qrcode-monkey`, { method: "POST", headers: { "Content-Type": "application/json", apikey: cfg.supabasePublishableKey, ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) }, body: JSON.stringify({ ...qrForm, data: content, config: { body: qrForm.body, eye: qrForm.eye, eyeBall: qrForm.eyeBall, bodyColor: qrForm.bodyColor, bgColor: qrForm.bgColor, eye1Color: qrForm.eyeColor, eye2Color: qrForm.eyeColor, eye3Color: qrForm.eyeColor, eyeBall1Color: qrForm.eyeColor, eyeBall2Color: qrForm.eyeColor, eyeBall3Color: qrForm.eyeColor, logo: qrForm.logo || null, logoMode: qrForm.logoMode, gradientColor1: qrForm.gradientColor1 || null, gradientColor2: qrForm.gradientColor2 || null, gradientType: qrForm.gradientType, gradientOnEyes: qrForm.gradientOnEyes } }) });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result.data) return notify(result.error || "No se pudo generar el código QR.", true);
-      state.qrPreview = { label, content, image: result.data, file: qrForm.file };
+      try { state.qrPreview = { label, content, image: (await createLocalQr(qrForm, content)).data, file: qrForm.file }; } catch (error) { console.error(error); return notify("No se pudo generar el código QR.", true); }
       renderShell();
     });
     document.querySelector("#qr-save")?.addEventListener("click", async () => {
@@ -3016,7 +3086,7 @@
     }
     const { data } = await supabase.auth.getSession();
     state.session = data.session;
-    if (!state.session) return renderAuth();
+    if (!state.session) return QR_STANDALONE ? renderShell() : renderAuth();
     try {
       await loadLiveData();
       renderShell();

@@ -198,6 +198,36 @@ td { padding: .7rem; border-bottom: 1px solid var(--surface-2); vertical-align: 
 .preview-banner { background: var(--amber); color: #fff; text-align: center; padding: .5rem .8rem; font-weight: 600; font-size: .85rem; }
 .empty { color: var(--muted); text-align: center; padding: 2.4rem 1rem; border: 1px dashed var(--line); border-radius: var(--radius); }
 
+/* Local QR builder — QRCode Monkey-inspired controls, Tellus palette. */
+.qr-monkey-shell { max-width: 1180px; margin: 0 auto; color: var(--ink); }
+.qr-tool-head { text-align: center; margin: .5rem auto 1.5rem; }
+.qr-tool-head h2 { margin: .45rem 0 .35rem; font: 600 clamp(1.6rem, 3vw, 2.3rem)/1.1 Fraunces, serif; }
+.qr-tool-head p { color: var(--muted); margin: 0; }
+.qr-type-tabs { display: flex; align-items: center; gap: .1rem; overflow-x: auto; border-bottom: 1px solid var(--line); margin-bottom: 1rem; scrollbar-width: thin; }
+.qr-type-tabs button { border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--muted); padding: .7rem .7rem .62rem; font-size: .78rem; font-weight: 700; white-space: nowrap; }
+.qr-type-tabs button:hover, .qr-type-tabs button.active { color: var(--teal-dark); border-bottom-color: var(--clay); }
+.qr-workspace { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr); gap: 1rem; align-items: start; }
+.qr-controls, .qr-preview-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; box-shadow: var(--shadow); }
+.qr-fold { border-bottom: 1px solid var(--line); }
+.qr-fold-toggle { display: flex; align-items: center; gap: .75rem; width: 100%; border: 0; background: transparent; color: var(--ink); padding: 1rem .4rem; font-size: .82rem; font-weight: 800; letter-spacing: .04em; text-align: left; }
+.qr-fold-toggle span:last-child { margin-left: auto; font-size: 1.1rem; color: var(--muted); }
+.qr-fold-body { display: none; padding: 0 .4rem 1rem; }
+.qr-fold.open .qr-fold-body { display: block; }
+.qr-fields, .qr-color-grid, .qr-design-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; }
+.qr-fields .field:first-child:last-child { grid-column: 1 / -1; }
+.qr-create { width: 100%; margin-top: 1rem; background: var(--clay); }
+.qr-create:hover { background: #a94720; }
+.qr-preview-panel { min-height: 430px; display: grid; justify-items: center; align-content: start; text-align: center; }
+.qr-preview-label { width: 100%; color: var(--muted); font: 700 .7rem/1.2 "JetBrains Mono", monospace; letter-spacing: .1em; text-align: left; }
+.qr-preview-panel h3 { margin: 1rem 0 .5rem; }
+.qr-image-preview { width: min(100%, 320px); height: auto; aspect-ratio: 1; object-fit: contain; padding: 1rem; background: #fff; border-radius: 12px; }
+.qr-empty-preview { display: grid; place-items: center; width: min(100%, 320px); aspect-ratio: 1; margin: 1.2rem 0; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); }
+.qr-empty-preview span { font: 700 3rem/1 "JetBrains Mono", monospace; color: var(--teal); }
+.qr-empty-preview p { max-width: 18ch; font-size: .85rem; }
+.qr-downloads { display: flex; gap: .5rem; width: 100%; justify-content: center; margin-top: 1rem; }
+.qr-save-note { color: var(--muted); font-size: .82rem; text-align: center; }
+@media (max-width: 760px) { .qr-workspace { grid-template-columns: 1fr; } .qr-preview-panel { min-height: 0; } .qr-type-tabs button { padding-inline: .55rem; } }
+
 .form-grid { display: grid; gap: .8rem 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .form-grid .field { margin-bottom: 0; }
 .form-grid .span-all { grid-column: 1 / -1; }
