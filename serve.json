@@ -7,7 +7,9 @@
     { "source": "/resources", "destination": "/resources/index.html" },
     { "source": "/resources/tools/:slug", "destination": "/resources/tool.html" },
     { "source": "/tierly", "destination": "/tierly/index.html" },
-    { "source": "/tools/qr-generator", "destination": "/ops/social/index.html" }
+    { "source": "/tools/qr-generator", "destination": "/ops/social/index.html" },
+    { "source": "/tools/fear-greed", "destination": "/tools/fear-greed/index.html" },
+    { "source": "/tools/fear-greed/", "destination": "/tools/fear-greed/index.html" }
   ],
   "redirects": [
     { "source": "/qr", "destination": "/tools/qr-generator", "type": 308 }

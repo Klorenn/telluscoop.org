@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fear &amp; Greed — Tellus Cooperative</title>
+  <meta name="description" content="Índice de sentimiento del mercado cripto de Tellus Cooperative.">
+  <link rel="icon" href="/hub/logos/tellus-mark.svg">
+  <link rel="stylesheet" href="/tools/fear-greed/styles.css">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Tellus Cooperative">
+        <img src="/tools/fear-greed/telluscoop_green.svg" alt="Tellus Cooperative">
+      </a>
+      <a class="back-link" href="/resources">Recursos <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">Tellus Cooperative / Herramienta</p>
+      <h1 id="page-title">Fear &amp; Greed<br><em>Index.</em></h1>
+      <p class="lede">Una lectura rápida del sentimiento del mercado cripto, actualizada desde CoinMarketCap.</p>
+    </section>
+
+    <section class="dashboard" aria-label="Índice de miedo y codicia">
+      <article class="meter-card" id="meter-card">
+        <div class="meter-header">
+          <div>
+            <p class="card-kicker">Sentimiento actual</p>
+            <h2>Fear &amp; Greed Index</h2>
+          </div>
+          <span class="live-dot"><i></i> En vivo</span>
+        </div>
+        <div class="state state-loading" id="loading-state" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <p>Cargando índice...</p>
+        </div>
+        <div class="state state-error" id="error-state" hidden aria-live="polite">
+          <p class="error-title">No se pudo cargar el índice.</p>
+          <p id="error-detail">Intenta nuevamente en unos segundos.</p>
+          <button class="retry-button" id="retry-button" type="button">Reintentar</button>
+        </div>
+        <div class="meter-content" id="meter-content" hidden>
+          <div class="score-row">
+            <div class="score" id="score">—</div>
+            <div class="classification" id="classification">—</div>
+          </div>
+          <div class="character-wrap" id="character-wrap">
+            <div class="character-glow" aria-hidden="true"></div>
+            <img id="character" src="/tools/fear-greed/img/neutral.svg" alt="">
+          </div>
+          <div class="meter" aria-label="Escala de 0 a 100">
+            <div class="meter-track"><span class="meter-marker" id="meter-marker"></span></div>
+            <div class="meter-labels"><span>Fear</span><span>Neutral</span><span>Greed</span></div>
+          </div>
+          <p class="updated" id="updated">Actualizado —</p>
+        </div>
+      </article>
+
+      <aside class="context-card">
+        <p class="card-kicker">Cómo leerlo</p>
+        <h2>El pulso colectivo del mercado.</h2>
+        <p>El índice combina señales de comportamiento y las traduce a una escala de 0 a 100.</p>
+        <div class="legend"><span class="legend-swatch fear"></span><span><strong>0–44</strong> Fear</span></div>
+        <div class="legend"><span class="legend-swatch neutral"></span><span><strong>45–54</strong> Neutral</span></div>
+        <div class="legend"><span class="legend-swatch greed"></span><span><strong>55–100</strong> Greed</span></div>
+        <p class="source">Fuente: <a href="https://coinmarketcap.com/api/" target="_blank" rel="noreferrer">CoinMarketCap ↗</a></p>
+      </aside>
+    </section>
+
+    <footer class="site-footer"><span>Tellus Cooperative</span><span>Herramientas abiertas para la comunidad.</span></footer>
+  </main>
+  <script src="/tools/fear-greed/app.js"></script>
+</body>
+</html>

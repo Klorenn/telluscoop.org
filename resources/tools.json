@@ -2040,6 +2040,21 @@
       "no_card": true,
       "recommended": false,
       "slug": "imagekit"
+    },
+    {
+      "name": "Tellus Fear & Greed Index",
+      "description_es": "Índice de sentimiento del mercado cripto, actualizado y presentado por Tellus Cooperative.",
+      "description_en": "A live crypto market sentiment index presented by Tellus Cooperative.",
+      "url": "/tools/fear-greed",
+      "category": "analytics",
+      "tags": ["crypto", "market sentiment"],
+      "free_tier_note_es": "Sin tarjeta",
+      "free_tier_note_en": "No card required",
+      "free_tier_detail_es": "Consulta gratuita del índice Fear & Greed con datos de CoinMarketCap.",
+      "free_tier_detail_en": "Free Fear & Greed index lookup powered by CoinMarketCap data.",
+      "no_card": true,
+      "recommended": true,
+      "slug": "tellus-fear-greed"
     }
   ]
 }
