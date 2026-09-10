@@ -1,69 +1,17 @@
 (function () {
   "use strict";
   var endpoint = "https://rhzanxzoqmbxptvxgnfj.supabase.co/functions/v1/fear-greed";
-  var loading = document.getElementById("loading-state");
-  var error = document.getElementById("error-state");
-  var content = document.getElementById("meter-content");
-  var score = document.getElementById("score");
-  var classification = document.getElementById("classification");
-  var character = document.getElementById("character");
-  var glow = document.querySelector(".character-glow");
-  var marker = document.getElementById("meter-marker");
-  var updated = document.getElementById("updated");
-  var errorDetail = document.getElementById("error-detail");
-  var params = new URLSearchParams(window.location.search);
-  var embedType = "auto";
-  var theme = params.get("theme") || "auto";
-  var embedBuilder = document.getElementById("embed-builder");
-  var embedCode = document.getElementById("embed-code");
-  var copyStatus = document.getElementById("copy-status");
-
-  function color(value) { return value >= 75 ? "#16c784" : value >= 55 ? "#93d900" : value >= 45 ? "#f3d42f" : value >= 25 ? "#ea8c00" : "#ea3943"; }
-  function image(value) { return value < 45 ? "fear.svg" : value < 55 ? "neutral.svg" : "greed.svg"; }
-  function date(value) { var d = new Date(value); return isNaN(d.getTime()) ? "Actualización no disponible" : "Actualizado " + d.toLocaleString("es-CL", { dateStyle: "medium", timeStyle: "short" }); }
-  function showError(message) { loading.hidden = true; content.hidden = true; error.hidden = false; errorDetail.textContent = message || "Intenta nuevamente en unos segundos."; }
-  function absoluteUrl(path) { return window.location.origin + path; }
-  function generateEmbedCode() {
-    var query = theme !== "auto" ? "?theme=" + encodeURIComponent(theme) : "";
-    if (embedType === "fixed") {
-      var dateParam = encodeURIComponent(new Date().toISOString());
-      var imageUrl = absoluteUrl("/tools/fear-greed?embed=1&mode=fixed&date=" + dateParam + (theme !== "auto" ? "&theme=" + encodeURIComponent(theme) : ""));
-      return '<iframe\n  src="' + imageUrl + '"\n  width="100%"\n  height="520"\n  frameborder="0"\n  style="border:0; border-radius:16px; background:transparent;"\n  loading="lazy"\n  title="Fear and Greed Index by Tellus Cooperative">\n</iframe>';
-    }
-    return '<iframe\n  src="' + absoluteUrl("/tools/fear-greed?embed=1" + query) + '"\n  width="100%"\n  height="520"\n  frameborder="0"\n  style="border:0; border-radius:16px; background:transparent;"\n  loading="lazy"\n  title="Fear and Greed Index by Tellus Cooperative">\n</iframe>';
-  }
-  function updateEmbedCode() { if (embedCode) embedCode.textContent = generateEmbedCode(); }
-  function setActive(selector, target) { document.querySelectorAll(selector).forEach(function (button) { button.classList.toggle("active", button === target); }); }
-  function configureEmbedMode() {
-    if (params.get("embed") !== "1") return;
-    document.body.classList.add("embed-mode");
-    [".site-header", ".intro", ".context-card", "#embed-builder", "#usage", ".site-footer"].forEach(function (selector) { var node = document.querySelector(selector); if (node) node.hidden = true; });
-    var shell = document.querySelector(".page-shell"); if (shell) shell.style.padding = "0";
-    if (theme === "dark" || (theme === "auto" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)) document.body.classList.add("embed-dark");
-  }
-  function load() {
-    loading.hidden = false; error.hidden = true; content.hidden = true;
-    fetch(endpoint, { headers: { Accept: "application/json" } }).then(function (response) {
-      if (!response.ok) throw new Error("El servicio respondió " + response.status + ".");
-      return response.json();
-    }).then(function (payload) {
-      var data = payload && payload.data;
-      var value = Number(data && data.value);
-      if (!Number.isFinite(value) || value < 0 || value > 100) throw new Error("Respuesta inválida del índice.");
-      var tone = color(value);
-      score.textContent = value;
-      classification.textContent = data.value_classification || "Unknown";
-      score.style.color = tone; classification.style.color = tone; glow.style.backgroundColor = tone;
-      character.src = "/tools/fear-greed/img/" + image(value); character.alt = data.value_classification || "Índice de sentimiento";
-      marker.style.left = value + "%"; updated.textContent = date(params.get("date") || data.update_time);
-      loading.hidden = true; content.hidden = false;
-    }).catch(function (err) { showError(err.message); });
-  }
-  document.getElementById("retry-button").addEventListener("click", load);
-  document.querySelectorAll("[data-embed-type]").forEach(function (button) { button.addEventListener("click", function () { embedType = button.getAttribute("data-embed-type"); setActive("[data-embed-type]", button); updateEmbedCode(); }); });
-  document.querySelectorAll("[data-theme]").forEach(function (button) { button.addEventListener("click", function () { theme = button.getAttribute("data-theme"); setActive("[data-theme]", button); updateEmbedCode(); }); });
-  document.getElementById("copy-embed").addEventListener("click", function () { var text = embedCode.textContent; var done = function () { copyStatus.textContent = "Código copiado."; setTimeout(function () { copyStatus.textContent = ""; }, 2200); }; if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done); else { embedCode.focus(); document.execCommand("copy"); done(); } });
-  configureEmbedMode();
-  updateEmbedCode();
-  load();
-})();
+  var params = new URLSearchParams(location.search), type = "auto", theme = params.get("theme") || "auto";
+  function tone(v) { return v >= 75 ? "#16c784" : v >= 55 ? "#93d900" : v >= 45 ? "#f3d42f" : v >= 25 ? "#ea8c00" : "#ea3943"; }
+  function art(v) { return v < 45 ? "fear.svg" : v < 55 ? "neutral.svg" : "greed.svg"; }
+  function format(d) { var date = new Date(d); return isNaN(date) ? "Unknown" : date.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }); }
+  function renderCard(node, data) { var v = Number(data.value), c = tone(v); node.innerHTML = '<div class="meter-header"><h2>Fear &amp; Greed Index</h2><p>by Tellus Cooperative</p></div><div class="value" style="color:' + c + '">' + v + '</div><div class="class" style="color:' + c + '">' + (data.value_classification || "Unknown") + '</div><div class="character-wrap"><div class="glow" style="background:' + c + '"></div><img src="/tools/fear-greed/img/' + art(v) + '" alt="' + (data.value_classification || "Fear and Greed") + '"></div><div class="meter-track"><span class="marker" style="left:' + v + '%"></span></div><div class="ticks"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><div class="updated">Updated ' + format(params.get("date") || data.update_time) + '</div>'; }
+  function errorCard(node) { node.innerHTML = '<div class="error"><div style="font-size:32px">😕</div><p>Couldn\'t load the index</p><button class="retry" type="button">Try Again</button></div>'; node.querySelector("button").onclick = load; }
+  function load() { var cards = [document.getElementById("meter-card"), document.getElementById("preview-meter")].filter(Boolean); cards.forEach(function (n) { n.innerHTML = '<div class="loading"><span class="spinner"></span><p>Loading market sentiment...</p></div>'; }); fetch(endpoint, { headers: { Accept: "application/json" } }).then(function (r) { if (!r.ok) throw Error("HTTP " + r.status); return r.json(); }).then(function (p) { var d = p && p.data; if (Array.isArray(d)) d = d[0]; var v = Number(d && d.value); if (!d || !Number.isFinite(v) || v < 0 || v > 100) throw Error("Invalid response"); cards.forEach(function (n) { renderCard(n, d); }); }).catch(function () { cards.forEach(errorCard); }); }
+  function code() { var query = new URLSearchParams({ embed: "1" }); if (theme !== "auto") query.set("theme", theme); if (type === "fixed") query.set("date", new Date().toISOString()); return '<iframe\n  src="' + location.origin + '/tools/fear-greed?' + query.toString() + '"\n  width="100%"\n  height="520"\n  frameborder="0"\n  style="border-radius: 16px; background: transparent;"\n  loading="lazy"\n  title="Fear and Greed Index by Tellus Cooperative">\n</iframe>'; }
+  function updateCode() { var e = document.getElementById("embed-code"); if (e) e.textContent = code(); document.body.dataset.theme = theme; var tip = document.querySelector(".tip"); if (tip) tip.textContent = type === "auto" ? "💡 Auto-updates daily with latest data." : "💡 Fixed-date widget snapshot for publications."; }
+  document.querySelectorAll("[data-embed-type]").forEach(function (b) { b.onclick = function () { type = b.dataset.embedType; document.querySelectorAll("[data-embed-type]").forEach(function (x) { x.classList.toggle("active", x === b); }); updateCode(); }; });
+  document.querySelectorAll("[data-theme]").forEach(function (b) { b.onclick = function () { theme = b.dataset.theme; document.querySelectorAll("[data-theme]").forEach(function (x) { x.classList.toggle("active", x === b); }); updateCode(); }; });
+  var copy = document.getElementById("copy-embed"); if (copy) copy.onclick = function () { var text = document.getElementById("embed-code").textContent, done = function () { document.getElementById("copy-status").textContent = "Copied!"; setTimeout(function () { document.getElementById("copy-status").textContent = ""; }, 2000); }; if (navigator.clipboard) navigator.clipboard.writeText(text).then(done); else { var area = document.createElement("textarea"); area.value = text; document.body.appendChild(area); area.select(); document.execCommand("copy"); area.remove(); done(); } };
+  document.getElementById("year").textContent = new Date().getFullYear(); if (params.get("embed") === "1") { document.querySelector(".app-header").hidden = true; document.querySelector(".embed-section").hidden = true; document.querySelector(".how-to").hidden = true; document.querySelector("footer").hidden = true; document.querySelector(".widget-section").style.margin = 0; } updateCode(); load();
+}());

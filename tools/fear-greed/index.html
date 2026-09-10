@@ -1,91 +1,11 @@
 <!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Fear &amp; Greed — Tellus Cooperative</title>
-  <meta name="description" content="Índice de sentimiento del mercado cripto de Tellus Cooperative.">
-  <link rel="icon" href="/hub/logos/tellus-mark.svg">
-  <link rel="stylesheet" href="/tools/fear-greed/styles.css">
-</head>
-<body>
-  <main class="page-shell">
-    <header class="site-header">
-      <a class="brand" href="/" aria-label="Tellus Cooperative">
-        <img src="/tools/fear-greed/telluscoop_green.svg" alt="Tellus Cooperative">
-      </a>
-      <a class="back-link" href="/resources">Recursos <span aria-hidden="true">↗</span></a>
-    </header>
-
-    <section class="intro" aria-labelledby="page-title">
-      <p class="eyebrow">Tellus Cooperative / Herramienta</p>
-      <h1 id="page-title">Fear &amp; Greed<br><em>Index.</em></h1>
-      <p class="lede">Una lectura rápida del sentimiento del mercado cripto, actualizada desde CoinMarketCap.</p>
-    </section>
-
-    <section class="dashboard" aria-label="Índice de miedo y codicia">
-      <article class="meter-card" id="meter-card">
-        <div class="meter-header">
-          <div>
-            <p class="card-kicker">Sentimiento actual</p>
-            <h2>Fear &amp; Greed Index</h2>
-          </div>
-          <span class="live-dot"><i></i> En vivo</span>
-        </div>
-        <div class="state state-loading" id="loading-state" aria-live="polite">
-          <span class="spinner" aria-hidden="true"></span>
-          <p>Cargando índice...</p>
-        </div>
-        <div class="state state-error" id="error-state" hidden aria-live="polite">
-          <p class="error-title">No se pudo cargar el índice.</p>
-          <p id="error-detail">Intenta nuevamente en unos segundos.</p>
-          <button class="retry-button" id="retry-button" type="button">Reintentar</button>
-        </div>
-        <div class="meter-content" id="meter-content" hidden>
-          <div class="score-row">
-            <div class="score" id="score">—</div>
-            <div class="classification" id="classification">—</div>
-          </div>
-          <div class="character-wrap" id="character-wrap">
-            <div class="character-glow" aria-hidden="true"></div>
-            <img id="character" src="/tools/fear-greed/img/neutral.svg" alt="">
-          </div>
-          <div class="meter" aria-label="Escala de 0 a 100">
-            <div class="meter-track"><span class="meter-marker" id="meter-marker"></span></div>
-            <div class="meter-labels"><span>Fear</span><span>Neutral</span><span>Greed</span></div>
-          </div>
-          <p class="updated" id="updated">Actualizado —</p>
-        </div>
-      </article>
-
-      <aside class="context-card">
-        <p class="card-kicker">Cómo leerlo</p>
-        <h2>El pulso colectivo del mercado.</h2>
-        <p>El índice combina señales de comportamiento y las traduce a una escala de 0 a 100.</p>
-        <div class="legend"><span class="legend-swatch fear"></span><span><strong>0–44</strong> Fear</span></div>
-        <div class="legend"><span class="legend-swatch neutral"></span><span><strong>45–54</strong> Neutral</span></div>
-        <div class="legend"><span class="legend-swatch greed"></span><span><strong>55–100</strong> Greed</span></div>
-        <p class="source">Fuente: <a href="https://coinmarketcap.com/api/" target="_blank" rel="noreferrer">CoinMarketCap ↗</a></p>
-      </aside>
-    </section>
-
-    <section class="embed-builder" id="embed-builder" aria-labelledby="embed-title">
-      <div class="builder-copy">
-        <p class="eyebrow">Comparte el indicador</p>
-        <h2 id="embed-title">Llévalo a tu sitio.</h2>
-        <p>Configura una vista y copia el código listo para pegar en una web, newsletter o bloque HTML.</p>
-      </div>
-      <div class="builder-panel">
-        <div class="option-group"><span class="option-label">Actualización</span><div class="option-row" role="group" aria-label="Tipo de inserción"><button class="option active" data-embed-type="auto" type="button"><strong>↻ En vivo</strong><small>Se actualiza automáticamente</small></button><button class="option" data-embed-type="fixed" type="button"><strong>▣ Captura fija</strong><small>Guarda el estado actual</small></button></div></div>
-        <div class="option-group"><span class="option-label">Tema</span><div class="option-row option-row-three" role="group" aria-label="Tema"><button class="option active" data-theme="auto" type="button">◐ Automático</button><button class="option" data-theme="light" type="button">☼ Claro</button><button class="option" data-theme="dark" type="button">◑ Oscuro</button></div></div>
-        <div class="code-heading"><span class="option-label">Código para insertar</span><button id="copy-embed" class="copy-button" type="button">Copiar código</button></div>
-        <pre class="embed-code" id="embed-code" tabindex="0"></pre><p class="copy-status" id="copy-status" role="status"></p>
-      </div>
-    </section>
-    <section class="usage" id="usage"><p class="eyebrow">Uso</p><p><strong>1.</strong> Elige una vista y un tema. <strong>2.</strong> Copia el código. <strong>3.</strong> Pégalo donde quieras mostrar el indicador.</p></section>
-
-    <footer class="site-footer"><span>Tellus Cooperative</span><span>Herramientas abiertas para la comunidad.</span></footer>
-  </main>
-  <script src="/tools/fear-greed/app.js"></script>
-</body>
-</html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Fear &amp; Greed Index — Tellus Cooperative</title><link rel="icon" href="/hub/logos/tellus-mark.svg"><link rel="stylesheet" href="/tools/fear-greed/styles.css"></head>
+<body><main class="app-shell">
+<header class="app-header"><a href="/" aria-label="Tellus Cooperative"><img src="/tools/fear-greed/telluscoop_green.svg" alt="Tellus Cooperative"></a></header>
+<section class="widget-section"><div id="meter-card" class="meter-card"></div></section>
+<section class="embed-section"><div class="section-heading"><h1>Share &amp; Embed</h1><p>Generate embed code for your website, newsletter, or beehiiv</p></div><div class="embed-grid">
+<div class="preview-panel"><h2>Preview</h2><div class="preview-frame"><div id="preview-meter" class="meter-card compact"></div></div></div>
+<div class="configure-panel"><h2>Configure Your Embed</h2><div class="controls"><div class="control-group"><label>Embed Type</label><div class="choice-row"><button data-embed-type="auto" class="choice active" type="button"><strong>🔄 Auto-Updating</strong><small>Updates automatically</small></button><button data-embed-type="fixed" class="choice" type="button"><strong>📸 Fixed-date Embed</strong><small>Snapshot date label</small></button></div></div><div class="control-group"><label>Theme</label><div class="choice-row theme-row"><button data-theme="light" class="choice" type="button">☀️ Light</button><button data-theme="dark" class="choice" type="button">🌙 Dark</button><button data-theme="auto" class="choice active" type="button">🔄 Auto</button></div></div></div><div class="code-section"><div class="code-heading"><h3>Embed Code</h3><button id="copy-embed" type="button">📋 Copy</button></div><pre id="embed-code"></pre><p id="copy-status" class="copy-status"></p><p class="tip">💡 Auto-updates daily with latest data.</p></div></div></div></section>
+<section class="how-to"><h2>How to Use</h2><ol><li><b>1.</b><span>Configure your embed type and theme</span></li><li><b>2.</b><span>Preview the widget above to see how it will look</span></li><li><b>3.</b><span>Click "Copy Code" to copy the embed code</span></li><li><b>4.</b><span>Paste the code into your website, newsletter, or beehiiv HTML block</span></li></ol></section>
+<footer>© <span id="year"></span> Tellus Cooperative. All rights reserved.<br><span>Data provided by CoinMarketCap</span></footer></main><script src="/tools/fear-greed/app.js"></script></body></html>
