@@ -44,7 +44,7 @@
     guideView: null, guideSocialPosts: null,
     metrics: [], goals: [], summaryBusy: false,
     followView: null, followTargets: [], listView: null,
-    qrcodes: [], qrForm: { label: "", content: "", file: "png", size: 1000, body: "square", eye: "frame0", eyeBall: "ball0", logo: "", color: "#173f42" }, qrPreview: null,
+    qrcodes: [], qrForm: { label: "", content: "", file: "png", size: 1000, body: "square", eye: "frame0", eyeBall: "ball0", logo: "", logoEnabled: false, color: "#173f42" }, qrPreview: null,
   };
   if (VALID_VIEWS.includes(requestedView)) state.view = requestedView;
   const QR_STANDALONE = requestedView === "qr";
@@ -2885,6 +2885,7 @@
           <div class="field"><label for="qr-content">URL</label><input name="content" type="url" id="qr-content" placeholder="https://…" required value="${esc(data.content)}" /></div>
           <div class="field"><label for="qr-label">Nombre interno <span class="qr-optional">opcional</span></label><input id="qr-label" name="label" placeholder="ej: Bio link" value="${esc(data.label)}" /></div>
           <div class="qr-logo-fields"><div class="field"><label for="qr-logo">Logo por URL <span class="qr-optional">opcional</span></label><input id="qr-logo" name="logo" type="url" placeholder="https://…/logo.png" value="${esc(data.logo || "")}" /></div><div class="field"><label for="qr-logo-file">Subir logo <span class="qr-optional">máx. 2 MB</span></label><input id="qr-logo-file" name="logoFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" /></div></div>
+          <label class="check qr-logo-toggle"><input id="qr-logo-enabled" name="logoEnabled" type="checkbox" aria-describedby="qr-logo-help" ${data.logoEnabled ? "checked" : ""} /> Agregar logo al centro</label><small id="qr-logo-help" class="qr-helper">Reserva un espacio blanco en el centro para el logo.</small>
           <div class="field qr-color-field"><label for="qr-color">Color del QR</label><input id="qr-color" name="color" type="color" value="${esc(data.color || "#173f42")}" /></div>
           <fieldset class="qr-swatch-group"><legend>Body Shape</legend><div class="qr-swatch-grid">${[["square", "Square"], ["rounded", "Rounded"], ["circle", "Dots"], ["dot", "Dot"], ["rounded-pointed", "Classy"]].map(([v, l]) => swatch("body", v, l, data.body)).join("")}</div></fieldset>
           <fieldset class="qr-swatch-group"><legend>Eye Frame Shape</legend><div class="qr-swatch-grid">${["frame0", "frame1", "frame2", "frame3", "frame4", "frame5", "frame14"].map(v => swatch("eye-frame", v, v, data.eye)).join("")}</div></fieldset>
@@ -2916,7 +2917,7 @@
     if (window.QRCodeStyling) {
       const blob = await new window.QRCodeStyling({
         width: size, height: size, data: content, margin: 8,
-        image: form.logo || QR_CENTER_PLACEHOLDER,
+        image: form.logoEnabled ? (form.logo || QR_CENTER_PLACEHOLDER) : undefined,
         imageOptions: { hideBackgroundDots: true, imageSize: .2, margin: 6 },
         dotsOptions: { type: ({ square: "square", rounded: "rounded", circle: "dots", dot: "dots", "rounded-pointed": "classy-rounded" })[form.body] || "square", color: foreground },
         cornersSquareOptions: { type: form.eye === "frame1" ? "dot" : form.eye === "frame2" ? "extra-rounded" : "square", color: foreground },
@@ -2929,9 +2930,11 @@
     const qrOptions = { width: size, margin: 2, errorCorrectionLevel: "H", color: { dark: foreground, light: background } };
     if (form.file === "svg") {
       let svg = await new Promise((resolve, reject) => window.QRCode.toString(content, { type: "svg", width: size, margin: 2, color: { dark: foreground, light: background } }, (error, value) => error ? reject(error) : resolve(value)));
-      const centerSize = size * .24, centerOffset = (size - centerSize) / 2;
-      const logoMarkup = form.logo ? `<image href="${String(form.logo).replaceAll('"', '&quot;')}" x="${size * .4}" y="${size * .4}" width="${size * .2}" height="${size * .2}" preserveAspectRatio="xMidYMid meet"/>` : "";
-      svg = svg.replace("</svg>", `<rect x="${centerOffset}" y="${centerOffset}" width="${centerSize}" height="${centerSize}" fill="${background}"/>${logoMarkup}</svg>`);
+      if (form.logoEnabled) {
+        const centerSize = size * .24, centerOffset = (size - centerSize) / 2;
+        const logoMarkup = form.logo ? `<image href="${String(form.logo).replaceAll('"', '&quot;')}" x="${size * .4}" y="${size * .4}" width="${size * .2}" height="${size * .2}" preserveAspectRatio="xMidYMid meet"/>` : "";
+        svg = svg.replace("</svg>", `<rect x="${centerOffset}" y="${centerOffset}" width="${centerSize}" height="${centerSize}" fill="${background}"/>${logoMarkup}</svg>`);
+      }
       const mime = form.file === "svg" ? "image/svg+xml" : "image/svg+xml";
       return { data: `data:${mime};charset=utf-8,${encodeURIComponent(svg)}`, file: form.file, mime };
     }
@@ -2939,9 +2942,11 @@
     const canvas = document.createElement("canvas"); canvas.width = size; canvas.height = size;
     const ctx = canvas.getContext("2d");
     const qr = await qrImage(qrData); ctx.drawImage(qr, 0, 0, size, size);
-    const centerSize = size * .24, centerOffset = (size - centerSize) / 2;
-    ctx.fillStyle = background; ctx.fillRect(centerOffset, centerOffset, centerSize, centerSize);
-    if (form.logo) { try { const logo = await qrImage(form.logo); const logoSize = size * .2; ctx.drawImage(logo, (size - logoSize) / 2, (size - logoSize) / 2, logoSize, logoSize); } catch (_) {} }
+    if (form.logoEnabled) {
+      const centerSize = size * .24, centerOffset = (size - centerSize) / 2;
+      ctx.fillStyle = background; ctx.fillRect(centerOffset, centerOffset, centerSize, centerSize);
+      if (form.logo) { try { const logo = await qrImage(form.logo); const logoSize = size * .2; ctx.drawImage(logo, (size - logoSize) / 2, (size - logoSize) / 2, logoSize, logoSize); } catch (_) {} }
+    }
     const mime = form.file === "png" ? "image/png" : "application/octet-stream";
     return { data: canvas.toDataURL(mime === "image/png" ? mime : "image/png"), file: form.file, mime };
   }
@@ -2968,6 +2973,7 @@
       qrForm.body = state.qrForm.body;
       qrForm.eye = state.qrForm.eye;
       qrForm.eyeBall = state.qrForm.eyeBall;
+      qrForm.logoEnabled = form.has("logoEnabled");
       qrForm.color = /^#[0-9a-f]{6}$/i.test(String(qrForm.color || "")) ? qrForm.color : "#173f42";
       const logoFile = qrForm.logoFile;
       if (logoFile instanceof File && logoFile.size) {
@@ -2990,7 +2996,7 @@
       if (error) return notify("No se pudo guardar el código QR.", true);
       state.qrcodes.unshift(data);
       state.qrPreview = null;
-      state.qrForm = { label: "", content: "", file: "png", size: 1000, body: "square", eye: "frame0", eyeBall: "ball0", logo: "", color: "#173f42" };
+      state.qrForm = { label: "", content: "", file: "png", size: 1000, body: "square", eye: "frame0", eyeBall: "ball0", logo: "", logoEnabled: false, color: "#173f42" };
       notify("Código QR guardado.");
       renderShell();
     });

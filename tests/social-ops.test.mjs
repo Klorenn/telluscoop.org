@@ -473,15 +473,18 @@ test("QR generator is URL-only and exposes only the reference design controls", 
   assert.match(styles, /\.qr-swatch-grid/);
 });
 
-test("QR generator reserves a central logo area and exposes only one QR color picker", () => {
+test("QR generator can opt into a central logo area and exposes only one QR color picker", () => {
   const qrUi = app.slice(app.indexOf("function qrView()"), app.indexOf("function qrImage"));
   assert.match(qrUi, /name="color"[^>]+type="color"/);
   assert.match(qrUi, /name="logo"[^>]+type="url"/);
+  assert.match(qrUi, /name="logoEnabled"[^>]+type="checkbox"/);
+  assert.match(qrUi, /Agregar logo al centro/);
   assert.doesNotMatch(qrUi, /name="background"|name="eyeColor"|name="gradient/);
   assert.match(app, /QR_CENTER_PLACEHOLDER/);
-  assert.match(app, /image: form\.logo \|\| QR_CENTER_PLACEHOLDER/);
+  assert.match(app, /form\.logoEnabled \? \(form\.logo \|\| QR_CENTER_PLACEHOLDER\) : undefined/);
   assert.match(app, /hideBackgroundDots:\s*true/);
   assert.match(app, /color: foreground/);
+  assert.match(app, /if \(form\.logoEnabled\)/);
 });
 
 test("articles hyperlink every mentioned entity to its official site, in both generate and rewrite flows", () => {
