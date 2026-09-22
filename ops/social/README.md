@@ -1,6 +1,6 @@
 # Tellus Social Ops
 
-Analizador privado de contenido social para el equipo Tellus. Fase 1.
+Centro privado de descubrimiento y producción de contenido social para el equipo Tellus.
 
 ## Ruta
 
@@ -20,7 +20,7 @@ npm run dev
 
 - **Feed** — publicaciones capturadas de X / LinkedIn / Instagram, con filtros por plataforma, categoría y texto. Captura manual mientras no exista el scraper.
 - **Cuentas** — cuentas observadas con categoría editorial (SaaS, memes, IA, repos, …). Semilla en la migración `20260717120000_create_social_analyzer.sql`.
-- **Repos** — buscador vía la Edge Function `github-search`, que llama a la API de GitHub con el secreto `GITHUB_TOKEN` (5000 búsquedas/hora autenticado; 60/hora si el secreto no está configurado). Guarda a `repo_picks` con estados bandeja → revisado → compartido. Cada repo (resultado o guardado) tiene **Crear post X**: genera con Gemini un post para X en la voz de Tellus sobre ese repo, para copiar o guardar como borrador. Antes de generar contenido, `generate-article` vuelve a verificar el repo en GitHub (dueño, licencia, archivado, última actividad) para no confiar ciegamente en datos que ya pudieron cambiar.
+- **Repos** — buscador vía la Edge Function `github-search`, con categorías curadas para repos nuevos, UX, IA, blockchain y proyectos llamativos. Cada búsqueda guarda automáticamente los repos nuevos en `repo_picks` y genera una sola vez posts para X, WhatsApp, Discord, LinkedIn e Instagram. Se conservan las fuentes, el modelo y la fecha de generación. El historial permite filtrar por fecha, abrir todos los posts, cambiar el estado y eliminar el repo junto con su contenido generado. Antes de generar, `generate-article` vuelve a verificar el repo en GitHub.
 - **Artículos** — generador diario para el boletín Beehiiv: elegís plantilla (cripto/IA), cuántos (1-5) y Generar; cada borrador se puede guardar, copiar o descartar. Los posts de repos también se guardan acá con `prompt_key = 'x_post'`.
 
 ## Fases siguientes

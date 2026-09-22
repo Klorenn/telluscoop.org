@@ -21,6 +21,7 @@ const refreshAllMigration = await readFile(new URL("../supabase/migrations/20260
 const followTargetsMigration = await readFile(new URL("../supabase/migrations/20260721070000_follow_targets.sql", import.meta.url), "utf8");
 const qrCodesMigration = await readFile(new URL("../supabase/migrations/20260819090000_create_qr_codes.sql", import.meta.url), "utf8");
 const githubSearchEdge = await readFile(new URL("../supabase/functions/github-search/index.ts", import.meta.url), "utf8");
+const repoHistoryMigration = await readFile(new URL("../supabase/migrations/20260922090000_add_repo_content_history.sql", import.meta.url), "utf8");
 
 test("production cache versions match", () => {
   const cssVersion = page.match(/styles\.css\?v=([^"']+)/)?.[1];
@@ -559,6 +560,19 @@ test("repo posts are re-verified against GitHub before generation, archived repo
   assert.match(repoSocialFn, /No pudimos verificar/);
   assert.match(edge, /function archivedNote/);
   assert.match(edge, /ARCHIVADO/);
+});
+
+test("repo searches automatically persist one generated multi-channel package per new repo", () => {
+  assert.match(repoHistoryMigration, /add column if not exists social_posts/);
+  assert.match(repoHistoryMigration, /add column if not exists social_sources/);
+  assert.match(repoHistoryMigration, /add column if not exists generated_at/);
+  assert.match(app, /function autoGenerateRepoHistory/);
+  assert.match(app, /upsert\(rows, \{ onConflict: "organization_id,repo_full_name"/);
+  assert.match(app, /filter\(\(repo\) => !repo\.social_posts\)/);
+  assert.match(app, /generated_at: new Date\(\)\.toISOString\(\)/);
+  assert.match(app, /data-view-repo-posts/);
+  assert.match(app, /data-delete-repo/);
+  assert.match(app, /repo-filter-date/);
 });
 
 test("editorial brief (stage 1) is optional and constrains audience/level/platform/length/objective before generation", () => {

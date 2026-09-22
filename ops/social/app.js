@@ -27,11 +27,12 @@
     org: null, accounts: [], posts: [], repos: [],
     filters: { platform: "", category: "", search: "" },
     repoResults: [], repoQuery: "", repoBusy: false, repoSort: "stars",
-    repoPostDraft: null, repoPostBusy: false,
+    repoPostDraft: null, repoPostBusy: false, repoAutoBusy: false,
     prompts: [], articles: [], drafts: [], articleBusy: false, articleView: null,
     articleForm: { prompt_key: "crypto", count: 1, prompt_md: "" },
     brief: { audience: "", level: "", platform: "", maxWords: "", objective: "", readerOutcome: "" },
     articleFilters: { status: "", template: "", search: "" }, articlePage: 0,
+    repoFilters: { date: "", search: "" },
     topics: [], topicBusy: false, topicPosts: null, feedPage: 0,
     memes: { query: "", busy: false, info: null, gifs: [], top: null, topBusy: false },
     memePicks: [],
@@ -1414,6 +1415,13 @@
   }
 
   function reposView() {
+    const repoTerm = state.repoFilters.search.trim().toLowerCase();
+    const repoDate = state.repoFilters.date;
+    const savedRepos = state.repos.filter((repo) => {
+      if (repoTerm && !`${repo.repo_full_name} ${repo.description || ""}`.toLowerCase().includes(repoTerm)) return false;
+      if (repoDate && !String(repo.generated_at || repo.created_at || "").startsWith(repoDate)) return false;
+      return true;
+    });
     return `
       <div class="toolbar"><div><span class="eyebrow">GitHub</span><h2>Buscador de repositorios</h2></div></div>
       <section class="card" style="margin-bottom:1.2rem">
@@ -1436,21 +1444,24 @@
       </section>
       ${repoPostModal()}
       ${state.repoResults.length ? `<div class="grid grid-2" style="margin-bottom:1.4rem">${state.repoResults.map(repoResultCard).join("")}</div>` : ""}
-      <div class="toolbar"><div><span class="eyebrow">Guardados</span><h2>Repos elegidos</h2></div></div>
-      ${state.repos.length ? `<div class="card table-wrap"><table>
-        <thead><tr><th>Repo</th><th>Stars</th><th>Lenguaje</th><th>Estado</th><th></th></tr></thead>
-        <tbody>${state.repos.map((repo) => `<tr>
+      <div class="toolbar"><div><span class="eyebrow">Historial editorial</span><h2>Repos encontrados</h2></div></div>
+      <div class="filters">
+        <input id="repo-filter-search" type="search" placeholder="Buscar repo o descripción…" value="${esc(state.repoFilters.search)}" aria-label="Buscar repos guardados" />
+        <label style="display:flex;align-items:center;gap:.45rem;color:var(--muted);font-size:.85rem">Generado el <input id="repo-filter-date" type="date" value="${esc(repoDate)}" aria-label="Filtrar por fecha de generación" /></label>
+      </div>
+      ${savedRepos.length ? `<div class="card table-wrap"><table>
+        <thead><tr><th>Repo</th><th>Descubierto</th><th>Posts</th><th>Fuente</th><th>Acciones</th></tr></thead>
+        <tbody>${savedRepos.map((repo) => `<tr>
           <td><a class="table-link" href="${esc(repo.url)}" target="_blank" rel="noopener"><strong>${esc(repo.repo_full_name)}</strong></a><br />
-            <span style="color:var(--muted)">${esc(repo.description || "")}</span></td>
-          <td>★ ${fmtNum(repo.stars)}</td>
-          <td>${esc(repo.language || "—")}</td>
-          <td><span class="status status-${esc(repo.status)}">${esc(repoStatusLabels[repo.status] || repo.status)}</span></td>
-          <td>${state.preview ? "" : `<button class="table-link" data-post-repo-saved="${esc(repo.id)}" ${state.repoPostBusy ? "disabled" : ""}>${icon("sparkles")} Crear posts</button>
-          <select data-repo-status="${esc(repo.id)}" aria-label="Cambiar estado" style="margin-top:.4rem">
-            ${Object.entries(repoStatusLabels).map(([value, label]) => `<option value="${value}" ${repo.status === value ? "selected" : ""}>${label}</option>`).join("")}
-          </select>`}</td>
+            <span style="color:var(--muted)">${esc(repo.description || "Sin descripción")}</span><br /><span class="post-meta">★ ${fmtNum(repo.stars)} · ${esc(repo.language || "—")}</span></td>
+          <td>${fmtDate(repo.created_at)}<br /><span class="post-meta">${repo.generated_at ? `Posts: ${fmtDate(repo.generated_at)}` : "Pendiente"}</span></td>
+          <td>${repo.social_posts ? `<button class="table-link" data-view-repo-posts="${esc(repo.id)}">${icon("message-circle")} Ver posts</button>` : `<span class="status status-inbox">${state.repoAutoBusy ? "Generando…" : "Sin generar"}</span>`}</td>
+          <td>${repo.social_sources?.length ? repo.social_sources.slice(0, 2).map((s) => `<a class="table-link" href="${esc(s.url)}" target="_blank" rel="noopener">${icon("external-link")} ${esc((s.title || "Fuente").slice(0, 28))}</a>`).join("<br />") : `<span class="post-meta">Sin fuentes</span>`}</td>
+          <td>${state.preview ? "" : `<select data-repo-status="${esc(repo.id)}" aria-label="Cambiar estado">
+              ${Object.entries(repoStatusLabels).map(([value, label]) => `<option value="${value}" ${repo.status === value ? "selected" : ""}>${label}</option>`).join("")}
+            </select><br /><button class="table-link" data-delete-repo="${esc(repo.id)}" style="margin-top:.4rem;color:var(--red)">${icon("trash-2")} Eliminar</button>`}</td>
         </tr>`).join("")}</tbody>
-      </table></div>` : `<div class="empty">Todavía no guardaste repos. Buscá arriba y presioná “Guardar”.</div>`}`;
+      </table></div>` : `<div class="empty">Todavía no hay repos en el historial. Ejecutá una búsqueda arriba.</div>`}`;
   }
 
   function repoResultCard(repo) {
@@ -1599,6 +1610,8 @@
         progress.fail(!anyOk ? "GitHub no respondió (límite de 60 búsquedas/hora)" : "Sin resultados para esa búsqueda");
       } else {
         progress.done(`${state.repoResults.length} repos encontrados${hnItems.length || webItems.length ? ` (${hnItems.length} vía HN, ${webItems.length} vía web)` : ""}`);
+        renderShell();
+        autoGenerateRepoHistory(state.repoResults);
       }
     } catch (error) {
       progress.fail("La búsqueda falló. Probá de nuevo en un momento.");
@@ -1608,7 +1621,67 @@
     }
   }
 
+  // Cada búsqueda crea un registro por repositorio y genera contenido una sola
+  // vez. Si el repositorio ya tiene posts, se conserva el historial existente.
+  async function autoGenerateRepoHistory(results) {
+    if (state.preview || state.repoAutoBusy || !results.length) return;
+    // Las búsquedas automáticas usan el idioma elegido previamente; no deben
+    // interrumpir el flujo con otro modal por cada búsqueda.
+    const lang = state.lang || "es";
+    state.repoAutoBusy = true;
+    renderShell();
+    const rows = results.map((repo) => ({
+      organization_id: state.org.id,
+      repo_full_name: repo.full_name,
+      url: repo.html_url,
+      description: repo.description || null,
+      stars: repo.stargazers_count || 0,
+      language: repo.language || null,
+      topics: repo.topics || [],
+      added_by: state.session?.user?.id || null,
+    }));
+    const { data: saved, error: saveError } = await supabase.from("repo_picks")
+      .upsert(rows, { onConflict: "organization_id,repo_full_name", ignoreDuplicates: false })
+      .select();
+    if (saveError) {
+      state.repoAutoBusy = false;
+      notify("Se encontraron repos, pero no se pudo guardar el historial.", true);
+      return renderShell();
+    }
+    state.repos = [...(saved || []), ...state.repos.filter((old) => !(saved || []).some((row) => row.id === old.id))];
+    const pending = (saved || []).filter((repo) => !repo.social_posts);
+    if (!pending.length) {
+      state.repoAutoBusy = false;
+      notify("Estos repos ya tenían posts guardados; no se regeneraron.");
+      return renderShell();
+    }
+    const progress = createProgress(`Generando posts para ${pending.length} repos nuevos`);
+    let generated = 0;
+    for (const repo of pending) {
+      progress.step(`${generated + 1}/${pending.length}: ${repo.repo_full_name}`);
+      const { data, error } = await invokeEdge("generate-article", {
+        format: "repo_social_posts",
+        repo: { full_name: repo.repo_full_name, description: repo.description, url: repo.url, language: repo.language, stars: repo.stars },
+        lang,
+      });
+      if (!error && data?.posts) {
+        const patch = { social_posts: data.posts, social_sources: data.sources || [], social_model: data.model || null, generated_at: new Date().toISOString() };
+        const { data: updated } = await supabase.from("repo_picks").update(patch).eq("id", repo.id).select().single();
+        Object.assign(repo, updated || patch);
+        generated += 1;
+      }
+    }
+    state.repoAutoBusy = false;
+    if (pending.length) progress.done(`${generated} de ${pending.length} repos con posts guardados`);
+    renderShell();
+  }
+
   function wireRepos() {
+    document.querySelector("#repo-filter-search")?.addEventListener("input", (e) => {
+      state.repoFilters.search = e.target.value;
+      clearTimeout(wireRepos._filterTimer); wireRepos._filterTimer = setTimeout(renderShell, 250);
+    });
+    document.querySelector("#repo-filter-date")?.addEventListener("change", (e) => { state.repoFilters.date = e.target.value; renderShell(); });
     document.querySelector("#repo-sort")?.addEventListener("change", (e) => {
       state.repoSort = e.target.value;
       // Re-run the current query with the new order if there's one active.
@@ -1651,6 +1724,20 @@
       if (error) return notify("No se pudo actualizar el estado.", true);
       const repo = state.repos.find((r) => r.id === select.dataset.repoStatus);
       if (repo) repo.status = select.value;
+      renderShell();
+    }));
+    document.querySelectorAll("[data-delete-repo]").forEach((button) => button.addEventListener("click", async () => {
+      const repo = state.repos.find((r) => r.id === button.dataset.deleteRepo);
+      if (!repo || !confirm(`¿Eliminar «${repo.repo_full_name}» y sus posts generados?`)) return;
+      const { error } = await supabase.from("repo_picks").delete().eq("id", repo.id);
+      if (error) return notify("No se pudo eliminar el repositorio.", true);
+      state.repos = state.repos.filter((r) => r.id !== repo.id);
+      renderShell();
+    }));
+    document.querySelectorAll("[data-view-repo-posts]").forEach((button) => button.addEventListener("click", () => {
+      const repo = state.repos.find((r) => r.id === button.dataset.viewRepoPosts);
+      if (!repo) return;
+      state.repoPostDraft = { repoName: repo.repo_full_name, repoUrl: repo.url, posts: repo.social_posts, sources: repo.social_sources || [], model: repo.social_model, tab: "x", verified: null, historyOnly: true };
       renderShell();
     }));
 
