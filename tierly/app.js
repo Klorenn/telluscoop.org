@@ -821,7 +821,8 @@ import { calculatePoints } from "./points.mjs";
       const name = window.prompt(t("adminName"), item.event_name); if (name === null) return;
       const location = window.prompt(t("adminLocation"), item.location || ""); if (location === null) return;
       const luma = window.prompt(t("adminLuma"), item.luma_url || ""); if (luma === null) return;
-      const { error } = await supabase.rpc("tierly_update_event", { p_event_id: item.event_id, p_name: name, p_event_date: item.event_date, p_location: location, p_luma_url: luma });
+      const banner = window.prompt(t("adminBanner"), item.banner_url || ""); if (banner === null) return;
+      const { error } = await supabase.rpc("tierly_update_event", { p_event_id: item.event_id, p_name: name, p_event_date: item.event_date, p_location: location, p_luma_url: luma, p_banner_url: banner });
       if (!error) await renderAdminEvents();
     }));
     el.querySelectorAll("[data-delete-event]").forEach((button) => button.addEventListener("click", async () => {
@@ -1475,7 +1476,7 @@ import { calculatePoints } from "./points.mjs";
     button.disabled = true;
     await checkDiscordMembership(currentSession);
     const { error } = await supabase.rpc("tierly_register_for_tournament", { p_tournament_id: tournamentId });
-    button.textContent = error ? "No se pudo inscribir" : "Inscripción confirmada";
+    button.textContent = error ? (error.message || "No se pudo inscribir") : "Inscripción confirmada";
     if (error) button.disabled = false;
   }
 
