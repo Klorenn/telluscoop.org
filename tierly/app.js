@@ -817,9 +817,10 @@ import { calculatePoints } from "./points.mjs";
       if (!error) await renderAdminEvents();
     }));
     el.querySelectorAll("[data-delete-event]").forEach((button) => button.addEventListener("click", async () => {
-      if (!window.confirm("¿Eliminar este evento y su bracket?")) return;
+      if (!window.confirm("¿Eliminar este evento, sus inscripciones y su bracket? Esta acción no se puede deshacer.")) return;
+      button.disabled = true;
       const { error } = await supabase.rpc("tierly_delete_event", { p_event_id: button.dataset.deleteEvent });
-      if (!error) { await renderAdminEvents(); await loadLatestBracket(); } else window.alert(error.message || "No se pudo eliminar");
+      if (!error) { await renderAdminEvents(); await loadLatestBracket(); } else { button.disabled = false; window.alert(error.message || "No se pudo eliminar el evento"); }
     }));
   }
 
