@@ -680,7 +680,9 @@ import { calculatePoints } from "./points.mjs";
     const el = document.querySelector("#lb-bracket");
     if (!el) return;
     el.innerHTML = events.map((event) => {
-      const names = bracketRows.filter((row) => row.tournament_id === event.tournament_id && row.round === 1).map((row) => row.display_name);
+      const names = (event.registered_players || []).map((player) => player.display_name).length
+        ? (event.registered_players || []).map((player) => player.display_name)
+        : bracketRows.filter((row) => row.tournament_id === event.tournament_id && row.round === 1).map((row) => row.display_name);
       const slots = [...Array(Math.max(4, names.length || 4))].map((_, index) => names[index] || "Por definir");
       return `<article class="lb-event-catalog-card">${event.banner_url ? `<img src="${esc(event.banner_url)}" alt="" loading="lazy" />` : ""}<h3>${esc(event.event_name)}</h3><p>${esc(event.game)} · ${esc(fmtEventDate(event.event_date))} · ${event.registration_count} inscritos</p><p>${esc(event.location || "")}${event.luma_url ? ` · <a href="${esc(event.luma_url)}" target="_blank" rel="noopener">Luma ↗</a>` : ""}</p><div class="lb-bracket-board lb-catalog-bracket"><div class="lb-bracket-round"><h3>Primera ronda</h3>${slots.map((name) => `<div class="lb-bracket-match"><span class="lb-bracket-player">${esc(name)}</span></div>`).join("")}</div><div class="lb-bracket-round"><h3>Semifinal</h3><div class="lb-bracket-match"><span class="lb-bracket-player">Por definir</span></div><div class="lb-bracket-match"><span class="lb-bracket-player">Por definir</span></div></div><div class="lb-bracket-round"><h3>Final</h3><div class="lb-bracket-match"><span class="lb-bracket-player">Por definir</span></div></div></div>${event.tournament_status === "draft" ? `<button type="button" class="lb-discord-btn" data-catalog-login="${event.tournament_id}">${currentSession ? "Inscribirme" : t("eventLogin")}</button>` : ""}</article>`;
     }).join("");
@@ -750,7 +752,7 @@ import { calculatePoints } from "./points.mjs";
     const confirmed = [...groups.values()].filter((rows) => rows[0].match_status === "confirmed");
     const rounds = new Map();
     [...groups.values()].forEach((rows) => { const round = rows[0].round; if (!rounds.has(round)) rounds.set(round, []); rounds.get(round).push(rows); });
-    el.innerHTML = `<div class="lb-bracket-board">${[...rounds.entries()].sort((a, b) => a[0] - b[0]).map(([round, matches]) => `<div class="lb-bracket-round"><h3>Ronda ${round}</h3>${matches.map((rows) => { const winner = rows.find((row) => row.placement === 1); const controls = rows[0].match_status === "confirmed" ? (winner ? `<button class="lb-admin-submit" data-reward="${winner.player_id}" data-tournament="${rows[0].tournament_id}">${t("adminReward")}</button>` : "") : rows.map((row) => `<button class="lb-admin-submit" data-match="${row.match_id}" data-player="${row.player_id}">${esc(row.player_name)}</button>`).join(" vs "); return `<div class="lb-bracket-match"><div>${rows.map((row) => `<span class="lb-bracket-player${row.placement === 1 && rows[0].match_status === "confirmed" ? " is-winner" : ""}">${esc(row.player_name)}</span>`).join("")}</div>${controls}</div>`; }).join("")}</div>`).join("")}</div>`;
+    el.innerHTML = `<h2>Gestión de partidas</h2><p class="lb-admin-status">Seleccione quién gana cada enfrentamiento. El ganador pasa automáticamente a la siguiente ronda.</p><div class="lb-bracket-board">${[...rounds.entries()].sort((a, b) => a[0] - b[0]).map(([round, matches]) => `<div class="lb-bracket-round"><h3>Ronda ${round}</h3>${matches.map((rows) => { const winner = rows.find((row) => row.placement === 1); const loser = rows.find((row) => row.placement === 2); const controls = rows[0].match_status === "confirmed" ? (winner ? `<p class="lb-admin-result">Ganó: <strong>${esc(winner.player_name)}</strong><br />Perdió: ${esc(loser?.player_name || "")}</p><button class="lb-admin-submit" data-reward="${winner.player_id}" data-tournament="${rows[0].tournament_id}">${t("adminReward")}</button>` : "") : `<strong>Elegir ganador</strong>${rows.map((row) => `<button class="lb-admin-submit" data-match="${row.match_id}" data-player="${row.player_id}">${esc(row.player_name)}</button>`).join("")}`; return `<div class="lb-bracket-match"><div>${rows.map((row) => `<span class="lb-bracket-player">${esc(row.player_name)}</span>`).join("")}</div>${controls}</div>`; }).join("")}</div>`).join("")}</div>`;
     el.querySelectorAll("[data-match]").forEach((button) => button.addEventListener("click", async () => {
       button.disabled = true;
       const { error: confirmError } = await supabase.rpc("tierly_confirm_match", { p_match_id: button.dataset.match, p_winner_id: button.dataset.player });
@@ -801,7 +803,7 @@ import { calculatePoints } from "./points.mjs";
     if (!el) return;
     const { data, error } = await supabase.rpc("tierly_admin_events");
     if (error || !data) return;
-    el.innerHTML = `<h3>Eventos</h3>${data.map((item) => `<div class="lb-admin-player"><span><strong>${esc(item.event_name)}</strong> · ${esc(item.location || "")}<small> · ${item.event_date}</small></span><span><select class="lb-admin-status-select" data-status-event="${item.tournament_id}"><option value="draft" ${item.tournament_status === "draft" ? "selected" : ""}>Inscripciones</option><option value="live" ${item.tournament_status === "live" ? "selected" : ""}>En curso</option><option value="completed" ${item.tournament_status === "completed" ? "selected" : ""}>Finalizado</option></select><button type="button" class="lb-admin-small" data-seed-event="${item.tournament_id}">Generar bracket</button><button type="button" class="lb-admin-small" data-edit-event="${item.event_id}">Editar</button><button type="button" class="lb-admin-small" data-delete-event="${item.event_id}">Eliminar</button></span></div>`).join("")}`;
+    el.innerHTML = `<h3>Eventos</h3>${data.map((item) => `<div class="lb-admin-player"><span><strong>${esc(item.event_name)}</strong> · ${esc(item.location || "")}<small> · ${item.event_date} · ${item.registration_count} inscritos</small></span><span><select class="lb-admin-status-select" data-status-event="${item.tournament_id}"><option value="draft" ${item.tournament_status === "draft" ? "selected" : ""}>Inscripciones</option><option value="live" ${item.tournament_status === "live" ? "selected" : ""}>En curso</option><option value="completed" ${item.tournament_status === "completed" ? "selected" : ""}>Finalizado</option></select><button type="button" class="lb-admin-small" data-seed-event="${item.tournament_id}">Generar bracket</button><button type="button" class="lb-admin-small" data-edit-banner="${item.event_id}">Editar banner</button><button type="button" class="lb-admin-small" data-edit-event="${item.event_id}">Editar</button><button type="button" class="lb-admin-small" data-delete-event="${item.event_id}">Eliminar</button></span></div>`).join("")}`;
     el.querySelectorAll("[data-status-event]").forEach((select) => select.addEventListener("change", async () => {
       select.disabled = true;
       const { error } = await supabase.rpc("tierly_set_tournament_status", { p_tournament_id: select.dataset.statusEvent, p_status: select.value });
@@ -824,6 +826,12 @@ import { calculatePoints } from "./points.mjs";
       const banner = window.prompt(t("adminBanner"), item.banner_url || ""); if (banner === null) return;
       const { error } = await supabase.rpc("tierly_update_event", { p_event_id: item.event_id, p_name: name, p_event_date: item.event_date, p_location: location, p_luma_url: luma, p_banner_url: banner });
       if (!error) await renderAdminEvents();
+    }));
+    el.querySelectorAll("[data-edit-banner]").forEach((button) => button.addEventListener("click", async () => {
+      const item = data.find((row) => row.event_id === button.dataset.editBanner); if (!item) return;
+      const banner = window.prompt(t("adminBanner"), item.banner_url || ""); if (banner === null) return;
+      const { error } = await supabase.rpc("tierly_update_event", { p_event_id: item.event_id, p_name: item.event_name, p_event_date: item.event_date, p_location: item.location || "", p_luma_url: item.luma_url || "", p_banner_url: banner });
+      if (!error) await renderAdminEvents(); else window.alert(error.message || "No se pudo actualizar el banner");
     }));
     el.querySelectorAll("[data-delete-event]").forEach((button) => button.addEventListener("click", async () => {
       if (!window.confirm("¿Eliminar este evento, sus inscripciones y su bracket? Esta acción no se puede deshacer.")) return;
@@ -1475,9 +1483,11 @@ import { calculatePoints } from "./points.mjs";
     }
     button.disabled = true;
     await checkDiscordMembership(currentSession);
+    const activeButton = document.querySelector(`[data-tournament="${tournamentId}"], [data-catalog-login="${tournamentId}"]`) || button;
+    activeButton.disabled = true;
     const { error } = await supabase.rpc("tierly_register_for_tournament", { p_tournament_id: tournamentId });
-    button.textContent = error ? (error.message || "No se pudo inscribir") : "Inscripción confirmada";
-    if (error) button.disabled = false;
+    activeButton.textContent = error ? (error.message || "No se pudo inscribir") : "Inscripción confirmada";
+    if (error) activeButton.disabled = false;
   }
 
   function renderAuth(session) {
