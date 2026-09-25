@@ -17,7 +17,7 @@ import { calculatePoints } from "./points.mjs";
       seasonResetsOn: "Season resets on {date}",
       bracketTitle: "Latest event", rewardsTitle: "Winners & rewards",
       navRanking: "Leaderboard", navBracket: "Events", navRewards: "Rewards", navProfile: "Profile", navSettings: "Settings", navAdmin: "Admin",
-      adminTitle: "Create tournament", adminName: "Event name", adminDate: "Date", adminLocation: "Location", adminPlayers: "Players (one per line)", adminCreate: "Create Smash tournament", adminReady: "Admin access enabled.", adminCreated: "Tournament created with bracket.", adminLogin: "Sign in with the administrator account to use this panel.", adminError: "Could not create the tournament. Check the fields and try again.", adminNoPlayers: "Add at least two players.", adminMatches: "Pending matches", adminConfirm: "Confirm winner", adminDone: "Match confirmed.", adminReward: "Award prize", adminRewardPrompt: "Prize description", adminRewarded: "Prize assigned.",
+      adminTitle: "Create tournament", adminName: "Event name", adminDate: "Date", adminLocation: "Location", adminPlayers: "Existing players", adminWalkins: "New players (one per line)", adminCreate: "Create Smash tournament", adminReady: "Admin access enabled.", adminCreated: "Tournament created with bracket.", adminLogin: "Sign in with the administrator account to use this panel.", adminError: "Could not create the tournament. Check the fields and try again.", adminNoPlayers: "Add at least two players.", adminMatches: "Pending matches", adminConfirm: "Confirm winner", adminDone: "Match confirmed.", adminReward: "Award prize", adminRewardPrompt: "Prize description", adminRewarded: "Prize assigned.", adminNoAccounts: "No linked player accounts yet.",
       profileTitle: "Profile",
       profileHistoryTitle: "Recent history",
       profileStatRank: "Ranking position", profileStatEvents: "Events played",
@@ -171,7 +171,7 @@ import { calculatePoints } from "./points.mjs";
       seasonResetsOn: "La temporada se reinicia el {date}",
       bracketTitle: "Último evento", rewardsTitle: "Ganadores y premios",
       navRanking: "Leaderboard", navBracket: "Eventos", navRewards: "Premios", navProfile: "Perfil", navSettings: "Configuración", navAdmin: "Administración",
-      adminTitle: "Crear torneo", adminName: "Nombre del evento", adminDate: "Fecha", adminLocation: "Ubicación", adminPlayers: "Jugadores (uno por línea)", adminCreate: "Crear torneo de Smash", adminReady: "Acceso de administrador habilitado.", adminCreated: "Torneo creado con bracket.", adminLogin: "Inicia sesión con la cuenta administradora para usar este panel.", adminError: "No se pudo crear el torneo. Revisa los campos e inténtalo de nuevo.", adminNoPlayers: "Agrega al menos dos jugadores.", adminMatches: "Partidas pendientes", adminConfirm: "Confirmar ganador", adminDone: "Partida confirmada.", adminReward: "Asignar premio", adminRewardPrompt: "Descripción del premio", adminRewarded: "Premio asignado.",
+      adminTitle: "Crear torneo", adminName: "Nombre del evento", adminDate: "Fecha", adminLocation: "Ubicación", adminPlayers: "Jugadores existentes", adminWalkins: "Jugadores nuevos (uno por línea)", adminCreate: "Crear torneo de Smash", adminReady: "Acceso de administrador habilitado.", adminCreated: "Torneo creado con bracket.", adminLogin: "Inicia sesión con la cuenta administradora para usar este panel.", adminError: "No se pudo crear el torneo. Revisa los campos e inténtalo de nuevo.", adminNoPlayers: "Agrega al menos dos jugadores.", adminMatches: "Partidas pendientes", adminConfirm: "Confirmar ganador", adminDone: "Partida confirmada.", adminReward: "Asignar premio", adminRewardPrompt: "Descripción del premio", adminRewarded: "Premio asignado.", adminNoAccounts: "Todavía no hay cuentas de jugadores vinculadas.",
       profileTitle: "Perfil",
       profileHistoryTitle: "Historial reciente",
       profileStatRank: "Posición en el ranking", profileStatEvents: "Eventos jugados",
@@ -353,6 +353,7 @@ import { calculatePoints } from "./points.mjs";
   let rewardsRows = [];
   let viewingPlayer = null;
   let tierlyAdmin = false;
+  let adminPlayers = [];
 
   window.TierlyBridge = {
     supabase,
@@ -673,6 +674,7 @@ import { calculatePoints } from "./points.mjs";
     if (!currentSession) { tierlyAdmin = false; renderNav(); return; }
     const { data, error } = await supabase.rpc("tierly_is_admin");
     tierlyAdmin = !error && data === true;
+    if (tierlyAdmin) await loadAdminPlayers();
     renderNav();
     if (activeView === "admin") renderAdminView();
   }
@@ -686,7 +688,8 @@ import { calculatePoints } from "./points.mjs";
       <label>${t("adminName")}<input name="name" required maxlength="120" value="Smash Tournament" /></label>
       <label>${t("adminDate")}<input name="date" type="date" required value="${new Date().toISOString().slice(0, 10)}" /></label>
       <label>${t("adminLocation")}<input name="location" maxlength="120" /></label>
-      <label>${t("adminPlayers")}<textarea name="players" required placeholder="Jugador 1\nJugador 2\nJugador 3\nJugador 4"></textarea></label>
+      <label>${t("adminPlayers")}<select name="existing" multiple size="6">${adminPlayers.length ? adminPlayers.map((player) => `<option value="${player.player_id}">${esc(player.display_name)}${player.username ? ` · @${esc(player.username)}` : ""}</option>`).join("") : `<option disabled>${t("adminNoAccounts")}</option>`}</select></label>
+      <label>${t("adminWalkins")}<textarea name="players" placeholder="Jugador invitado 1\nJugador invitado 2"></textarea></label>
       <button class="lb-admin-submit" type="submit">${t("adminCreate")}</button><div id="lb-admin-status" class="lb-admin-status" role="status"></div>
     </form><div id="lb-admin-bracket" class="lb-admin-bracket"></div></div>`;
     el.querySelector("form").addEventListener("submit", createSmashTournament);
@@ -703,7 +706,9 @@ import { calculatePoints } from "./points.mjs";
     if (!el) return;
     const pending = [...groups.values()].filter((rows) => rows[0].match_status !== "confirmed");
     const confirmed = [...groups.values()].filter((rows) => rows[0].match_status === "confirmed");
-    el.innerHTML = `${pending.length ? `<h3>${t("adminMatches")}</h3>${pending.map((rows) => `<div class="lb-admin-match"><strong>Ronda ${rows[0].round}</strong><span>${rows.map((row) => `<button class="lb-admin-submit" data-match="${row.match_id}" data-player="${row.player_id}">${esc(row.player_name)}</button>`).join(" vs ")}</span></div>`).join("")}` : ""}${confirmed.map((rows) => { const winner = rows.find((row) => row.placement === 1); return winner ? `<div class="lb-admin-match"><span>Ronda ${rows[0].round} · ${esc(winner.player_name)}</span><button class="lb-admin-submit" data-reward="${winner.player_id}" data-tournament="${rows[0].tournament_id}">${t("adminReward")}</button></div>` : ""; }).join("")}`;
+    const rounds = new Map();
+    [...groups.values()].forEach((rows) => { const round = rows[0].round; if (!rounds.has(round)) rounds.set(round, []); rounds.get(round).push(rows); });
+    el.innerHTML = `<div class="lb-bracket-board">${[...rounds.entries()].sort((a, b) => a[0] - b[0]).map(([round, matches]) => `<div class="lb-bracket-round"><h3>Ronda ${round}</h3>${matches.map((rows) => { const winner = rows.find((row) => row.placement === 1); const controls = rows[0].match_status === "confirmed" ? (winner ? `<button class="lb-admin-submit" data-reward="${winner.player_id}" data-tournament="${rows[0].tournament_id}">${t("adminReward")}</button>` : "") : rows.map((row) => `<button class="lb-admin-submit" data-match="${row.match_id}" data-player="${row.player_id}">${esc(row.player_name)}</button>`).join(" vs "); return `<div class="lb-bracket-match"><div>${rows.map((row) => `<span class="lb-bracket-player${row.placement === 1 && rows[0].match_status === "confirmed" ? " is-winner" : ""}">${esc(row.player_name)}</span>`).join("")}</div>${controls}</div>`; }).join("")}</div>`).join("")}</div>`;
     el.querySelectorAll("[data-match]").forEach((button) => button.addEventListener("click", async () => {
       button.disabled = true;
       const { error: confirmError } = await supabase.rpc("tierly_confirm_match", { p_match_id: button.dataset.match, p_winner_id: button.dataset.player });
@@ -727,17 +732,26 @@ import { calculatePoints } from "./points.mjs";
     const button = form.querySelector("button");
     const values = new FormData(form);
     const names = String(values.get("players") || "").split(/\r?\n/).map((name) => name.trim()).filter(Boolean);
-    if (names.length < 2) { status.textContent = t("adminNoPlayers"); return; }
+    const selected = [...form.querySelector("select[name=existing]").selectedOptions].map((option) => ({ player_id: option.value }));
+    const players = [...selected, ...names.map((display_name) => ({ display_name }))];
+    if (players.length < 2) { status.textContent = t("adminNoPlayers"); return; }
     button.disabled = true;
     try {
-      const { data: tournament, error: tournamentError } = await supabase.rpc("tierly_create_smash_tournament", { p_name: String(values.get("name")), p_event_date: String(values.get("date")), p_location: String(values.get("location") || ""), p_players: names.map((display_name) => ({ display_name, client_id: newId() })) });
+      const { data: tournament, error: tournamentError } = await supabase.rpc("tierly_create_smash_tournament", { p_name: String(values.get("name")), p_event_date: String(values.get("date")), p_location: String(values.get("location") || ""), p_players: players });
       if (tournamentError) throw tournamentError;
-      const matches = names.filter((_, index) => index % 2 === 0).map((_, index) => index);
+      const matches = players.filter((_, index) => index % 2 === 0).map((_, index) => index);
       status.textContent = t("adminCreated");
-      document.querySelector("#lb-admin-bracket").innerHTML = matches.map((_, index) => `<div class="lb-admin-match"><strong>Ronda 1 · Mesa ${index + 1}</strong><span>${names[index * 2] || ""} vs ${names[index * 2 + 1] || "Pase"}</span></div>`).join("");
+      document.querySelector("#lb-admin-bracket").innerHTML = matches.map((_, index) => `<div class="lb-bracket-match"><strong>Ronda 1 · Mesa ${index + 1}</strong><span>${esc(players[index * 2].display_name || adminPlayers.find((p) => p.player_id === players[index * 2].player_id)?.display_name || "")} vs ${esc(players[index * 2 + 1]?.display_name || adminPlayers.find((p) => p.player_id === players[index * 2 + 1]?.player_id)?.display_name || "Pase")}</span></div>`).join("");
+      await loadAdminMatches();
       await Promise.all([loadLatestBracket(), loadRanking()]);
     } catch (error) { console.error(error); status.textContent = t("adminError"); }
     button.disabled = false;
+  }
+
+  async function loadAdminPlayers() {
+    if (!tierlyAdmin) return;
+    const { data, error } = await supabase.rpc("tierly_admin_players");
+    adminPlayers = error || !data ? [] : data;
   }
 
   function renderStats() {

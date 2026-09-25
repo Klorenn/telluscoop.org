@@ -794,6 +794,14 @@
     .lb-admin-status { min-height: 22px; color: var(--ink-dim); font-size: 13px; }
     .lb-admin-bracket { display: grid; gap: 10px; margin-top: 20px; }
     .lb-admin-match { border: 1px solid var(--card-border); border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; gap: 12px; }
+    .lb-bracket-board { display: flex; gap: 18px; overflow-x: auto; padding: 22px 4px 12px; margin-top: 20px; }
+    .lb-bracket-round { display: flex; flex: 1 0 190px; min-width: 190px; flex-direction: column; justify-content: space-around; gap: 18px; }
+    .lb-bracket-round h3 { color: var(--ink-dim); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    .lb-bracket-match { position: relative; display: grid; gap: 8px; min-height: 76px; padding: 10px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); box-shadow: var(--card-shadow); }
+    .lb-bracket-match::after { content: ""; position: absolute; top: 50%; right: -19px; width: 18px; border-top: 1px solid var(--card-border); }
+    .lb-bracket-round:last-child .lb-bracket-match::after { display: none; }
+    .lb-bracket-player { display: block; padding: 5px 7px; border-radius: 6px; background: var(--chip-bg); font-size: 13px; }
+    .lb-bracket-player.is-winner { background: rgba(21,156,131,.18); color: var(--teal-deep); font-weight: 700; }
 
     @media (max-width: 960px) {
       .lb-content-grid { flex-direction: column; }
@@ -991,7 +999,7 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"></script>
-  <script type="module" src="/tierly/chess.js?v=20260925-04"></script>
-  <script type="module" src="/tierly/app.js?v=20260925-04"></script>
+  <script type="module" src="/tierly/chess.js?v=20260925-05"></script>
+  <script type="module" src="/tierly/app.js?v=20260925-05"></script>
 </body>
 </html>
