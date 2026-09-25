@@ -16,7 +16,8 @@ import { calculatePoints } from "./points.mjs";
       rankingTitle: "Top Players",
       seasonResetsOn: "Season resets on {date}",
       bracketTitle: "Latest event", rewardsTitle: "Winners & rewards",
-      navRanking: "Leaderboard", navBracket: "Events", navRewards: "Rewards", navProfile: "Profile", navSettings: "Settings",
+      navRanking: "Leaderboard", navBracket: "Events", navRewards: "Rewards", navProfile: "Profile", navSettings: "Settings", navAdmin: "Admin",
+      adminTitle: "Create tournament", adminName: "Event name", adminDate: "Date", adminLocation: "Location", adminPlayers: "Players (one per line)", adminCreate: "Create Smash tournament", adminReady: "Admin access enabled.", adminCreated: "Tournament created with bracket.", adminLogin: "Sign in with the administrator account to use this panel.", adminError: "Could not create the tournament. Check the fields and try again.", adminNoPlayers: "Add at least two players.", adminMatches: "Pending matches", adminConfirm: "Confirm winner", adminDone: "Match confirmed.", adminReward: "Award prize", adminRewardPrompt: "Prize description", adminRewarded: "Prize assigned.",
       profileTitle: "Profile",
       profileHistoryTitle: "Recent history",
       profileStatRank: "Ranking position", profileStatEvents: "Events played",
@@ -169,7 +170,8 @@ import { calculatePoints } from "./points.mjs";
       rankingTitle: "Mejores jugadores",
       seasonResetsOn: "La temporada se reinicia el {date}",
       bracketTitle: "Último evento", rewardsTitle: "Ganadores y premios",
-      navRanking: "Leaderboard", navBracket: "Eventos", navRewards: "Premios", navProfile: "Perfil", navSettings: "Configuración",
+      navRanking: "Leaderboard", navBracket: "Eventos", navRewards: "Premios", navProfile: "Perfil", navSettings: "Configuración", navAdmin: "Administración",
+      adminTitle: "Crear torneo", adminName: "Nombre del evento", adminDate: "Fecha", adminLocation: "Ubicación", adminPlayers: "Jugadores (uno por línea)", adminCreate: "Crear torneo de Smash", adminReady: "Acceso de administrador habilitado.", adminCreated: "Torneo creado con bracket.", adminLogin: "Inicia sesión con la cuenta administradora para usar este panel.", adminError: "No se pudo crear el torneo. Revisa los campos e inténtalo de nuevo.", adminNoPlayers: "Agrega al menos dos jugadores.", adminMatches: "Partidas pendientes", adminConfirm: "Confirmar ganador", adminDone: "Partida confirmada.", adminReward: "Asignar premio", adminRewardPrompt: "Descripción del premio", adminRewarded: "Premio asignado.",
       profileTitle: "Perfil",
       profileHistoryTitle: "Historial reciente",
       profileStatRank: "Posición en el ranking", profileStatEvents: "Eventos jugados",
@@ -350,6 +352,7 @@ import { calculatePoints } from "./points.mjs";
   let bracketRows = [];
   let rewardsRows = [];
   let viewingPlayer = null;
+  let tierlyAdmin = false;
 
   window.TierlyBridge = {
     supabase,
@@ -362,6 +365,7 @@ import { calculatePoints } from "./points.mjs";
   };
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const newId = () => globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   const initials = (name) => esc((name || "?").trim().slice(0, 2).toUpperCase());
   function resolveAvatarUrl(user) {
     const discordIdentity = user?.identities?.find((identity) => identity.provider === "discord");
@@ -663,6 +667,77 @@ import { calculatePoints } from "./points.mjs";
     const el = document.querySelector("#lb-rewards");
     if (!rewardsRows.length) { el.innerHTML = `<p class="lb-empty">${t("empty")}</p>`; return; }
     el.innerHTML = `<ul>${rewardsRows.map((r) => `<li>${esc(r.display_name || "")} · ${esc(r.description)}</li>`).join("")}</ul>`;
+  }
+
+  async function loadAdminAccess() {
+    if (!currentSession) { tierlyAdmin = false; renderNav(); return; }
+    const { data, error } = await supabase.rpc("tierly_is_admin");
+    tierlyAdmin = !error && data === true;
+    renderNav();
+    if (activeView === "admin") renderAdminView();
+  }
+
+  function renderAdminView() {
+    const el = document.querySelector("#lb-admin");
+    if (!el) return;
+    if (!currentSession) { el.innerHTML = `<div class="lb-admin-card"><p>${t("adminLogin")}</p></div>`; return; }
+    if (!tierlyAdmin) { el.innerHTML = `<div class="lb-admin-card"><p>${t("adminError")}</p></div>`; return; }
+    el.innerHTML = `<div class="lb-admin-card"><p>${t("adminReady")}</p><form id="lb-admin-form" class="lb-admin-form">
+      <label>${t("adminName")}<input name="name" required maxlength="120" value="Smash Tournament" /></label>
+      <label>${t("adminDate")}<input name="date" type="date" required value="${new Date().toISOString().slice(0, 10)}" /></label>
+      <label>${t("adminLocation")}<input name="location" maxlength="120" /></label>
+      <label>${t("adminPlayers")}<textarea name="players" required placeholder="Jugador 1\nJugador 2\nJugador 3\nJugador 4"></textarea></label>
+      <button class="lb-admin-submit" type="submit">${t("adminCreate")}</button><div id="lb-admin-status" class="lb-admin-status" role="status"></div>
+    </form><div id="lb-admin-bracket" class="lb-admin-bracket"></div></div>`;
+    el.querySelector("form").addEventListener("submit", createSmashTournament);
+    loadAdminMatches();
+  }
+
+  async function loadAdminMatches() {
+    if (!tierlyAdmin) return;
+    const { data, error } = await supabase.rpc("tierly_admin_matches");
+    if (error || !data) return;
+    const groups = new Map();
+    data.forEach((row) => { if (!groups.has(row.match_id)) groups.set(row.match_id, []); groups.get(row.match_id).push(row); });
+    const el = document.querySelector("#lb-admin-bracket");
+    if (!el) return;
+    const pending = [...groups.values()].filter((rows) => rows[0].match_status !== "confirmed");
+    const confirmed = [...groups.values()].filter((rows) => rows[0].match_status === "confirmed");
+    el.innerHTML = `${pending.length ? `<h3>${t("adminMatches")}</h3>${pending.map((rows) => `<div class="lb-admin-match"><strong>Ronda ${rows[0].round}</strong><span>${rows.map((row) => `<button class="lb-admin-submit" data-match="${row.match_id}" data-player="${row.player_id}">${esc(row.player_name)}</button>`).join(" vs ")}</span></div>`).join("")}` : ""}${confirmed.map((rows) => { const winner = rows.find((row) => row.placement === 1); return winner ? `<div class="lb-admin-match"><span>Ronda ${rows[0].round} · ${esc(winner.player_name)}</span><button class="lb-admin-submit" data-reward="${winner.player_id}" data-tournament="${rows[0].tournament_id}">${t("adminReward")}</button></div>` : ""; }).join("")}`;
+    el.querySelectorAll("[data-match]").forEach((button) => button.addEventListener("click", async () => {
+      button.disabled = true;
+      const { error: confirmError } = await supabase.rpc("tierly_confirm_match", { p_match_id: button.dataset.match, p_winner_id: button.dataset.player });
+      if (confirmError) { button.disabled = false; return; }
+      await loadAdminMatches();
+      await Promise.all([loadRanking(), loadLatestBracket()]);
+    }));
+    el.querySelectorAll("[data-reward]").forEach((button) => button.addEventListener("click", async () => {
+      const description = window.prompt(t("adminRewardPrompt"));
+      if (!description?.trim()) return;
+      button.disabled = true;
+      const { error } = await supabase.rpc("tierly_award_reward", { p_tournament_id: button.dataset.tournament, p_player_id: button.dataset.reward, p_description: description.trim() });
+      if (!error) { button.textContent = t("adminRewarded"); await loadRewards(); } else button.disabled = false;
+    }));
+  }
+
+  async function createSmashTournament(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const status = form.querySelector("[role=status]");
+    const button = form.querySelector("button");
+    const values = new FormData(form);
+    const names = String(values.get("players") || "").split(/\r?\n/).map((name) => name.trim()).filter(Boolean);
+    if (names.length < 2) { status.textContent = t("adminNoPlayers"); return; }
+    button.disabled = true;
+    try {
+      const { data: tournament, error: tournamentError } = await supabase.rpc("tierly_create_smash_tournament", { p_name: String(values.get("name")), p_event_date: String(values.get("date")), p_location: String(values.get("location") || ""), p_players: names.map((display_name) => ({ display_name, client_id: newId() })) });
+      if (tournamentError) throw tournamentError;
+      const matches = names.filter((_, index) => index % 2 === 0).map((_, index) => index);
+      status.textContent = t("adminCreated");
+      document.querySelector("#lb-admin-bracket").innerHTML = matches.map((_, index) => `<div class="lb-admin-match"><strong>Ronda 1 · Mesa ${index + 1}</strong><span>${names[index * 2] || ""} vs ${names[index * 2 + 1] || "Pase"}</span></div>`).join("");
+      await Promise.all([loadLatestBracket(), loadRanking()]);
+    } catch (error) { console.error(error); status.textContent = t("adminError"); }
+    button.disabled = false;
   }
 
   function renderStats() {
@@ -1282,6 +1357,7 @@ import { calculatePoints } from "./points.mjs";
 
   function renderAuth(session) {
     currentSession = session;
+    loadAdminAccess();
     const el = document.querySelector("#lb-auth");
     if (!el) return;
     if (!session) {
@@ -1327,7 +1403,12 @@ import { calculatePoints } from "./points.mjs";
     activeView = view;
     document.querySelectorAll(".lb-view").forEach((section) => { section.hidden = section.dataset.view !== view; });
     document.querySelectorAll(".lb-nav-item").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.view === view));
+    const sidebar = document.querySelector(".lb-sidebar");
+    const menuToggle = document.querySelector("#lb-menu-toggle");
+    sidebar?.classList.remove("is-menu-open");
+    menuToggle?.setAttribute("aria-expanded", "false");
     if (view !== "player" && location.hash.startsWith("#u/")) history.replaceState(null, "", location.pathname + location.search);
+    if (view === "admin") renderAdminView();
   }
 
   function renderNav() {
@@ -1339,9 +1420,19 @@ import { calculatePoints } from "./points.mjs";
       <button class="lb-nav-item${activeView === "rewards" ? " is-active" : ""}" data-view="rewards"><i data-lucide="gift"></i><span>${t("navRewards")}</span></button>
       <button class="lb-nav-item${activeView === "chess" ? " is-active" : ""}" data-view="chess"><i data-lucide="swords"></i><span>${t("navChess")}</span></button>
       <button class="lb-nav-item${activeView === "profile" ? " is-active" : ""}" data-view="profile"><i data-lucide="user"></i><span>${t("navProfile")}</span></button>
-      <button class="lb-nav-item${activeView === "settings" ? " is-active" : ""}" data-view="settings"><i data-lucide="settings"></i><span>${t("navSettings")}</span></button>`;
+       <button class="lb-nav-item${activeView === "settings" ? " is-active" : ""}" data-view="settings"><i data-lucide="settings"></i><span>${t("navSettings")}</span></button>
+       ${tierlyAdmin ? `<button class="lb-nav-item${activeView === "admin" ? " is-active" : ""}" data-view="admin"><i data-lucide="shield-check"></i><span>${t("navAdmin")}</span></button>` : ""}`;
     el.querySelectorAll("button").forEach((btn) => btn.addEventListener("click", () => switchView(btn.dataset.view)));
+    const menuToggle = document.querySelector("#lb-menu-toggle");
+    if (menuToggle && menuToggle.dataset.bound !== "true") menuToggle.addEventListener("click", () => {
+      const sidebar = document.querySelector(".lb-sidebar");
+      const open = !sidebar.classList.contains("is-menu-open");
+      sidebar.classList.toggle("is-menu-open", open);
+      menuToggle.setAttribute("aria-expanded", String(open));
+    });
+    if (menuToggle) menuToggle.dataset.bound = "true";
     window.lucide?.createIcons();
+    if (activeView === "admin") renderAdminView();
   }
 
   function renderRankTabs() {
@@ -1712,6 +1803,7 @@ import { calculatePoints } from "./points.mjs";
     document.querySelector("#lb-profile-title").textContent = t("profileTitle");
     document.querySelector("#lb-profile-history-title").textContent = t("profileHistoryTitle");
     document.querySelector("#lb-settings-title").textContent = t("settingsTitle");
+    document.querySelector("#lb-admin-title").textContent = t("adminTitle");
     document.querySelector("#lb-view-full").textContent = t("viewFull") + " →";
     document.querySelector("#lb-ranks-info-btn-label").textContent = t("ranksInfoBtn");
     document.querySelector("#lb-sidebar-promo-text").textContent = t("promoSidebar");

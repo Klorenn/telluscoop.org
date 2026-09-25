@@ -1,0 +1,6 @@
+**/*.zip
+node_modules
+.git
+.playwright-mcp
+docs/superpowers
+tests
