@@ -716,7 +716,7 @@ import { calculatePoints } from "./points.mjs";
     if (!force && el.querySelector("#lb-admin-form")) return;
     if (!currentSession) { el.innerHTML = `<div class="lb-admin-card"><p>${t("adminLogin")}</p></div>`; return; }
     if (!tierlyAdmin) { el.innerHTML = `<div class="lb-admin-card"><p>${t("adminError")}</p></div>`; return; }
-    el.innerHTML = `<div class="lb-admin-card"><p>${t("adminReady")}</p><form id="lb-admin-form" class="lb-admin-form">
+    el.innerHTML = `<div class="lb-admin-card"><p>${t("adminReady")}</p><div id="lb-admin-events" class="lb-admin-players"></div><form id="lb-admin-form" class="lb-admin-form">
       <label>${t("adminName")}<input name="name" required maxlength="120" value="Smash Tournament" /></label>
       <label>${t("adminDate")}<input name="date" type="date" required value="${new Date().toISOString().slice(0, 10)}" /></label>
       <label>${t("adminLocation")}<input name="location" maxlength="120" /></label>
@@ -727,7 +727,7 @@ import { calculatePoints } from "./points.mjs";
       <label>${t("adminPlayers")}<select name="player-picker" size="1">${adminPlayers.length ? adminPlayers.map((player) => `<option value="${player.player_id}">${esc(player.display_name)}${player.username ? ` · @${esc(player.username)}` : ""}</option>`).join("") : `<option disabled>${t("adminNoAccounts")}</option>`}</select></label>
       <button id="lb-admin-add-player" class="lb-admin-small" type="button">+ ${t("adminAddPlayer")}</button><div id="lb-admin-selected" class="lb-admin-selected"></div>
       <button class="lb-admin-submit" type="submit">${t("adminCreate")}</button><div id="lb-admin-status" class="lb-admin-status" role="status"></div>
-    </form><div id="lb-admin-bracket" class="lb-admin-bracket"></div><div id="lb-admin-players" class="lb-admin-players"></div><div id="lb-admin-events" class="lb-admin-players"></div></div>`;
+    </form><div id="lb-admin-bracket" class="lb-admin-bracket"></div><div id="lb-admin-players" class="lb-admin-players"></div></div>`;
     el.querySelector("form").addEventListener("submit", createSmashTournament);
     const selectedIds = new Set();
     const selectedEl = el.querySelector("#lb-admin-selected");
@@ -735,6 +735,7 @@ import { calculatePoints } from "./points.mjs";
     el.querySelector("#lb-admin-add-player").addEventListener("click", () => { const id = el.querySelector("[name=player-picker]").value; if (id) selectedIds.add(id); renderSelected(); });
     loadAdminMatches();
     renderAdminPlayers();
+    renderAdminEvents();
   }
 
   async function loadAdminMatches() {
@@ -800,7 +801,14 @@ import { calculatePoints } from "./points.mjs";
     if (!el) return;
     const { data, error } = await supabase.rpc("tierly_admin_events");
     if (error || !data) return;
-    el.innerHTML = `<h3>Eventos</h3>${data.map((item) => `<div class="lb-admin-player"><span><strong>${esc(item.event_name)}</strong> · ${esc(item.location || "")}<small> · ${item.event_date} · estado: ${esc(item.tournament_status)}</small></span><span><button type="button" class="lb-admin-small" data-seed-event="${item.tournament_id}">Generar bracket</button><button type="button" class="lb-admin-small" data-edit-event="${item.event_id}">Editar</button><button type="button" class="lb-admin-small" data-delete-event="${item.event_id}">Eliminar</button></span></div>`).join("")}`;
+    el.innerHTML = `<h3>Eventos</h3>${data.map((item) => `<div class="lb-admin-player"><span><strong>${esc(item.event_name)}</strong> · ${esc(item.location || "")}<small> · ${item.event_date}</small></span><span><select class="lb-admin-status-select" data-status-event="${item.tournament_id}"><option value="draft" ${item.tournament_status === "draft" ? "selected" : ""}>Inscripciones</option><option value="live" ${item.tournament_status === "live" ? "selected" : ""}>En curso</option><option value="completed" ${item.tournament_status === "completed" ? "selected" : ""}>Finalizado</option></select><button type="button" class="lb-admin-small" data-seed-event="${item.tournament_id}">Generar bracket</button><button type="button" class="lb-admin-small" data-edit-event="${item.event_id}">Editar</button><button type="button" class="lb-admin-small" data-delete-event="${item.event_id}">Eliminar</button></span></div>`).join("")}`;
+    el.querySelectorAll("[data-status-event]").forEach((select) => select.addEventListener("change", async () => {
+      select.disabled = true;
+      const { error } = await supabase.rpc("tierly_set_tournament_status", { p_tournament_id: select.dataset.statusEvent, p_status: select.value });
+      select.disabled = false;
+      if (error) window.alert(error.message || "No se pudo actualizar el estado");
+      else await loadLatestBracket();
+    }));
     el.querySelectorAll("[data-seed-event]").forEach((button) => button.addEventListener("click", async () => {
       button.disabled = true;
       const { error: seedError } = await supabase.rpc("tierly_seed_bracket", { p_tournament_id: button.dataset.seedEvent });
