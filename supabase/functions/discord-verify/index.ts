@@ -292,7 +292,8 @@ Deno.serve(async (request) => {
         .from("gaming_players")
         .upsert(
           {
-            discord_id: discordId,
+             discord_id: discordId,
+             auth_user_id: user.id,
             username,
             ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
             ...updates,
@@ -313,7 +314,8 @@ Deno.serve(async (request) => {
         .from("gaming_players")
         .upsert(
           {
-            discord_id: discordId,
+             discord_id: discordId,
+             auth_user_id: user.id,
             username,
             ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
             stellar_passport_url: null,
@@ -380,6 +382,7 @@ Deno.serve(async (request) => {
       .upsert(
         {
           discord_id: discordId,
+          auth_user_id: user.id,
           display_name: cleanText(passportProfile?.display_name ?? displayName, 120),
           username,
           ...(avatarUrl ? { avatar_url: avatarUrl } : {}),

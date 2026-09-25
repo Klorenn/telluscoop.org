@@ -17,7 +17,7 @@ import { calculatePoints } from "./points.mjs";
       seasonResetsOn: "Season resets on {date}",
       bracketTitle: "Latest event", rewardsTitle: "Winners & rewards",
       navRanking: "Leaderboard", navBracket: "Events", navRewards: "Rewards", navProfile: "Profile", navSettings: "Settings", navAdmin: "Admin",
-      adminTitle: "Create tournament", adminName: "Event name", adminDate: "Date", adminLocation: "Location", adminPlayers: "Existing players", adminWalkins: "New players (one per line)", adminCreate: "Create Smash tournament", adminReady: "Admin access enabled.", adminCreated: "Tournament created with bracket.", adminLogin: "Sign in with the administrator account to use this panel.", adminError: "Could not create the tournament. Check the fields and try again.", adminNoPlayers: "Add at least two players.", adminMatches: "Pending matches", adminConfirm: "Confirm winner", adminDone: "Match confirmed.", adminReward: "Award prize", adminRewardPrompt: "Prize description", adminRewarded: "Prize assigned.", adminNoAccounts: "No linked player accounts yet.",
+      adminTitle: "Create event", adminName: "Event name", adminDate: "Date", adminLocation: "Location", adminLuma: "Luma event link", adminBanner: "Banner image URL", adminGame: "Game", adminFormat: "Format", adminElimination: "Bracket elimination", adminHeats: "Heats", adminPlayers: "Optional registered players", adminAddPlayer: "Add player", adminCreate: "Create event", adminReady: "Admin access enabled.", adminCreated: "Event created.", adminLogin: "Sign in with the administrator account to use this panel.", adminError: "Could not create the event. Check the fields and try again.", adminNoPlayers: "Select at least two players to create an initial bracket, or leave empty for registrations.", adminMatches: "Pending matches", adminConfirm: "Confirm winner", adminDone: "Match confirmed.", adminReward: "Award prize", adminRewardPrompt: "Prize description", adminRewarded: "Prize assigned.", adminNoAccounts: "No registered player accounts yet.", adminManagePlayers: "Manage registered players", adminEdit: "Edit", adminDelete: "Delete", adminDeleteConfirm: "Delete this player?", adminHistoryError: "Players with match history cannot be deleted.", eventLogin: "Sign in to join this event",
       profileTitle: "Profile",
       profileHistoryTitle: "Recent history",
       profileStatRank: "Ranking position", profileStatEvents: "Events played",
@@ -171,7 +171,7 @@ import { calculatePoints } from "./points.mjs";
       seasonResetsOn: "La temporada se reinicia el {date}",
       bracketTitle: "Último evento", rewardsTitle: "Ganadores y premios",
       navRanking: "Leaderboard", navBracket: "Eventos", navRewards: "Premios", navProfile: "Perfil", navSettings: "Configuración", navAdmin: "Administración",
-      adminTitle: "Crear torneo", adminName: "Nombre del evento", adminDate: "Fecha", adminLocation: "Ubicación", adminPlayers: "Jugadores existentes", adminWalkins: "Jugadores nuevos (uno por línea)", adminCreate: "Crear torneo de Smash", adminReady: "Acceso de administrador habilitado.", adminCreated: "Torneo creado con bracket.", adminLogin: "Inicia sesión con la cuenta administradora para usar este panel.", adminError: "No se pudo crear el torneo. Revisa los campos e inténtalo de nuevo.", adminNoPlayers: "Agrega al menos dos jugadores.", adminMatches: "Partidas pendientes", adminConfirm: "Confirmar ganador", adminDone: "Partida confirmada.", adminReward: "Asignar premio", adminRewardPrompt: "Descripción del premio", adminRewarded: "Premio asignado.", adminNoAccounts: "Todavía no hay cuentas de jugadores vinculadas.",
+      adminTitle: "Crear evento", adminName: "Nombre del evento", adminDate: "Fecha", adminLocation: "Ubicación", adminLuma: "Enlace del evento en Luma", adminBanner: "URL de imagen del banner", adminGame: "Juego", adminFormat: "Formato", adminElimination: "Bracket de eliminación", adminHeats: " heats", adminPlayers: "Jugadores registrados opcionales", adminAddPlayer: "Agregar jugador", adminCreate: "Crear evento", adminReady: "Acceso de administrador habilitado.", adminCreated: "Evento creado.", adminLogin: "Inicia sesión con la cuenta administradora para usar este panel.", adminError: "No se pudo crear el evento. Revisa los campos e inténtalo de nuevo.", adminNoPlayers: "Selecciona al menos dos jugadores para crear un bracket inicial o deja vacío para que se inscriban.", adminMatches: "Partidas pendientes", adminConfirm: "Confirmar ganador", adminDone: "Partida confirmada.", adminReward: "Asignar premio", adminRewardPrompt: "Descripción del premio", adminRewarded: "Premio asignado.", adminNoAccounts: "Todavía no hay cuentas de jugadores registradas.", adminManagePlayers: "Administrar jugadores registrados", adminEdit: "Editar", adminDelete: "Eliminar", adminDeleteConfirm: "¿Eliminar este jugador?", adminHistoryError: "No se pueden eliminar jugadores con historial de partidas.", eventLogin: "Inicia sesión para unirte al evento",
       profileTitle: "Perfil",
       profileHistoryTitle: "Historial reciente",
       profileStatRank: "Posición en el ranking", profileStatEvents: "Eventos jugados",
@@ -341,7 +341,7 @@ import { calculatePoints } from "./points.mjs";
   let currentPassportUrl = null;
   let profileSyncState = "idle"; // idle | loading | ready | error
   let profileSyncError = "";
-  let activeView = "ranking";
+  let activeView = location.pathname.startsWith("/admin/event") ? "admin" : "ranking";
   let rankingLimit = 5;
   let rankingSearch = "";
   let rankingRows = [];
@@ -640,13 +640,28 @@ import { calculatePoints } from "./points.mjs";
     const rows = bracketRows.filter((r) => r.event_id === latestEventId);
     const status = eventStatus(rows[0].event_date);
     const badgeLabel = status === "live" ? t("eventLive") : status === "upcoming" ? t("eventUpcoming") : t("eventPast");
+    const tournamentId = rows[0].tournament_id;
+    const registrationCount = rows[0].registration_count || 0;
+    const matches = new Map();
+    rows.forEach((row) => { if (!matches.has(row.match_id)) matches.set(row.match_id, []); matches.get(row.match_id).push(row); });
+    const rounds = new Map();
+    [...matches.values()].forEach((match) => { const round = match[0].round || 1; if (!rounds.has(round)) rounds.set(round, []); rounds.get(round).push(match); });
     el.innerHTML = `
       <div class="lb-event-banner lb-event-${status || "past"}">
+        ${rows[0].banner_url ? `<img class="lb-event-banner-image" src="${esc(rows[0].banner_url)}" alt="" loading="lazy" />` : ""}
         ${status ? `<span class="lb-event-badge">${badgeLabel}</span>` : ""}
         <h3>${esc(rows[0].event_name)}</h3>
-        <span class="lb-event-date">${esc(fmtEventDate(rows[0].event_date))}</span>
+        <span class="lb-event-date">${esc(fmtEventDate(rows[0].event_date))} · ${registrationCount} inscritos${rows[0].luma_url ? ` · <a href="${esc(rows[0].luma_url)}" target="_blank" rel="noopener">Luma ↗</a>` : ""}</span>
       </div>
-      <ul>${rows.map((r) => `<li>${esc(r.game)} · ${esc(r.display_name || "")} · ${r.match_status}${r.placement ? ` (#${r.placement})` : ""}</li>`).join("")}</ul>`;
+      ${rows[0].tournament_status === "draft" ? (currentSession ? `<button type="button" class="lb-promo-btn" id="lb-register-event" data-tournament="${tournamentId}">Inscribirme</button>` : `<button type="button" class="lb-discord-btn" id="lb-event-login">${t("eventLogin")}</button>`) : ""}
+      <div class="lb-bracket-board lb-public-bracket">${[...rounds.entries()].sort((a, b) => a[0] - b[0]).map(([round, roundMatches]) => `<div class="lb-bracket-round"><h3>Ronda ${round}</h3>${roundMatches.map((match) => `<div class="lb-bracket-match">${match.map((r) => `<span class="lb-bracket-player${r.placement === 1 && r.match_status === "confirmed" ? " is-winner" : ""}">${esc(r.display_name || "Jugador")}</span>`).join("")}</div>`).join("")}</div>`).join("")}</div>`;
+    document.querySelector("#lb-register-event")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      await registerForTournament(button.dataset.tournament, button);
+    });
+    document.querySelector("#lb-event-login")?.addEventListener("click", () => {
+      supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: `${window.location.origin}/tierly` } });
+    });
   }
 
   async function loadLatestBracket() {
@@ -656,7 +671,23 @@ import { calculatePoints } from "./points.mjs";
       .order("event_date", { ascending: false })
       .limit(50);
     bracketRows = error || !data ? [] : data;
+    const catalog = await supabase.from("gaming_events_catalog_public_view").select("*").order("event_date", { ascending: false }).limit(30);
+    if (!catalog.error && catalog.data?.length) { renderEventCatalog(catalog.data); return; }
     renderLatestBracket();
+  }
+
+  function renderEventCatalog(events) {
+    const el = document.querySelector("#lb-bracket");
+    if (!el) return;
+    el.innerHTML = events.map((event) => {
+      const names = bracketRows.filter((row) => row.tournament_id === event.tournament_id && row.round === 1).map((row) => row.display_name);
+      const slots = [...Array(Math.max(4, names.length || 4))].map((_, index) => names[index] || "Por definir");
+      return `<article class="lb-event-catalog-card">${event.banner_url ? `<img src="${esc(event.banner_url)}" alt="" loading="lazy" />` : ""}<h3>${esc(event.event_name)}</h3><p>${esc(event.game)} · ${esc(fmtEventDate(event.event_date))} · ${event.registration_count} inscritos</p><p>${esc(event.location || "")}${event.luma_url ? ` · <a href="${esc(event.luma_url)}" target="_blank" rel="noopener">Luma ↗</a>` : ""}</p><div class="lb-bracket-board lb-catalog-bracket"><div class="lb-bracket-round"><h3>Primera ronda</h3>${slots.map((name) => `<div class="lb-bracket-match"><span class="lb-bracket-player">${esc(name)}</span></div>`).join("")}</div><div class="lb-bracket-round"><h3>Semifinal</h3><div class="lb-bracket-match"><span class="lb-bracket-player">Por definir</span></div><div class="lb-bracket-match"><span class="lb-bracket-player">Por definir</span></div></div><div class="lb-bracket-round"><h3>Final</h3><div class="lb-bracket-match"><span class="lb-bracket-player">Por definir</span></div></div></div>${event.tournament_status === "draft" ? `<button type="button" class="lb-discord-btn" data-catalog-login="${event.tournament_id}">${currentSession ? "Inscribirme" : t("eventLogin")}</button>` : ""}</article>`;
+    }).join("");
+    el.querySelectorAll("[data-catalog-login]").forEach((button) => button.addEventListener("click", async () => {
+      if (!currentSession) return supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: `${window.location.origin}/tierly` } });
+      await registerForTournament(button.dataset.catalogLogin, button);
+    }));
   }
 
   async function loadRewards() {
@@ -679,21 +710,31 @@ import { calculatePoints } from "./points.mjs";
     if (activeView === "admin") renderAdminView();
   }
 
-  function renderAdminView() {
+  function renderAdminView(force = false) {
     const el = document.querySelector("#lb-admin");
     if (!el) return;
+    if (!force && el.querySelector("#lb-admin-form")) return;
     if (!currentSession) { el.innerHTML = `<div class="lb-admin-card"><p>${t("adminLogin")}</p></div>`; return; }
     if (!tierlyAdmin) { el.innerHTML = `<div class="lb-admin-card"><p>${t("adminError")}</p></div>`; return; }
     el.innerHTML = `<div class="lb-admin-card"><p>${t("adminReady")}</p><form id="lb-admin-form" class="lb-admin-form">
       <label>${t("adminName")}<input name="name" required maxlength="120" value="Smash Tournament" /></label>
       <label>${t("adminDate")}<input name="date" type="date" required value="${new Date().toISOString().slice(0, 10)}" /></label>
       <label>${t("adminLocation")}<input name="location" maxlength="120" /></label>
-      <label>${t("adminPlayers")}<select name="existing" multiple size="6">${adminPlayers.length ? adminPlayers.map((player) => `<option value="${player.player_id}">${esc(player.display_name)}${player.username ? ` · @${esc(player.username)}` : ""}</option>`).join("") : `<option disabled>${t("adminNoAccounts")}</option>`}</select></label>
-      <label>${t("adminWalkins")}<textarea name="players" placeholder="Jugador invitado 1\nJugador invitado 2"></textarea></label>
+      <label>${t("adminLuma")}<input name="luma" type="url" placeholder="https://lu.ma/..." /></label>
+      <label>${t("adminBanner")}<input name="banner" type="url" placeholder="https://.../imagen.jpg" /></label>
+      <label>${t("adminGame")}<input name="game" required maxlength="80" value="Super Smash Bros." placeholder="Mario Kart, Smash, FIFA..." /></label>
+      <label>${t("adminFormat")}<select name="format"><option value="elimination">${t("adminElimination")}</option><option value="heats">${t("adminHeats")}</option></select></label>
+      <label>${t("adminPlayers")}<select name="player-picker" size="1">${adminPlayers.length ? adminPlayers.map((player) => `<option value="${player.player_id}">${esc(player.display_name)}${player.username ? ` · @${esc(player.username)}` : ""}</option>`).join("") : `<option disabled>${t("adminNoAccounts")}</option>`}</select></label>
+      <button id="lb-admin-add-player" class="lb-admin-small" type="button">+ ${t("adminAddPlayer")}</button><div id="lb-admin-selected" class="lb-admin-selected"></div>
       <button class="lb-admin-submit" type="submit">${t("adminCreate")}</button><div id="lb-admin-status" class="lb-admin-status" role="status"></div>
-    </form><div id="lb-admin-bracket" class="lb-admin-bracket"></div></div>`;
+    </form><div id="lb-admin-bracket" class="lb-admin-bracket"></div><div id="lb-admin-players" class="lb-admin-players"></div><div id="lb-admin-events" class="lb-admin-players"></div></div>`;
     el.querySelector("form").addEventListener("submit", createSmashTournament);
+    const selectedIds = new Set();
+    const selectedEl = el.querySelector("#lb-admin-selected");
+    const renderSelected = () => { el.querySelector("form").dataset.selectedIds = JSON.stringify([...selectedIds]); selectedEl.innerHTML = [...selectedIds].map((id) => { const p = adminPlayers.find((item) => item.player_id === id); return `<button type="button" class="lb-admin-chip" data-remove-player="${id}">${esc(p?.display_name || "Jugador")} ×</button>`; }).join(""); selectedEl.querySelectorAll("[data-remove-player]").forEach((button) => button.addEventListener("click", () => { selectedIds.delete(button.dataset.removePlayer); renderSelected(); })); };
+    el.querySelector("#lb-admin-add-player").addEventListener("click", () => { const id = el.querySelector("[name=player-picker]").value; if (id) selectedIds.add(id); renderSelected(); });
     loadAdminMatches();
+    renderAdminPlayers();
   }
 
   async function loadAdminMatches() {
@@ -731,19 +772,19 @@ import { calculatePoints } from "./points.mjs";
     const status = form.querySelector("[role=status]");
     const button = form.querySelector("button");
     const values = new FormData(form);
-    const names = String(values.get("players") || "").split(/\r?\n/).map((name) => name.trim()).filter(Boolean);
-    const selected = [...form.querySelector("select[name=existing]").selectedOptions].map((option) => ({ player_id: option.value }));
-    const players = [...selected, ...names.map((display_name) => ({ display_name }))];
-    if (players.length < 2) { status.textContent = t("adminNoPlayers"); return; }
+    const selected = JSON.parse(form.dataset.selectedIds || "[]").map((player_id) => ({ player_id }));
+    if (selected.length === 1) { status.textContent = t("adminNoPlayers"); return; }
+    const players = selected;
     button.disabled = true;
     try {
-      const { data: tournament, error: tournamentError } = await supabase.rpc("tierly_create_smash_tournament", { p_name: String(values.get("name")), p_event_date: String(values.get("date")), p_location: String(values.get("location") || ""), p_players: players });
+      const { data: tournament, error: tournamentError } = await supabase.rpc("tierly_create_smash_tournament", { p_name: String(values.get("name")), p_event_date: String(values.get("date")), p_location: String(values.get("location") || ""), p_luma_url: String(values.get("luma") || ""), p_banner_url: String(values.get("banner") || ""), p_game: String(values.get("game")), p_format: String(values.get("format")), p_players: players });
       if (tournamentError) throw tournamentError;
       const matches = players.filter((_, index) => index % 2 === 0).map((_, index) => index);
       status.textContent = t("adminCreated");
-      document.querySelector("#lb-admin-bracket").innerHTML = matches.map((_, index) => `<div class="lb-bracket-match"><strong>Ronda 1 · Mesa ${index + 1}</strong><span>${esc(players[index * 2].display_name || adminPlayers.find((p) => p.player_id === players[index * 2].player_id)?.display_name || "")} vs ${esc(players[index * 2 + 1]?.display_name || adminPlayers.find((p) => p.player_id === players[index * 2 + 1]?.player_id)?.display_name || "Pase")}</span></div>`).join("");
+      document.querySelector("#lb-admin-bracket").innerHTML = matches.map((_, index) => `<div class="lb-bracket-match"><strong>Ronda 1 · Mesa ${index + 1}</strong><span>${esc(adminPlayers.find((p) => p.player_id === players[index * 2].player_id)?.display_name || "")} vs ${esc(adminPlayers.find((p) => p.player_id === players[index * 2 + 1]?.player_id)?.display_name || "Pase")}</span></div>`).join("");
       await loadAdminMatches();
       await Promise.all([loadLatestBracket(), loadRanking()]);
+      await loadAdminPlayers();
     } catch (error) { console.error(error); status.textContent = t("adminError"); }
     button.disabled = false;
   }
@@ -752,6 +793,54 @@ import { calculatePoints } from "./points.mjs";
     if (!tierlyAdmin) return;
     const { data, error } = await supabase.rpc("tierly_admin_players");
     adminPlayers = error || !data ? [] : data;
+  }
+
+  async function renderAdminEvents() {
+    const el = document.querySelector("#lb-admin-events");
+    if (!el) return;
+    const { data, error } = await supabase.rpc("tierly_admin_events");
+    if (error || !data) return;
+    el.innerHTML = `<h3>Eventos</h3>${data.map((item) => `<div class="lb-admin-player"><span><strong>${esc(item.event_name)}</strong> · ${esc(item.location || "")}<small> · ${item.event_date} · estado: ${esc(item.tournament_status)}</small></span><span><button type="button" class="lb-admin-small" data-seed-event="${item.tournament_id}">Generar bracket</button><button type="button" class="lb-admin-small" data-edit-event="${item.event_id}">Editar</button><button type="button" class="lb-admin-small" data-delete-event="${item.event_id}">Eliminar</button></span></div>`).join("")}`;
+    el.querySelectorAll("[data-seed-event]").forEach((button) => button.addEventListener("click", async () => {
+      button.disabled = true;
+      const { error: seedError } = await supabase.rpc("tierly_seed_bracket", { p_tournament_id: button.dataset.seedEvent });
+      if (seedError) { button.disabled = false; window.alert(seedError.message || "No se pudo generar el bracket"); return; }
+      button.textContent = "Bracket creado";
+      await loadAdminMatches();
+    }));
+    el.querySelectorAll("[data-edit-event]").forEach((button) => button.addEventListener("click", async () => {
+      const item = data.find((row) => row.event_id === button.dataset.editEvent); if (!item) return;
+      const name = window.prompt(t("adminName"), item.event_name); if (name === null) return;
+      const location = window.prompt(t("adminLocation"), item.location || ""); if (location === null) return;
+      const luma = window.prompt(t("adminLuma"), item.luma_url || ""); if (luma === null) return;
+      const { error } = await supabase.rpc("tierly_update_event", { p_event_id: item.event_id, p_name: name, p_event_date: item.event_date, p_location: location, p_luma_url: luma });
+      if (!error) await renderAdminEvents();
+    }));
+    el.querySelectorAll("[data-delete-event]").forEach((button) => button.addEventListener("click", async () => {
+      if (!window.confirm("¿Eliminar este evento y su bracket?")) return;
+      const { error } = await supabase.rpc("tierly_delete_event", { p_event_id: button.dataset.deleteEvent });
+      if (!error) { await renderAdminEvents(); await loadLatestBracket(); } else window.alert(error.message || "No se pudo eliminar");
+    }));
+  }
+
+  async function renderAdminPlayers() {
+    const el = document.querySelector("#lb-admin-players");
+    if (!el) return;
+    el.innerHTML = `<h3>${t("adminManagePlayers")}</h3>${adminPlayers.map((player) => `<div class="lb-admin-player"><span><strong>${esc(player.display_name)}</strong>${player.username ? ` · @${esc(player.username)}` : ""}</span><span><button type="button" class="lb-admin-small" data-edit-player="${player.player_id}">${t("adminEdit")}</button><button type="button" class="lb-admin-small" data-delete-player="${player.player_id}">${t("adminDelete")}</button></span></div>`).join("")}`;
+    el.querySelectorAll("[data-edit-player]").forEach((button) => button.addEventListener("click", async () => {
+      const player = adminPlayers.find((item) => item.player_id === button.dataset.editPlayer);
+      if (!player) return;
+      const displayName = window.prompt(t("adminName"), player.display_name);
+      if (displayName === null) return;
+      const username = window.prompt("Username", player.username || "");
+      const { error } = await supabase.rpc("tierly_edit_player", { p_player_id: player.player_id, p_display_name: displayName, p_username: username || null });
+      if (!error) { await loadAdminPlayers(); renderAdminView(true); }
+    }));
+    el.querySelectorAll("[data-delete-player]").forEach((button) => button.addEventListener("click", async () => {
+      if (!window.confirm(t("adminDeleteConfirm"))) return;
+      const { error } = await supabase.rpc("tierly_delete_player", { p_player_id: button.dataset.deletePlayer });
+      if (!error) { await loadAdminPlayers(); renderAdminView(true); } else window.alert(t("adminHistoryError"));
+    }));
   }
 
   function renderStats() {
@@ -1367,6 +1456,18 @@ import { calculatePoints } from "./points.mjs";
     renderProfileSummary();
     renderProfileStats();
     renderProfileHistory();
+    loadLatestBracket();
+  }
+
+  async function registerForTournament(tournamentId, button) {
+    if (!currentSession) {
+      return supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: `${window.location.origin}/tierly` } });
+    }
+    button.disabled = true;
+    await checkDiscordMembership(currentSession);
+    const { error } = await supabase.rpc("tierly_register_for_tournament", { p_tournament_id: tournamentId });
+    button.textContent = error ? "No se pudo inscribir" : "Inscripción confirmada";
+    if (error) button.disabled = false;
   }
 
   function renderAuth(session) {
@@ -1386,6 +1487,7 @@ import { calculatePoints } from "./points.mjs";
       });
       renderProfileStats();
       renderProfileHistory();
+      loadLatestBracket();
       return;
     }
     renderProfileAvatar();

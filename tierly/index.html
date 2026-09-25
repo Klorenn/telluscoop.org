@@ -601,6 +601,12 @@
       background: rgba(255,255,255,0.18); padding: 4px 10px; border-radius: 999px; margin-bottom: 10px;
     }
     .lb-event-banner h3 { font-family: var(--serif); font-size: 20px; }
+    .lb-event-banner-image { width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; }
+    .lb-event-catalog-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 18px; padding: 20px; margin-bottom: 18px; }
+    .lb-event-catalog-card > img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; margin-bottom: 14px; }
+    .lb-event-catalog-card h3 { font-family: var(--serif); font-size: 22px; margin-bottom: 6px; }
+    .lb-event-catalog-card p { color: var(--ink-dim); font-size: 13px; margin: 4px 0; }
+    .lb-catalog-bracket { padding-inline: 0; }
     .lb-event-date { display: block; margin-top: 6px; font-size: 12.5px; color: rgba(255,255,255,0.75); }
 
     ul { list-style: none; }
@@ -794,6 +800,11 @@
     .lb-admin-status { min-height: 22px; color: var(--ink-dim); font-size: 13px; }
     .lb-admin-bracket { display: grid; gap: 10px; margin-top: 20px; }
     .lb-admin-match { border: 1px solid var(--card-border); border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; gap: 12px; }
+    .lb-admin-players { display: grid; gap: 8px; margin-top: 24px; }
+    .lb-admin-player { display: flex; justify-content: space-between; gap: 12px; align-items: center; border: 1px solid var(--card-border); border-radius: 10px; padding: 10px 12px; }
+    .lb-admin-small { min-height: 36px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--card); color: var(--ink); padding: 6px 10px; cursor: pointer; }
+    .lb-admin-selected { display: flex; flex-wrap: wrap; gap: 8px; }
+    .lb-admin-chip { min-height: 36px; border: 1px solid var(--teal-bright); border-radius: 999px; background: rgba(21,156,131,.12); color: var(--teal-deep); padding: 6px 12px; cursor: pointer; }
     .lb-bracket-board { display: flex; gap: 18px; overflow-x: auto; padding: 22px 4px 12px; margin-top: 20px; }
     .lb-bracket-round { display: flex; flex: 1 0 190px; min-width: 190px; flex-direction: column; justify-content: space-around; gap: 18px; }
     .lb-bracket-round h3 { color: var(--ink-dim); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
@@ -999,7 +1010,7 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"></script>
-  <script type="module" src="/tierly/chess.js?v=20260925-05"></script>
-  <script type="module" src="/tierly/app.js?v=20260925-05"></script>
+  <script type="module" src="/tierly/chess.js?v=20260925-16"></script>
+  <script type="module" src="/tierly/app.js?v=20260925-16"></script>
 </body>
 </html>
