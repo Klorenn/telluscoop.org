@@ -34,13 +34,16 @@ modelo nuevo.
 - Brackets y torneos.
 - Leaderboard público (top 50 + búsqueda): es ranking global sin noción de
   guild, incompatible con multi-tenancy.
-- Perfil público `/tierly/u/:username`: vuelve en V2 como pasaporte, con el
-  modelo nuevo.
+- Perfil público del jugador (ranking + tiers en `/tierly`): vuelve en V2 como
+  pasaporte con el modelo nuevo. No existe hoy ninguna ruta
+  `/tierly/u/:username`; lo público es `/tierly` vía rewrite en `vercel.json`.
 - Tiers y divisiones (Bronce→Diamante): V2 trae XP, niveles y stamps; sostener
   dos sistemas de progresión en paralelo es deuda pura.
 
 **Se conserva**: Racer y Chess, que son juegos propios y no dependen del modelo
-de presence.
+de presence. Ambos comparten `gaming_players` y `gaming_match_participants`, así
+que esas dos tablas sobreviven; lo que se elimina es la capa de bracket montada
+encima.
 
 **Datos existentes**: descartables. El modelo nuevo arranca limpio; no se
 migran puntos, tiers ni historial de partidas.
