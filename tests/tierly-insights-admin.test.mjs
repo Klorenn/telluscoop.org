@@ -21,10 +21,12 @@ test("el panel admin reconoce la ruta y ofrece las cuatro vistas", () => {
   }
 });
 
-test("el panel consulta identidades solo mediante la fuente administrativa autorizada", () => {
+test("el panel resuelve al jugador por la sesión y conserva discord_user_id fuera del HTML", () => {
   for (const table of ["community_admins", "daily_game_rollups", "suggested_events", "games", "communities", "tierly_admin_game_players"]) {
     assert.match(admin, new RegExp(`from\\(["']${table}["']\\)`));
   }
+  assert.match(admin, /from\(["']gaming_players["']\)/);
+  assert.match(admin, /eq\(["']auth_user_id["'], state\.session\.user\.id\)/);
   assert.doesNotMatch(admin, /from\(["']play_sessions["']\)/);
   assert.doesNotMatch(admin, /discord_user_id/);
   assert.match(admin, /display_name/);
@@ -52,6 +54,17 @@ test("cada juego del panel usa un icono Lucide determinista y controlado", () =>
 test("la única escritura posible es la RPC segura de estado de sugerencia", () => {
   assert.match(admin, /rpc\(["']tierly_update_suggestion_status["']/);
   assert.doesNotMatch(admin, /\.insert\(|\.upsert\(|\.delete\(|\.update\(/);
+});
+
+test("las acciones de eventos usan RPC y recargan la UI con errores accesibles", () => {
+  for (const rpc of ["tierly_register_event", "tierly_unregister_event", "tierly_check_in_event", "tierly_confirm_event_attendance"]) {
+    assert.match(admin, new RegExp(rpc));
+  }
+  assert.match(admin, /state\.message = result\.error\?\.message/);
+  assert.match(admin, /role="alert"/);
+  assert.match(admin, /await load\(\)/);
+  assert.match(admin, /tierly_xp_ledger/);
+  assert.match(admin, /confirmed_at/);
 });
 
 test("la navegación pública conserva ranking, chess y racer sin admin antiguo", () => {
