@@ -693,7 +693,22 @@
      .tierly-admin-stat span { color:var(--ink-dim); font-size:13px; }
      .tierly-admin-gate { max-width:600px; }
      .tierly-admin-gate h2 { font-family:var(--serif); margin-bottom:8px; }
-     .tierly-admin-gate p { color:var(--ink-dim); margin-bottom:16px; }
+      .tierly-admin-gate p { color:var(--ink-dim); margin-bottom:16px; }
+      .tierly-admin-event-form, .tierly-admin-event-card { background:var(--card); border:1px solid var(--card-border); border-radius:18px; padding:20px; margin-bottom:16px; box-shadow:var(--card-shadow); }
+      .tierly-admin-event-form h3, .tierly-admin-event-card h3 { font-family:var(--serif); color:var(--ink); margin-bottom:12px; }
+      .tierly-admin-event-form form { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+      .tierly-admin-event-form label { display:grid; gap:5px; color:var(--ink-dim); font-size:12px; font-weight:600; }
+      .tierly-admin-event-form input, .tierly-admin-event-form select, .tierly-admin-event-form textarea { width:100%; min-height:44px; padding:10px 12px; border:1px solid var(--card-border); border-radius:10px; background:var(--sand-soft); color:var(--ink); font:inherit; }
+      .tierly-admin-event-form textarea { min-height:80px; resize:vertical; }
+      .tierly-admin-event-form label:nth-last-child(2), .tierly-admin-event-form button { grid-column:1 / -1; }
+      .tierly-admin-event-card { display:grid; gap:14px; }
+      .tierly-admin-event-actions { display:flex; flex-wrap:wrap; gap:8px; }
+      .tierly-admin-event-card details { border-top:1px solid var(--card-border); padding-top:12px; }
+      .tierly-admin-event-card summary { cursor:pointer; color:var(--teal-bright); font-size:13px; font-weight:600; }
+      .tierly-admin-event-card ul { margin-top:8px; }
+      .tierly-admin-event-card li { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+      .tierly-admin-attendance-state { color:var(--ink-dim); font-size:12px; margin-left:auto; }
+      @media (max-width:640px) { .tierly-admin-event-form form { grid-template-columns:1fr; } .tierly-admin-event-form label:nth-last-child(2), .tierly-admin-event-form button { grid-column:auto; } }
 
     .lb-chess-lobby-shell { width: 100%; max-width: 1080px; margin: 0 auto; }
     #lb-chess-title { width: 100%; max-width: 1080px; margin: 0 auto 18px; }

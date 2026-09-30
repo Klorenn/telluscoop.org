@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const sql = readFileSync(new URL("../supabase/migrations/20260930152000_tierly_phase1_events_attendance_xp.sql", import.meta.url), "utf8");
+const createSql = readFileSync(new URL("../supabase/migrations/20260930160000_tierly_create_community_event.sql", import.meta.url), "utf8");
+const adminJs = readFileSync(new URL("../tierly/admin.js", import.meta.url), "utf8");
 
 test("vincula eventos con comunidades y añade horario", () => {
   assert.match(sql, /gaming_events[\s\S]*guild_id text references public\.communities/i);
@@ -33,4 +35,21 @@ test("habilita RLS y restringe las RPCs", () => {
   assert.match(sql, /revoke all on function[\s\S]*from public, anon/i);
   assert.match(sql, /grant execute on function[\s\S]*to authenticated/i);
   assert.match(sql, /to service_role/i);
+});
+
+test("la Fase 1 crea eventos solo mediante una RPC administrativa", () => {
+  assert.match(createSql, /tierly_create_event/);
+  assert.match(createSql, /is_community_admin\(p_guild_id\)/);
+  assert.match(createSql, /insert into public\.gaming_events/);
+  assert.match(createSql, /revoke all on function[\s\S]*from public, anon/i);
+  assert.match(adminJs, /tierly_create_event/);
+  assert.doesNotMatch(adminJs, /insert\s*\(/i);
+});
+
+test("el panel usa las RPCs de asistencia y no renderiza ids de Discord", () => {
+  for (const fn of ["tierly_register_event", "tierly_unregister_event", "tierly_check_in_event", "tierly_confirm_event_attendance"]) {
+    assert.match(adminJs, new RegExp(fn));
+  }
+  assert.match(adminJs, /tierly_event_attendance/);
+  assert.doesNotMatch(adminJs, /discord_user_id/);
 });
