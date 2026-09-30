@@ -1,4 +1,4 @@
-// tierly/chess.js · Módulo de ajedrez Tierly (sin bundler).
+// tierly/chess.js · Módulo de ajedrez TIRLY (sin bundler).
 // - Bot vs Stockfish (tres dificultades) y PvP por Supabase Realtime.
 // - Anti-cheat: el browser nunca decide un resultado. Cada movimiento
 //   (humano Y bot) se POSTea al edge function /functions/v1/chess, que lo

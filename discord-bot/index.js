@@ -52,7 +52,7 @@ async function recordBotHealth(action, errorCode = null) {
   const result = action === "error"
     ? await supabase.rpc("tierly_bot_health_error", { p_error_code: errorCode || "unknown" })
     : await supabase.rpc("tierly_bot_health_heartbeat", { p_connected_at: action === "connected" ? BOT_CONNECTED_AT : null });
-  if (result.error) console.error("No se pudo registrar el estado operativo de Tierly.");
+  if (result.error) console.error("No se pudo registrar el estado operativo de TIRLY.");
 }
 
 function sessionKey(userId, gameName) {
@@ -70,7 +70,7 @@ async function handleTierlyCommand(message) {
   try {
     if (parts[1] === "presencia" && parts[2] === "si") {
       await sessions.acceptMemberConsent(DISCORD_GUILD_ID, message.author.id, CONSENT_VERSION);
-      await message.channel.send("Consentimiento de presencia activado. Tierly podrá registrar las sesiones de juego.");
+      await message.channel.send("Consentimiento de presencia activado. TIRLY podrá registrar las sesiones de juego.");
     } else if (parts[1] === "presencia" && parts[2] === "no") {
       await sessions.declineMemberConsent(DISCORD_GUILD_ID, message.author.id);
       for (const [key, sessionId] of activeSessions) {
@@ -82,13 +82,13 @@ async function handleTierlyCommand(message) {
       for (const [key, sessionId] of activeSessions) {
         if (key.startsWith(`${message.author.id}:`)) activeSessions.delete(key);
       }
-      await message.channel.send("Se solicitó el borrado de tus datos de Tierly y se cerraron tus sesiones.");
+      await message.channel.send("Se solicitó el borrado de tus datos de TIRLY y se cerraron tus sesiones.");
     } else {
       await message.channel.send("Usa: `!tierly presencia si`, `!tierly presencia no` o `!tierly borrar`.");
     }
   } catch (error) {
     await recordBotHealth("error", "consent_update");
-    console.error("No se pudo actualizar el consentimiento de Tierly.");
+    console.error("No se pudo actualizar el consentimiento de TIRLY.");
     await message.channel.send("No se pudo actualizar el consentimiento. Inténtalo nuevamente más tarde.");
   }
   return true;
@@ -203,7 +203,7 @@ async function getWelcomeChannel(guild) {
   return guild.channels.create({
     name: WELCOME_CHANNEL_NAME,
     type: ChannelType.GuildText,
-    topic: "Tierly saluda por acá 🐈‍⬛ — bot de verificación del leaderboard gaming de Tellus.",
+    topic: "TIRLY saluda por acá 🐈‍⬛ — bot de verificación del leaderboard gaming de TIRLY.",
   });
 }
 
@@ -219,7 +219,7 @@ async function getAnnounceChannel(guild) {
   return guild.channels.create({
     name: ANNOUNCE_CHANNEL_NAME,
     type: ChannelType.GuildText,
-    topic: "Tellus gaming leaderboard updates 🐈‍⬛ — new events and rank-ups.",
+    topic: "TIRLY gaming leaderboard updates 🐈‍⬛ — new events and rank-ups.",
   });
 }
 
@@ -352,17 +352,17 @@ async function syncMembership(member) {
 }
 
 client.once("ready", async () => {
-  console.log(`Tierly conectado como ${client.user.tag}`);
+  console.log(`TIRLY conectado como ${client.user.tag}`);
   await recordBotHealth("connected");
   client.user.setPresence({
-    activities: [{ name: "el ranking gaming de Tellus", type: ActivityType.Watching }],
+    activities: [{ name: "el ranking gaming de TIRLY", type: ActivityType.Watching }],
     status: "online",
   });
 
   const guild = await client.guilds.fetch(DISCORD_GUILD_ID);
   const channel = await getWelcomeChannel(guild);
   await channel
-    .send(`🐈‍⬛ **Tierly está en línea.** Ya puedo verificar membresías para el leaderboard → ${LEADERBOARD_URL}`)
+    .send(`🐈‍⬛ **TIRLY está en línea.** Ya puedo verificar membresías para el leaderboard → ${LEADERBOARD_URL}`)
     .catch((err) => console.error("No se pudo postear saludo de arranque:", err.message));
 
   if (supabase) {
@@ -398,7 +398,7 @@ client.on("guildMemberAdd", async (member) => {
   if (member.guild.id !== DISCORD_GUILD_ID) return;
   const channel = await getWelcomeChannel(member.guild);
   await channel
-    .send(`🐈‍⬛ ¡Bienvenido/a, ${member}! Sumate al leaderboard gaming de Tellus → ${LEADERBOARD_URL}`)
+    .send(`🐈‍⬛ ¡Bienvenido/a, ${member}! Sumate al leaderboard gaming de TIRLY → ${LEADERBOARD_URL}`)
     .catch((err) => console.error("No se pudo postear bienvenida:", err.message));
   await syncMembership(member);
 });
@@ -412,7 +412,7 @@ client.on("messageCreate", async (message) => {
   if (message.content.trim().toLowerCase() !== "!bienvenida") return;
 
   await message.channel
-    .send(`🐈‍⬛ ¡Bienvenido/a, ${message.member}! Sumate al leaderboard gaming de Tellus → ${LEADERBOARD_URL}`)
+    .send(`🐈‍⬛ ¡Bienvenido/a, ${message.member}! Sumate al leaderboard gaming de TIRLY → ${LEADERBOARD_URL}`)
     .catch((err) => console.error("No se pudo postear bienvenida:", err.message));
   await syncMembership(message.member);
 });

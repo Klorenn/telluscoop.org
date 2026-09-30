@@ -1,4 +1,4 @@
-// Panel de insights de Tierly. Los agregados se protegen con RLS.
+// Panel de insights de TIRLY. Los agregados se protegen con RLS.
 (() => {
   "use strict";
 
@@ -153,7 +153,7 @@
 
   function render() {
     if (!state.authorized) return state.message ? (root.innerHTML = `<div class="tierly-admin-gate"><h2>Acceso no autorizado</h2><p>${esc(state.message)}</p></div>`) : showLogin();
-    root.innerHTML = `<div class="tierly-admin-head"><div><p class="tierly-admin-kicker">Tierly insights</p><h1>Administración</h1><p class="tierly-admin-note">Datos agregados por comunidad, protegidos por RLS.</p></div><button type="button" class="lb-mini-btn" id="tierly-admin-refresh">Actualizar</button></div><nav class="tierly-admin-tabs" aria-label="Vistas de administración">${["events", "games", "players", "trends", "suggestions"].map((view) => `<button type="button" data-admin-view="${view}" class="${state.view === view ? "is-active" : ""}">${view === "events" ? "Eventos" : view === "games" ? "Juegos" : view === "players" ? "Jugadores" : view === "trends" ? "Tendencias" : "Sugerencias"}</button>`).join("")}</nav><div id="tierly-admin-content"></div>`;
+    root.innerHTML = `<div class="tierly-admin-head"><div><p class="tierly-admin-kicker">TIRLY insights</p><h1>Administración</h1><p class="tierly-admin-note">Datos agregados por comunidad, protegidos por RLS.</p></div><button type="button" class="lb-mini-btn" id="tierly-admin-refresh">Actualizar</button></div><nav class="tierly-admin-tabs" aria-label="Vistas de administración">${["events", "games", "players", "trends", "suggestions"].map((view) => `<button type="button" data-admin-view="${view}" class="${state.view === view ? "is-active" : ""}">${view === "events" ? "Eventos" : view === "games" ? "Juegos" : view === "players" ? "Jugadores" : view === "trends" ? "Tendencias" : "Sugerencias"}</button>`).join("")}</nav><div id="tierly-admin-content"></div>`;
     root.querySelectorAll("[data-admin-view]").forEach((button) => button.addEventListener("click", () => { state.view = button.dataset.adminView; render(); }));
     root.querySelector("#tierly-admin-refresh").addEventListener("click", load);
     renderContent();
