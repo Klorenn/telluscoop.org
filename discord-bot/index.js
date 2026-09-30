@@ -284,8 +284,38 @@ async function announceRankUps(channel) {
 async function runNotificationPoll(guild) {
   if (!supabase) return;
   const channel = await getAnnounceChannel(guild);
+  await deliverEventReminders(channel);
   await announceNewEvents(channel);
   await announceRankUps(channel);
+}
+
+async function deliverEventReminders(channel) {
+  const now = new Date().toISOString();
+  const { data: reminders, error } = await supabase
+    .from("tierly_event_notifications")
+    .select("id, event_id, reminder_minutes, scheduled_for, gaming_events(name, starts_at, timezone)")
+    .eq("guild_id", DISCORD_GUILD_ID)
+    .eq("status", "pending")
+    .lte("scheduled_for", now)
+    .order("scheduled_for", { ascending: true })
+    .limit(25);
+  if (error || !reminders) return;
+
+  for (const reminder of reminders) {
+    const event = reminder.gaming_events;
+    if (!event) continue;
+    const { data: claimed, error: claimError } = await supabase
+      .from("tierly_event_notifications")
+      .update({ status: "sent", sent_at: now })
+      .eq("id", reminder.id)
+      .eq("status", "pending")
+      .select("id")
+      .maybeSingle();
+    if (claimError || !claimed) continue;
+    await channel.send(
+      `⏰ Recordatorio: **${event.name}** comienza en ${reminder.reminder_minutes} minutos (${event.timezone || "UTC"}).\n${LEADERBOARD_URL}`,
+    );
+  }
 }
 
 async function syncMembership(member) {

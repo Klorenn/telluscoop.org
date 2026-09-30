@@ -10,6 +10,7 @@ Proceso Node separado de la web y de las Supabase Edge Functions. Corre 24/7 via
 - Si hay credenciales de Supabase configuradas, sincroniza `discord_member = true` en `gaming_players` apenas la persona entra al server — no hace falta que además haga login en la web para que quede marcada.
 - Cualquier miembro puede escribir `!bienvenida` en el canal del bot para forzar su propio saludo + sync manual (útil para quien ya era miembro del server antes de que el bot arrancara, ya que `guildMemberAdd` no dispara retroactivamente).
 - Observa `presenceUpdate` para abrir y cerrar sesiones de juegos, reconcilia la caché al arrancar y mantiene las sesiones activas con un heartbeat cada cinco minutos. La cobertura depende de la visibilidad de presence de cada usuario.
+- Entrega recordatorios de eventos generados por Supabase. La migración `20260930201000_tierly_event_reminders.sql` crea el registro idempotente por guild/evento y el job `tierly-generar-recordatorios`; el bot solo reclama filas `pending` de su guild y las marca como `sent` de forma condicional.
 
 ## Variables de entorno
 
@@ -35,6 +36,8 @@ para sincronización, sesiones, anuncios y notificaciones. Sin ellas el bot pued
 conectarse a Discord, pero esas funciones quedan desactivadas.
 
 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` no es utilizada por este proceso.
+
+Los horarios se almacenan como `timestamptz` y se calculan desde `gaming_events.starts_at`; `gaming_events.timezone` se conserva únicamente para mostrar la zona local. No se agregan IDs de guild, evento ni credenciales al frontend.
 
 ## Antes de desplegar: Developer Portal
 
@@ -136,7 +139,7 @@ intents privilegiados y permisos del bot antes de cambiar código.
 
 ## Verificación de cron y rollback
 
-Los tres jobs de Tierly se crean en la migración
+Los jobs de Tierly se crean en las migraciones
 `20260929092000_tierly_v0_jobs.sql` con estos nombres y horarios UTC:
 
 | Job | Horario | Función |
@@ -144,6 +147,7 @@ Los tres jobs de Tierly se crean en la migración
 | `tierly-rollup-diario` | `15 4 * * *` | `tierly_rollup_day()` |
 | `tierly-cerrar-sesiones-viejas` | `5 * * * *` | `tierly_close_stale_sessions()` |
 | `tierly-sugerencias` | `30 4 * * *` | `tierly_generate_suggestions()` |
+| `tierly-generar-recordatorios` | `*/5 * * * *` | cancelar y generar recordatorios |
 
 Verificar desde el SQL Editor con una sesión administrativa:
 
