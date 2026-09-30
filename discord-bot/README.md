@@ -13,14 +13,28 @@ Proceso Node separado de la web y de las Supabase Edge Functions. Corre 24/7 via
 
 ## Variables de entorno
 
-| Variable | Requerida | De dónde sale |
+El proceso carga `discord-bot/.env` mediante `node --env-file=.env`. Ese archivo es
+local y está ignorado por Git. Nunca se deben pegar sus valores en tickets, logs,
+capturas ni documentación.
+
+| Variable | Requerida | Uso |
 |---|---|---|
-| `DISCORD_BOT_TOKEN` | sí | Discord Developer Portal → Bot → Token (la misma que ya usás en Supabase Edge Functions) |
-| `DISCORD_GUILD_ID` | sí | ID del server de Tellus (clic derecho al server → Copy Server ID, con modo desarrollador activado) |
-| `WELCOME_CHANNEL_ID` | no | ID de un canal existente si querés elegirlo vos. Si lo dejás vacío, Tierly crea/usa `bienvenida-tierly` |
-| `ANNOUNCE_CHANNEL_ID` | no | ID de un canal para anuncios (eventos nuevos, subidas de rango). Si lo dejás vacío, Tierly crea/usa `anuncios-tierly` |
-| `SUPABASE_URL` | no (recomendada) | `https://rhzanxzoqmbxptvxgnfj.supabase.co` |
-| `SUPABASE_SERVICE_ROLE_KEY` | no (recomendada) | Supabase Dashboard → Project Settings → API → `service_role` (secreto, nunca en el frontend) |
+| `DISCORD_BOT_TOKEN` | sí* | Token del bot en Discord Developer Portal → Bot → Token |
+| `DISCORD_TOKEN` | sí* | Alias legado aceptado por el proceso; preferir `DISCORD_BOT_TOKEN` |
+| `DISCORD_GUILD_ID` | sí | ID del servidor de Tellus |
+| `WELCOME_CHANNEL_ID` | no | Canal de bienvenida existente; si falta, usa o crea `bienvenida-tierly` |
+| `ANNOUNCE_CHANNEL_ID` | no | Canal de anuncios existente; si falta, usa o crea `anuncios-tierly` |
+| `SUPABASE_URL` | no** | URL de Supabase; preferirla sobre `NEXT_PUBLIC_SUPABASE_URL` |
+| `NEXT_PUBLIC_SUPABASE_URL` | no** | Alias legado para la URL de Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | no** | Clave `service_role`, solo en el proceso persistente y nunca en el frontend |
+
+\* Se requiere una de `DISCORD_BOT_TOKEN` o `DISCORD_TOKEN`.
+
+\*\* Se requieren juntas `SUPABASE_URL` (o su alias) y `SUPABASE_SERVICE_ROLE_KEY`
+para sincronización, sesiones, anuncios y notificaciones. Sin ellas el bot puede
+conectarse a Discord, pero esas funciones quedan desactivadas.
+
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` no es utilizada por este proceso.
 
 ## Antes de desplegar: Developer Portal
 
@@ -29,7 +43,7 @@ En https://discord.com/developers/applications → tu app Tierly → **Bot**:
 1. Activá **SERVER MEMBERS INTENT**, **MESSAGE CONTENT INTENT** y **PRESENCE INTENT** (obligatorios — sin el primero `guildMemberAdd` no dispara, sin el segundo el comando `!bienvenida` no funciona y sin el tercero no se reciben presences).
 2. Verificá que el bot ya esté agregado al server de Tellus con permisos: `View Channels`, `Send Messages`, `Manage Channels` (este último solo si querés que cree el canal solo).
 
-## Deploy en Google Cloud (e2-micro, free tier)
+## Arranque persistente en Google Cloud (e2-micro, free tier)
 
 Es un bot de Gateway (WebSocket persistente) → necesita un proceso que no se duerma. Render ya no tiene free tier para Background Worker (mínimo $7/mes). GCP ofrece una VM `e2-micro` gratis para siempre (Compute Engine Always Free), así que corremos el bot ahí con `systemd`.
 
@@ -62,7 +76,9 @@ cd tellus/discord-bot
 npm install
 ```
 
-Cargá las 5 variables de entorno de la tabla de arriba en `discord-bot/.env` (usar `dotenv` o exportarlas en el servicio de systemd, nunca hardcodeadas en el código).
+Crear `discord-bot/.env` con las variables necesarias de la tabla anterior. No
+usar `dotenv` adicional: el script `npm start` ya emplea la capacidad nativa
+`--env-file` de Node. Validar que la VM use Node 20.6 o superior.
 
 ### 4. Servicio systemd (mantiene el bot corriendo 24/7 y lo reinicia si crashea)
 
@@ -80,6 +96,7 @@ EnvironmentFile=/home/<usuario>/tellus/discord-bot/.env
 ExecStart=/usr/bin/npm start
 Restart=always
 RestartSec=30
+TimeoutStopSec=30
 
 [Install]
 WantedBy=multi-user.target
@@ -93,13 +110,82 @@ sudo journalctl -u tierly-bot -f   # logs en vivo
 
 Deberías ver `Tierly conectado como Tierly#XXXX` y el bot pasa a **online** en Discord.
 
-### Actualizar el bot (nuevo deploy)
+## Health y reinicio: checklist
+
+No existe un endpoint HTTP de health en este bot. La verificación operativa es
+el estado del servicio, el último log de conexión y el estado **online** en
+Discord:
+
+```bash
+sudo systemctl is-enabled tierly-bot
+sudo systemctl is-active tierly-bot
+sudo systemctl status tierly-bot --no-pager
+sudo journalctl -u tierly-bot -n 100 --no-pager
+```
+
+Después de reiniciar, confirmar:
+
+- aparece `Tierly conectado como ...` en los logs;
+- el bot aparece **online** en Discord;
+- se puede ejecutar `!bienvenida` en el servidor configurado;
+- si Supabase está habilitado, no aparecen errores de bootstrap, heartbeat o poll;
+- `GuildMembers`, `Message Content` y `Presence Intent` siguen habilitados en Discord.
+
+Si el proceso está activo pero no aparece online, revisar primero token, red,
+intents privilegiados y permisos del bot antes de cambiar código.
+
+## Verificación de cron y rollback
+
+Los tres jobs de Tierly se crean en la migración
+`20260929092000_tierly_v0_jobs.sql` con estos nombres y horarios UTC:
+
+| Job | Horario | Función |
+|---|---:|---|
+| `tierly-rollup-diario` | `15 4 * * *` | `tierly_rollup_day()` |
+| `tierly-cerrar-sesiones-viejas` | `5 * * * *` | `tierly_close_stale_sessions()` |
+| `tierly-sugerencias` | `30 4 * * *` | `tierly_generate_suggestions()` |
+
+Verificar desde el SQL Editor con una sesión administrativa:
+
+```sql
+select jobid, jobname, schedule, active, command
+from cron.job
+where jobname in (
+  'tierly-rollup-diario',
+  'tierly-cerrar-sesiones-viejas',
+  'tierly-sugerencias'
+)
+order by jobname;
+
+select jobid, runid, status, return_message, start_time, end_time
+from cron.job_run_details
+where jobid in (
+  select jobid from cron.job
+  where jobname like 'tierly-%'
+)
+order by start_time desc
+limit 20;
+```
+
+No se debe editar `cron.job` manualmente como sustituto de una migración.
+Para rollback de la migración, primero detener cambios de código que dependan
+de sus funciones, guardar la salida de las consultas anteriores y aplicar una
+migración de reversión revisada que elimine únicamente esos tres jobs y sus
+funciones. No se debe ejecutar `drop extension pg_cron`, porque otros módulos
+del proyecto también pueden usarla. Si el problema es solo el bot, detenerlo
+con `sudo systemctl stop tierly-bot` sin tocar los jobs de base de datos.
+
+### Actualizar el bot (nuevo despliegue)
 
 ```bash
 gcloud compute ssh tierly-bot --zone=us-west1-b
 cd tellus && git pull && cd discord-bot && npm install
 sudo systemctl restart tierly-bot
 ```
+
+Verificar el checklist anterior antes y después del reinicio. Si falla, volver
+al commit previamente validado, ejecutar `npm install` y reiniciar el servicio;
+no sobrescribir `.env` durante el rollback.
 
 ### Alternativa paga (más simple, sin manejar VM)
 

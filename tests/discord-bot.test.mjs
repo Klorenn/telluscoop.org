@@ -14,6 +14,11 @@ test("discord-bot requests the GuildMembers intent so it can see joins", () => {
   assert.match(bot, /GatewayIntentBits\.GuildMembers/);
 });
 
+test("discord-bot requests the GuildPresences intent and listens for updates", () => {
+  assert.match(bot, /GatewayIntentBits\.GuildPresences/);
+  assert.match(bot, /client\.on\("presenceUpdate"/);
+});
+
 test("discord-bot greets on ready and welcomes new members", () => {
   assert.match(bot, /client\.once\("ready"/);
   assert.match(bot, /client\.on\("guildMemberAdd"/);
@@ -35,4 +40,21 @@ test("discord-bot package declares discord.js and starts via npm start", () => {
 test("discord-bot acepta los nombres de variables existentes en el entorno local", () => {
   assert.match(bot, /DISCORD_BOT_TOKEN_ENV \|\| DISCORD_TOKEN/);
   assert.match(bot, /SUPABASE_URL_ENV \|\| NEXT_PUBLIC_SUPABASE_URL/);
+});
+
+test("discord-bot mantiene un arranque persistente con systemd documentado", async () => {
+  const readme = await readFile(new URL("../discord-bot/README.md", import.meta.url), "utf8");
+  assert.match(readme, /EnvironmentFile=.*discord-bot\/\.env/);
+  assert.match(readme, /Restart=always/);
+  assert.match(readme, /systemctl is-active tierly-bot/);
+  assert.match(readme, /node --env-file=\.env/);
+});
+
+test("discord-bot documenta la verificación de los tres jobs de cron y rollback", async () => {
+  const readme = await readFile(new URL("../discord-bot/README.md", import.meta.url), "utf8");
+  for (const job of ["tierly-rollup-diario", "tierly-cerrar-sesiones-viejas", "tierly-sugerencias"]) {
+    assert.match(readme, new RegExp(job));
+  }
+  assert.match(readme, /cron\.job_run_details/);
+  assert.match(readme, /rollback/i);
 });

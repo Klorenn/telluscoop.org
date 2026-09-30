@@ -75,7 +75,13 @@ import { calculatePoints } from "./points.mjs";
       settingsTitle: "Settings",
       settingsLangLabel: "Language",
       settingsThemeLabel: "Theme", themeLight: "Light", themeDark: "Dark",
-      settingsAbout: "Tierly is the Discord verification bot for this leaderboard. It only checks server membership, it never reads or posts messages.",
+       settingsAbout: "Tierly is the Discord verification bot for this leaderboard. It only checks server membership, it never reads or posts messages.",
+       privacyTitle: "Presence privacy",
+       privacyBody: "Presence means the game activity Discord shares with the server. Tierly uses it to calculate aggregated gaming statistics, not to read or publish messages.",
+       privacyObserve: "Allow observation of my presence",
+       privacyDelete: "Request deletion of my presence data",
+       privacyDeleteConfirm: "Request deletion of your presence data? This will stop observation and remove stored sessions.",
+       privacySaved: "Privacy preference saved.", privacyDeleted: "Deletion requested.", privacyError: "We could not update your privacy preference. Try again.",
       eventLive: "LIVE", eventUpcoming: "UPCOMING", eventPast: "COMPLETED",
       promoTitle1: "Climb the ranks.", promoTitle2: "Become legendary.",
       promoBody: "Compete in events and earn exclusive rewards.", promoExplore: "Explore Events",
@@ -229,7 +235,13 @@ import { calculatePoints } from "./points.mjs";
       settingsTitle: "Configuración",
       settingsLangLabel: "Idioma",
       settingsThemeLabel: "Tema", themeLight: "Claro", themeDark: "Oscuro",
-      settingsAbout: "Tierly es el bot de verificación de Discord de este leaderboard. Solo confirma tu membresía del server, nunca lee ni postea mensajes.",
+       settingsAbout: "Tierly es el bot de verificación de Discord de este leaderboard. Solo confirma tu membresía del server, nunca lee ni postea mensajes.",
+       privacyTitle: "Privacidad del presence",
+       privacyBody: "Presence es la actividad de juego que Discord comparte con el servidor. Tierly la usa para calcular estadísticas agregadas, no para leer ni publicar mensajes.",
+       privacyObserve: "Permitir la observación de mi presence",
+       privacyDelete: "Solicitar borrado de mis datos de presence",
+       privacyDeleteConfirm: "¿Solicitar el borrado de tus datos de presence? Esto detendrá la observación y eliminará las sesiones guardadas.",
+       privacySaved: "Preferencia de privacidad guardada.", privacyDeleted: "Borrado solicitado.", privacyError: "No pudimos actualizar tu preferencia de privacidad. Inténtalo de nuevo.",
       eventLive: "EN VIVO", eventUpcoming: "PRÓXIMO", eventPast: "FINALIZADO",
       promoTitle1: "Sube en el ranking.", promoTitle2: "Conviértete en leyenda.",
       promoBody: "Compite en eventos y gana premios exclusivos.", promoExplore: "Ver eventos",
@@ -338,6 +350,8 @@ import { calculatePoints } from "./points.mjs";
   document.documentElement.setAttribute("data-theme", theme);
   let currentSession = null;
   let currentPlayer = null;
+  let privacyState = null;
+  let privacyGuildId = null;
   let currentPassportUrl = null;
   let profileSyncState = "idle"; // idle | loading | ready | error
   let profileSyncError = "";
@@ -1043,7 +1057,6 @@ import { calculatePoints } from "./points.mjs";
         || currentSession.user.user_metadata?.name
         || currentSession.user.email;
       const description = currentPlayer?.bio || currentPlayer?.stellar_passport_bio || "";
-      console.log("[TIERLY DEBUG] renderProfileSummary:", JSON.stringify({ socialsCount: socials.length, displayName, description: description?.substring(0, 80), hasCurrentPlayer: !!currentPlayer, bio: currentPlayer?.bio, stellar_passport_bio: currentPlayer?.stellar_passport_bio, twitter: currentPlayer?.twitter_handle }));
       el.innerHTML = `
         <div class="lb-profile-summary-block">
           <div class="lb-profile-summary-head">
@@ -1288,14 +1301,12 @@ import { calculatePoints } from "./points.mjs";
       const text = await res.text();
       let parsed = null;
       try { parsed = JSON.parse(text); } catch {}
-      console.log(`[TIERLY DEBUG] discord-verify raw: status=${res.status} body=${text.slice(0, 500)}`);
       const errBody = res.ok ? null : (parsed?.error || text || `HTTP ${res.status}`);
       ptr = res.ok ? { data: parsed, error: null } : { data: null, error: { name: `HTTP ${res.status}`, status: res.status, message: errBody } };
     } catch (invokeError) {
       ptr = { data: null, error: invokeError };
     }
     const { data, error } = ptr;
-    console.log("[TIERLY DEBUG] discord-verify response:", JSON.stringify({ verified: data?.verified, hasPlayer: !!data?.player, playerKeys: data?.player ? Object.keys(data.player) : [], bio: data?.player?.bio, twitter: data?.player?.twitter_handle, telegram: data?.player?.telegram_handle, discord: data?.player?.discord_handle, instagram: data?.player?.instagram_handle, stellar_passport_url: data?.stellar_passport_url, error }));
     if (error || !data?.player) {
       console.error("[TIERLY] discord-verify failed:", error?.message || data?.error || "sin respuesta");
       profileSyncError = data?.error || error?.message || "";
@@ -1309,7 +1320,6 @@ import { calculatePoints } from "./points.mjs";
       // out), so persistBannerToServer() no-opped back then. Push it now.
       persistBannerToServer();
     }
-    console.log("[TIERLY DEBUG] currentPlayer after sync:", JSON.stringify({ bio: currentPlayer?.bio, twitter: currentPlayer?.twitter_handle, telegram: currentPlayer?.telegram_handle, discord: currentPlayer?.discord_handle, instagram: currentPlayer?.instagram_handle, stellar_passport_url: currentPlayer?.stellar_passport_url }));
     renderProfileAvatar();
     renderProfileSummary();
     renderProfileStats();
@@ -1336,6 +1346,8 @@ import { calculatePoints } from "./points.mjs";
     if (!el) return;
     if (!session) {
       currentPlayer = null;
+      privacyState = null;
+      privacyGuildId = null;
       profileSyncState = "idle";
       profileSyncError = "";
       renderProfileAvatar();
@@ -1353,6 +1365,7 @@ import { calculatePoints } from "./points.mjs";
     renderProfileSummary();
     el.innerHTML = "";
     checkDiscordMembership(session);
+    loadPrivacyState().then(() => { if (activeView === "settings") renderSettingsView(); });
     renderProfileStats();
     renderProfileHistory();
   }
@@ -1533,7 +1546,14 @@ import { calculatePoints } from "./points.mjs";
         <span class="lb-settings-label">${t("settingsThemeLabel")}</span>
         <div class="lb-settings-lang" id="lb-settings-theme"></div>
       </div>
-      <p class="lb-settings-about">${t("settingsAbout")}</p>`;
+       <p class="lb-settings-about">${t("settingsAbout")}</p>
+       ${currentSession ? `<section class="lb-privacy-block" aria-labelledby="lb-privacy-title">
+         <h3 id="lb-privacy-title">${t("privacyTitle")}</h3>
+         <p>${t("privacyBody")}</p>
+         <label class="lb-privacy-toggle"><input type="checkbox" id="lb-privacy-observe" ${privacyState?.consent_status === "accepted" ? "checked" : ""} ${privacyState === null ? "disabled" : ""} /><span>${t("privacyObserve")}</span></label>
+         <button type="button" id="lb-privacy-delete" class="lb-gate-retry">${t("privacyDelete")}</button>
+         <p id="lb-privacy-status" class="lb-privacy-status" role="status" aria-live="polite"></p>
+       </section>` : ""}`;
     const langEl = document.querySelector("#lb-settings-lang");
     langEl.innerHTML = `
       <button data-lang="en" class="${lang === "en" ? "is-active" : ""}">English</button>
@@ -1543,8 +1563,53 @@ import { calculatePoints } from "./points.mjs";
     themeEl.innerHTML = `
       <button data-theme="light" class="${theme === "light" ? "is-active" : ""}">${t("themeLight")}</button>
       <button data-theme="dark" class="${theme === "dark" ? "is-active" : ""}">${t("themeDark")}</button>`;
-    themeEl.querySelectorAll("button").forEach((btn) => btn.addEventListener("click", () => applyTheme(btn.dataset.theme)));
-  }
+     themeEl.querySelectorAll("button").forEach((btn) => btn.addEventListener("click", () => applyTheme(btn.dataset.theme)));
+     bindPrivacyControls();
+   }
+
+   function discordProviderId(session = currentSession) {
+     const identity = session?.user?.identities?.find((item) => item.provider === "discord");
+     return identity?.identity_data?.user_id || identity?.identity_data?.sub || identity?.id || null;
+   }
+
+   async function loadPrivacyState() {
+     privacyState = null;
+     privacyGuildId = null;
+     if (!currentSession || !discordProviderId()) return;
+     const communities = await supabase.from("communities").select("guild_id").limit(1).maybeSingle();
+     privacyGuildId = communities.data?.guild_id || null;
+     if (!privacyGuildId) return;
+     const result = await supabase.from("observed_members").select("consent_status, deletion_requested_at").eq("guild_id", privacyGuildId).eq("discord_user_id", discordProviderId()).maybeSingle();
+     if (!result.error) privacyState = result.data || { consent_status: "declined" };
+   }
+
+   async function updatePrivacy(action) {
+     const status = document.querySelector("#lb-privacy-status");
+     const observe = document.querySelector("#lb-privacy-observe");
+     if (!privacyGuildId || !discordProviderId()) return;
+     if (observe) observe.disabled = true;
+     const args = { target_guild: privacyGuildId, target_discord_user_id: discordProviderId() };
+     if (action === "accept") args.target_version = "1";
+     const rpcName = action === "delete"
+       ? "tierly_request_member_deletion"
+       : action === "accept" ? "tierly_accept_member_consent" : "tierly_decline_member_consent";
+     const { error } = await supabase.rpc(rpcName, args);
+     if (error) {
+       if (status) status.textContent = t("privacyError");
+     } else {
+       privacyState = { ...privacyState, consent_status: action === "accept" ? "accepted" : "declined" };
+       if (status) status.textContent = action === "delete" ? t("privacyDeleted") : t("privacySaved");
+       if (observe) observe.checked = action === "accept";
+     }
+     if (observe) observe.disabled = false;
+   }
+
+   function bindPrivacyControls() {
+     document.querySelector("#lb-privacy-observe")?.addEventListener("change", (event) => updatePrivacy(event.currentTarget.checked ? "accept" : "decline"));
+     document.querySelector("#lb-privacy-delete")?.addEventListener("click", () => {
+       if (window.confirm(t("privacyDeleteConfirm"))) updatePrivacy("delete");
+     });
+   }
 
   const PROFILE_BANNERS = [
     "banner-01.gif", "banner-02.jpg", "banner-03.jpg", "banner-04.jpg",
