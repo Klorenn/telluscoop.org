@@ -4,7 +4,7 @@
 
 **Goal:** El bot de Tierly observa Discord presence, lo convierte en sesiones de juego y rollups agregados por comunidad, y un panel admin muestra juegos activos, jugadores únicos, tendencias y eventos sugeridos.
 
-**Architecture:** El bot (proceso Node de larga vida en GCP) escribe directo a Postgres con service-role: abre una fila de sesión al detectar un juego, y un heartbeat cada 5 minutos contra su caché de presencias cierra las que terminaron. Jobs de `pg_cron` agregan a rollups permanentes, purgan sesiones viejas y generan sugerencias. El panel `ops/tierly/` se transforma de gestión de brackets a panel de inteligencia, leyendo solo datos agregados bajo RLS por `community_admins`.
+**Architecture:** El bot (proceso Node de larga vida en GCP) escribe directo a Postgres con service-role: abre una fila de sesión al detectar un juego, y un heartbeat cada 5 minutos contra su caché de presencias cierra las que terminaron. Jobs de `pg_cron` agregan a rollups permanentes, purgan sesiones viejas y generan sugerencias. El panel `/tierly/admin` se integra en la página pública, reutiliza su sesión de Discord y lee solo datos agregados bajo RLS por `community_admins`. `ops/tierly/` no forma parte de la ruta de producto.
 
 **Tech Stack:** Node 22 (ESM, sin bundler), discord.js 14, @supabase/supabase-js 2, Postgres/Supabase con RLS y `pg_cron`, vanilla JS en el panel, `node --test` para tests.
 
@@ -12,10 +12,10 @@
 
 ## Global Constraints
 
-- **Sin bundler, sin TypeScript, sin lint.** Todo es JS plano. Módulos del bot en ESM (`"type":"module"` ya está en `discord-bot/package.json`). El panel usa IIFE vanilla, como `ops/tierly/app.js` hoy.
+- **Sin bundler, sin TypeScript, sin lint.** Todo es JS plano. Módulos del bot en ESM (`"type":"module"` ya está en `discord-bot/package.json`). El panel usa IIFE vanilla, como `tierly/admin.js`.
 - **Tests:** `npm test` corre `node --test tests/*.test.mjs`. Dos estilos conviven en el repo: tests de lógica pura (importan un `.mjs` y prueban funciones) y tests estáticos (leen un archivo fuente como texto y hacen aserciones con regex). Ambos son válidos; este plan usa lógica pura para los módulos nuevos y estáticos para SQL/panel, siguiendo lo que ya existe.
 - **Secretos:** `SUPABASE_SERVICE_ROLE_KEY` vive SOLO en `discord-bot/.env`. Nunca en el panel, nunca en `config.js`, nunca en git. El panel usa la publishable key, que es pública por diseño.
-- **Cache busting:** `ops/tierly/index.html` debe referenciar `app.js` y `styles.css` con `?v=YYYYMMDD-NN` y ambos con el MISMO valor. Hoy no lo tiene; la Tarea 8 lo agrega y lo testea.
+- **Cache busting:** `tierly/index.html` debe referenciar `app.js` y los módulos administrativos con versiones coherentes. La Tarea 8 lo agrega y lo testea.
 - **Commits:** conventional commits, sin atribución a IA.
 - **Migraciones:** archivos nuevos en `supabase/migrations/` con nombre `YYYYMMDDHHMMSS_descripcion.sql`. Nunca editar una migración ya existente.
 - **RLS:** toda tabla nueva con RLS habilitada. Lectura solo para admins del guild vía `community_admins`. Escritura solo service-role. Ninguna tabla nueva legible por `anon`.
@@ -1349,10 +1349,10 @@ git commit -m "feat: jobs de rollup, purga y sugerencias"
 ### Task 8: Panel de inteligencia
 
 **Files:**
-- Modify: `ops/tierly/app.js` (reemplazar las vistas `events`/`tournaments`/`matches`/`rewards`, líneas ~239-330)
-- Modify: `ops/tierly/index.html` (agregar cache busting)
-- Modify: `ops/tierly/README.md`
-- Create: `tests/tierly-insights-ops.test.mjs`
+- Modify: `tierly/app.js` (agregar ruta `/tierly/admin`, acceso condicionado y bridge compartido)
+- Modify: `tierly/index.html` (agregar la superficie administrativa y módulos versionados)
+- Create: `tierly/admin.js` (vistas `games`, `players`, `trends`, `suggestions`)
+- Create: `tests/tierly-insights-admin.test.mjs`
 
 **Interfaces:**
 - Consumes: tablas de la Tarea 1; datos poblados por Tareas 6 y 7.
@@ -1360,15 +1360,15 @@ git commit -m "feat: jobs de rollup, purga y sugerencias"
 
 - [ ] **Step 1: Escribir el test que falla**
 
-Crear `tests/tierly-insights-ops.test.mjs`:
+Crear `tests/tierly-insights-admin.test.mjs`:
 
 ```js
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const app = readFileSync(new URL("../ops/tierly/app.js", import.meta.url), "utf8");
-const html = readFileSync(new URL("../ops/tierly/index.html", import.meta.url), "utf8");
+const app = readFileSync(new URL("../tierly/admin.js", import.meta.url), "utf8");
+const html = readFileSync(new URL("../tierly/index.html", import.meta.url), "utf8");
 
 test("las vistas son las cuatro de inteligencia", () => {
   for (const view of ["games", "players", "trends", "suggestions"]) {
@@ -1424,10 +1424,10 @@ test("cache busting coherente entre app.js y styles.css", () => {
 
 - [ ] **Step 2: Correr el test para verificar que falla**
 
-Run: `node --test tests/tierly-insights-ops.test.mjs`
+Run: `node --test tests/tierly-insights-admin.test.mjs`
 Expected: FAIL — las vistas viejas siguen, falta el cache busting.
 
-- [ ] **Step 3: Reemplazar el estado y las vistas en `ops/tierly/app.js`**
+- [ ] **Step 3: Integrar el estado y las vistas en `tierly/admin.js`**
 
 Dentro del IIFE existente, reemplazar el objeto `state` (líneas ~11-22) y todo el bloque `renderView()` (líneas ~239-330) por:
 
@@ -1608,15 +1608,15 @@ En el handler de acciones de sugerencias, "aceptar" solo cambia el estado y ofre
 
 - [ ] **Step 4: Borrar el resto del código de brackets**
 
-Eliminar de `ops/tierly/app.js` todas las funciones y queries que referencian `gaming_events`, `gaming_tournaments`, `gaming_matches`, `gaming_match_participants` y `gaming_rewards` (las del rango ~línea 81-195 del archivo original), más la invocación de la edge function `luma-events` si ya no la usa ninguna vista. Verificar:
+Mantener la capa existente de `ops/tierly/` sin convertirla en una dependencia nueva. Las vistas administrativas nuevas deben vivir en `tierly/admin.js` y consultar únicamente los agregados V0.
 
 ```bash
-rg -n "gaming_(events|tournaments|matches|match_participants|rewards)" ops/tierly/app.js
+rg -n "daily_game_rollups|suggested_events|community_admins" tierly/admin.js
 ```
 
 Expected: sin resultados.
 
-- [ ] **Step 5: Agregar cache busting en `ops/tierly/index.html`**
+- [ ] **Step 5: Agregar cache busting en `tierly/index.html`**
 
 Cambiar las referencias a assets para que ambas usen la MISMA versión:
 
@@ -1627,12 +1627,12 @@ Cambiar las referencias a assets para que ambas usen la MISMA versión:
 
 - [ ] **Step 6: Correr el test para verificar que pasa**
 
-Run: `node --test tests/tierly-insights-ops.test.mjs`
+Run: `node --test tests/tierly-insights-admin.test.mjs`
 Expected: PASS, 7 tests.
 
 - [ ] **Step 7: Actualizar el README del panel**
 
-En `ops/tierly/README.md`, reemplazar la descripción de gestión de torneos por:
+En la documentación de Tierly, describir `/tierly/admin` como la superficie administrativa oficial:
 
 ```markdown
 Panel de inteligencia de Tierly V0. Muestra, por comunidad y siempre en forma
@@ -1643,14 +1643,14 @@ El panel nunca muestra quién jugó a qué — solo conteos. La lista nominal de
 quién invitar llega en V1, junto con un flujo de consentimiento.
 
 Bump del cache busting: `app.js` y `styles.css` se referencian con `?v=` en
-`index.html` y ambos valores deben coincidir; `tests/tierly-insights-ops.test.mjs`
+`index.html` y ambos valores deben coincidir; `tests/tierly-insights-admin.test.mjs`
 falla si difieren.
 ```
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add ops/tierly/app.js ops/tierly/index.html ops/tierly/README.md tests/tierly-insights-ops.test.mjs
+git add tierly/app.js tierly/admin.js tierly/index.html tests/tierly-insights-admin.test.mjs
 git commit -m "feat: panel de inteligencia de comunidad"
 ```
 
@@ -1782,7 +1782,7 @@ Expected: rollups con `unique_players` y `total_minutes` coherentes. Las sugeren
 npm run dev
 ```
 
-Abrir `http://localhost:8080/ops/tierly/`, entrar con la cuenta admin. Expected: las cuatro vistas cargan; con pocos datos se ven los estados vacíos explicativos, no ceros ni errores.
+Abrir `http://localhost:8080/tierly/admin`, entrar con la cuenta admin. Expected: las cuatro vistas cargan; con pocos datos se ven los estados vacíos explicativos, no ceros ni errores.
 
 - [ ] **Step 7: Verificar el aislamiento de la RLS**
 

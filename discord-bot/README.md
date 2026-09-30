@@ -9,6 +9,7 @@ Proceso Node separado de la web y de las Supabase Edge Functions. Corre 24/7 via
 - Cuando alguien nuevo entra al server, lo saluda en ese canal y linkea al leaderboard.
 - Si hay credenciales de Supabase configuradas, sincroniza `discord_member = true` en `gaming_players` apenas la persona entra al server — no hace falta que además haga login en la web para que quede marcada.
 - Cualquier miembro puede escribir `!bienvenida` en el canal del bot para forzar su propio saludo + sync manual (útil para quien ya era miembro del server antes de que el bot arrancara, ya que `guildMemberAdd` no dispara retroactivamente).
+- Observa `presenceUpdate` para abrir y cerrar sesiones de juegos, reconcilia la caché al arrancar y mantiene las sesiones activas con un heartbeat cada cinco minutos. La cobertura depende de la visibilidad de presence de cada usuario.
 
 ## Variables de entorno
 
@@ -25,7 +26,7 @@ Proceso Node separado de la web y de las Supabase Edge Functions. Corre 24/7 via
 
 En https://discord.com/developers/applications → tu app Tierly → **Bot**:
 
-1. Activá **SERVER MEMBERS INTENT** y **MESSAGE CONTENT INTENT** (obligatorios — sin el primero `guildMemberAdd` no dispara, sin el segundo el comando `!bienvenida` no funciona).
+1. Activá **SERVER MEMBERS INTENT**, **MESSAGE CONTENT INTENT** y **PRESENCE INTENT** (obligatorios — sin el primero `guildMemberAdd` no dispara, sin el segundo el comando `!bienvenida` no funciona y sin el tercero no se reciben presences).
 2. Verificá que el bot ya esté agregado al server de Tellus con permisos: `View Channels`, `Send Messages`, `Manage Channels` (este último solo si querés que cree el canal solo).
 
 ## Deploy en Google Cloud (e2-micro, free tier)

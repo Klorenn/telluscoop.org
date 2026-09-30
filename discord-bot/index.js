@@ -1,15 +1,22 @@
 import { Client, GatewayIntentBits, ChannelType, ActivityType } from "discord.js";
 import { createClient } from "@supabase/supabase-js";
 import { rankForPoints } from "../tierly/ranks.mjs";
+import { playingGames, presenceDelta } from "./presence-delta.mjs";
+import { createSessionStore } from "./session-store.mjs";
 
 const {
-  DISCORD_BOT_TOKEN,
+  DISCORD_BOT_TOKEN: DISCORD_BOT_TOKEN_ENV,
+  DISCORD_TOKEN,
   DISCORD_GUILD_ID,
   WELCOME_CHANNEL_ID,
   ANNOUNCE_CHANNEL_ID,
-  SUPABASE_URL,
+  SUPABASE_URL: SUPABASE_URL_ENV,
+  NEXT_PUBLIC_SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY,
 } = process.env;
+
+const DISCORD_BOT_TOKEN = DISCORD_BOT_TOKEN_ENV || DISCORD_TOKEN;
+const SUPABASE_URL = SUPABASE_URL_ENV || NEXT_PUBLIC_SUPABASE_URL;
 
 if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) {
   throw new Error("Faltan DISCORD_BOT_TOKEN o DISCORD_GUILD_ID en las variables de entorno");
@@ -23,6 +30,7 @@ const WELCOME_CHANNEL_NAME = "bienvenida-tierly";
 const ANNOUNCE_CHANNEL_NAME = "anuncios-tierly";
 const LEADERBOARD_URL = "https://telluscoop.org/tierly";
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
+const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000;
 
 const client = new Client({
   intents: [
@@ -30,8 +38,71 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildPresences,
   ],
 });
+
+const sessions = supabase ? createSessionStore(supabase) : null;
+const activeSessions = new Map();
+
+function sessionKey(userId, gameName) {
+  return `${userId}:${gameName}`;
+}
+
+async function handlePresenceUpdate(oldPresence, newPresence) {
+  if (!sessions) return;
+  const guildId = newPresence?.guild?.id || oldPresence?.guild?.id;
+  if (guildId !== DISCORD_GUILD_ID) return;
+  if (newPresence?.member?.user?.bot) return;
+
+  const userId = newPresence?.userId || oldPresence?.userId;
+  if (!userId) return;
+  const { started, stopped } = presenceDelta(oldPresence, newPresence);
+
+  for (const gameName of started) {
+    const gameId = await sessions.resolveGame(gameName);
+    const session = await sessions.openSession({
+      guildId: DISCORD_GUILD_ID,
+      discordUserId: userId,
+      gameId,
+    });
+    if (session?.id) activeSessions.set(sessionKey(userId, gameName), session.id);
+  }
+  for (const gameName of stopped) {
+    const key = sessionKey(userId, gameName);
+    const sessionId = activeSessions.get(key);
+    if (!sessionId) continue;
+    await sessions.closeSession(sessionId, undefined, "normal");
+    activeSessions.delete(key);
+  }
+}
+
+async function reconcilePresence(guild) {
+  for (const member of guild.members.cache.values()) {
+    if (member.user?.bot) continue;
+    for (const gameName of playingGames(member.presence)) {
+      const gameId = await sessions.resolveGame(gameName);
+      const session = await sessions.openSession({
+        guildId: DISCORD_GUILD_ID,
+        discordUserId: member.id,
+        gameId,
+      });
+      if (session?.id) activeSessions.set(sessionKey(member.id, gameName), session.id);
+    }
+  }
+}
+
+async function runPresenceHeartbeat() {
+  const heartbeatAt = new Date().toISOString();
+  for (const sessionId of activeSessions.values()) {
+    await sessions.heartbeatSession(sessionId, heartbeatAt);
+  }
+  await sessions.closeStaleSessions({
+    guildId: DISCORD_GUILD_ID,
+    before: new Date(Date.now() - HEARTBEAT_INTERVAL_MS * 2).toISOString(),
+    endedAt: heartbeatAt,
+  });
+}
 
 async function getWelcomeChannel(guild) {
   if (WELCOME_CHANNEL_ID) {
@@ -182,6 +253,21 @@ client.once("ready", async () => {
       runNotificationPoll(guild).catch((err) => console.error("Fallo el poll de notificaciones:", err.message));
     }, POLL_INTERVAL_MS);
   }
+
+  if (sessions) {
+    await sessions.reconcileOpenSessions({ guildId: DISCORD_GUILD_ID, reason: "crash" })
+      .catch((err) => console.error("Fallo la reconciliacion inicial:", err.message));
+    await reconcilePresence(guild)
+      .catch((err) => console.error("Fallo la reconciliacion de presence:", err.message));
+    setInterval(() => {
+      runPresenceHeartbeat().catch((err) => console.error("Fallo el heartbeat de presence:", err.message));
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+});
+
+client.on("presenceUpdate", (oldPresence, newPresence) => {
+  handlePresenceUpdate(oldPresence, newPresence)
+    .catch((err) => console.error("Fallo al registrar sesion de presence:", err.message));
 });
 
 client.on("guildMemberAdd", async (member) => {

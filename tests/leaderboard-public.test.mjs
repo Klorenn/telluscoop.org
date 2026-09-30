@@ -10,6 +10,8 @@ const vercelConfig = await readFile(new URL("../vercel.json", import.meta.url), 
 test("vercel.json rewrites /tierly to tierly/index.html", () => {
   const rules = JSON.parse(vercelConfig).rewrites;
   assert.ok(rules.some((r) => r.source === "/tierly" && r.destination === "/tierly/index.html"));
+  assert.ok(rules.some((r) => r.source === "/tierly/admin" && r.destination === "/tierly/index.html"));
+  assert.ok(rules.some((r) => r.source === "/tierly/admin/" && r.destination === "/tierly/index.html"));
 });
 
 test("public page renders the ranking, bracket, rewards, and auth sections", () => {
@@ -44,6 +46,20 @@ test("public page never embeds secrets", () => {
   assert.doesNotMatch(app, /service[_-]?role/i);
   assert.doesNotMatch(app, /DISCORD_BOT_TOKEN/);
   assert.doesNotMatch(app, /eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\./);
+});
+
+test("static translations tolerate sections that are not mounted", () => {
+  const renderStaticText = app.slice(app.indexOf("function renderStaticText()"), app.indexOf("function applyLang("));
+  assert.match(renderStaticText, /const setText = \(selector, value\) =>/);
+  assert.match(renderStaticText, /if \(element\) element\.textContent = value/);
+  assert.doesNotMatch(renderStaticText, /document\.querySelector\([^\n]+\)\.textContent/);
+});
+
+test("public Tierly no conserva el panel administrativo antiguo", () => {
+  assert.doesNotMatch(app, /tierly_admin_(matches|players|events)/);
+  assert.doesNotMatch(app, /tierly_(create_smash_tournament|confirm_match|award_reward)/);
+  assert.doesNotMatch(app, /data-view="admin"|renderAdminView|loadAdminAccess/);
+  assert.doesNotMatch(page, /id="lb-admin"/);
 });
 
 test("Tierly resolves Discord avatars from metadata and renders an initials fallback", () => {
