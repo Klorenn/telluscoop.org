@@ -6,6 +6,10 @@ const sql = readFileSync(
   new URL("../supabase/migrations/20260929090000_tierly_v0_schema.sql", import.meta.url),
   "utf8",
 );
+const consentSql = readFileSync(
+  new URL("../supabase/migrations/20260930151000_tierly_presence_consent.sql", import.meta.url),
+  "utf8",
+);
 
 const tables = [
   "communities",
@@ -68,4 +72,20 @@ test("las políticas se pueden recrear tras una ejecución parcial", () => {
   ]) {
     assert.match(sql, new RegExp(`drop policy if exists ${policy}`, "i"));
   }
+});
+
+test("Fase 0 define consentimiento, visibilidad y RPCs de privacidad", () => {
+  assert.match(consentSql, /consent_status\s+text\s+not null default 'unknown'/i);
+  assert.match(consentSql, /consent_version\s+text/i);
+  assert.match(consentSql, /identity_visible\s+boolean\s+not null default false/i);
+  for (const rpc of ["tierly_accept_member_consent", "tierly_decline_member_consent", "tierly_request_member_deletion"]) {
+    assert.match(consentSql, new RegExp(`create or replace function public\\.${rpc}`, "i"));
+  }
+});
+
+test("la base impide presencia sin comunidad habilitada o consentimiento", () => {
+  assert.match(consentSql, /tierly_require_presence_consent/i);
+  assert.match(consentSql, /coalesce\(enabled, false\) is not true/i);
+  assert.match(consentSql, /status is distinct from 'accepted'/i);
+  assert.match(consentSql, /delete from public\.play_sessions/i);
 });

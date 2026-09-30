@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { SessionStore } from "../discord-bot/session-store.mjs";
 
-function fakeSupabase({ data = [], error = null } = {}) {
+function fakeSupabase({ data = [], error = null, withRpc = false } = {}) {
   const calls = [];
   const api = {
     calls,
@@ -31,25 +31,31 @@ function fakeSupabase({ data = [], error = null } = {}) {
       return chain;
     },
   };
+  if (withRpc) {
+    api.rpc = (name, args) => {
+      calls.push({ rpc: name, args });
+      return Promise.resolve({ data, error });
+    };
+  }
   return api;
 }
 
 test("inserta una sesión sin depender de un upsert incompatible con un índice parcial", async () => {
-  const supabase = fakeSupabase({ data: { id: 7 } });
+  const supabase = fakeSupabase({ data: { id: 7, presence_enabled: true, consent_status: "accepted" } });
   const store = new SessionStore(supabase);
 
   await assert.doesNotReject(() => store.openSession({ guildId: "g", discordUserId: "u", gameId: 3 }));
-  assert.deepEqual(supabase.calls[1].upsert[0], { guild_id: "g", discord_user_id: "u", last_seen_at: supabase.calls[1].upsert[0].last_seen_at });
-  assert.equal(supabase.calls[1].table, "observed_members");
-  assert.deepEqual(supabase.calls[2].insert, [{ guild_id: "g", discord_user_id: "u", game_id: 3 }]);
+  assert.deepEqual(supabase.calls[2].upsert[0], { guild_id: "g", discord_user_id: "u", last_seen_at: supabase.calls[2].upsert[0].last_seen_at });
+  assert.equal(supabase.calls[2].table, "observed_members");
+  assert.deepEqual(supabase.calls[3].insert, [{ guild_id: "g", discord_user_id: "u", game_id: 3 }]);
 });
 
 test("mantiene el nombre y avatar seguros del miembro observado", async () => {
-  const supabase = fakeSupabase({ data: { id: 7 } });
+  const supabase = fakeSupabase({ data: { id: 7, presence_enabled: true, consent_status: "accepted" } });
   const store = new SessionStore(supabase);
   await store.openSession({ guildId: "g", discordUserId: "u", gameId: 3, displayName: "Jugador", avatarUrl: "https://cdn.example/avatar.png" });
-  assert.deepEqual(supabase.calls[1].upsert[0], {
-    guild_id: "g", discord_user_id: "u", display_name: "Jugador", avatar_url: "https://cdn.example/avatar.png", last_seen_at: supabase.calls[1].upsert[0].last_seen_at,
+  assert.deepEqual(supabase.calls[2].upsert[0], {
+    guild_id: "g", discord_user_id: "u", display_name: "Jugador", avatar_url: "https://cdn.example/avatar.png", last_seen_at: supabase.calls[2].upsert[0].last_seen_at,
   });
 });
 
@@ -91,4 +97,24 @@ test("prepara la comunidad antes de usar tablas con FK", async () => {
   await store.ensureCommunity({ guildId: "g", name: "Servidor" });
   assert.equal(supabase.calls[0].table, "communities");
   assert.deepEqual(supabase.calls[0].upsert[0], { guild_id: "g", name: "Servidor" });
+});
+
+test("no abre sesiones sin consentimiento aceptado", async () => {
+  const supabase = fakeSupabase({ data: { presence_enabled: true, consent_status: "unknown" } });
+  const store = new SessionStore(supabase);
+  assert.equal(await store.openSession({ guildId: "g", discordUserId: "u", gameId: 3 }), null);
+  assert.equal(supabase.calls.some((call) => call.table === "play_sessions"), false);
+});
+
+test("gestiona consentimiento y borrado mediante RPCs privados", async () => {
+  const supabase = fakeSupabase({ data: true, withRpc: true });
+  const store = new SessionStore(supabase);
+  await store.acceptMemberConsent("g", "u", "1");
+  await store.declineMemberConsent("g", "u");
+  await store.requestMemberDeletion("g", "u");
+  assert.deepEqual(supabase.calls.map((call) => call.rpc), [
+    "tierly_accept_member_consent",
+    "tierly_decline_member_consent",
+    "tierly_request_member_deletion",
+  ]);
 });

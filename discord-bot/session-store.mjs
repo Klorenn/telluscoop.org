@@ -20,7 +20,7 @@ export class SessionStore {
     const result = await this.supabase
       .from("communities")
       .upsert({ guild_id: guildId, name }, { onConflict: "guild_id", ignoreDuplicates: true })
-      .select("guild_id, stale_session_hours")
+      .select("guild_id, stale_session_hours, presence_enabled")
       .maybeSingle();
     return throwIfError(result);
   }
@@ -28,10 +28,39 @@ export class SessionStore {
   async getCommunitySettings(guildId) {
     const result = await this.supabase
       .from("communities")
-      .select("stale_session_hours")
+      .select("stale_session_hours, presence_enabled")
       .eq("guild_id", guildId)
       .single();
     return throwIfError(result);
+  }
+
+  async getMemberConsent(guildId, discordUserId) {
+    const result = await this.supabase.from("observed_members")
+      .select("consent_status, identity_visible").eq("guild_id", guildId)
+      .eq("discord_user_id", discordUserId).maybeSingle();
+    return throwIfError(result);
+  }
+
+  async acceptMemberConsent(guildId, discordUserId, version = "1") {
+    return throwIfError(await this.supabase.rpc("tierly_accept_member_consent", {
+      target_guild: guildId,
+      target_discord_user_id: discordUserId,
+      target_version: version,
+    }));
+  }
+
+  async declineMemberConsent(guildId, discordUserId) {
+    return throwIfError(await this.supabase.rpc("tierly_decline_member_consent", {
+      target_guild: guildId,
+      target_discord_user_id: discordUserId,
+    }));
+  }
+
+  async requestMemberDeletion(guildId, discordUserId) {
+    return throwIfError(await this.supabase.rpc("tierly_request_member_deletion", {
+      target_guild: guildId,
+      target_discord_user_id: discordUserId,
+    }));
   }
 
   async resolveGame(rawActivityName) {
@@ -61,7 +90,10 @@ export class SessionStore {
   }
 
   async openSession({ guildId, discordUserId, gameId, displayName, avatarUrl, startedAt, communityName } = {}) {
-    await this.ensureCommunity({ guildId, name: communityName });
+    const settings = await this.ensureCommunity({ guildId, name: communityName });
+    if (settings?.presence_enabled === false) return null;
+    const consent = await this.getMemberConsent(guildId, discordUserId);
+    if (consent?.consent_status !== "accepted") return null;
     const member = await this.supabase
       .from("observed_members")
       .upsert({

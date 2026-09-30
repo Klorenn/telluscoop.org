@@ -31,6 +31,7 @@ const ANNOUNCE_CHANNEL_NAME = "anuncios-tierly";
 const LEADERBOARD_URL = "https://telluscoop.org/tierly";
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
 const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000;
+const CONSENT_VERSION = "1";
 
 const client = new Client({
   intents: [
@@ -49,6 +50,40 @@ function sessionKey(userId, gameName) {
   return `${userId}:${gameName}`;
 }
 
+async function handleTierlyCommand(message) {
+  const parts = message.content.trim().toLowerCase().split(/\s+/);
+  if (parts[0] !== "!tierly" || parts[1] !== "presencia" && parts[1] !== "borrar") return false;
+  if (!sessions) {
+    await message.channel.send("El servicio de consentimiento no está disponible en este momento.");
+    return true;
+  }
+
+  try {
+    if (parts[1] === "presencia" && parts[2] === "si") {
+      await sessions.acceptMemberConsent(DISCORD_GUILD_ID, message.author.id, CONSENT_VERSION);
+      await message.channel.send("Consentimiento de presencia activado. Tierly podrá registrar las sesiones de juego.");
+    } else if (parts[1] === "presencia" && parts[2] === "no") {
+      await sessions.declineMemberConsent(DISCORD_GUILD_ID, message.author.id);
+      for (const [key, sessionId] of activeSessions) {
+        if (key.startsWith(`${message.author.id}:`)) activeSessions.delete(key);
+      }
+      await message.channel.send("Consentimiento de presencia retirado. Las sesiones abiertas se cerraron y no se registrarán nuevas sesiones.");
+    } else if (parts[1] === "borrar" && parts.length === 2) {
+      await sessions.requestMemberDeletion(DISCORD_GUILD_ID, message.author.id);
+      for (const [key, sessionId] of activeSessions) {
+        if (key.startsWith(`${message.author.id}:`)) activeSessions.delete(key);
+      }
+      await message.channel.send("Se solicitó el borrado de tus datos de Tierly y se cerraron tus sesiones.");
+    } else {
+      await message.channel.send("Usa: `!tierly presencia si`, `!tierly presencia no` o `!tierly borrar`.");
+    }
+  } catch (error) {
+    console.error("No se pudo actualizar el consentimiento de Tierly.");
+    await message.channel.send("No se pudo actualizar el consentimiento. Inténtalo nuevamente más tarde.");
+  }
+  return true;
+}
+
 function memberIdentity(member) {
   const user = member?.user;
   const avatarHash = user?.avatar;
@@ -65,6 +100,8 @@ async function handlePresenceUpdate(oldPresence, newPresence) {
   const guildId = newPresence?.guild?.id || oldPresence?.guild?.id;
   if (guildId !== DISCORD_GUILD_ID) return;
   if (newPresence?.member?.user?.bot) return;
+  const settings = await sessions.getCommunitySettings(guildId);
+  if (settings?.presence_enabled === false) return;
 
   const userId = newPresence?.userId || oldPresence?.userId;
   if (!userId) return;
@@ -83,7 +120,7 @@ async function handlePresenceUpdate(oldPresence, newPresence) {
       });
       if (session?.id) activeSessions.set(sessionKey(userId, gameName), session.id);
     } catch (error) {
-      console.error("No se pudo abrir la sesion de presence:", error.message);
+      console.error("No se pudo abrir la sesion de presence.");
     }
   }
   for (const gameName of stopped) {
@@ -94,12 +131,14 @@ async function handlePresenceUpdate(oldPresence, newPresence) {
       await sessions.closeSession(sessionId, undefined, "normal");
       activeSessions.delete(key);
     } catch (error) {
-      console.error("No se pudo cerrar la sesion de presence:", error.message);
+      console.error("No se pudo cerrar la sesion de presence.");
     }
   }
 }
 
 async function reconcilePresence(guild) {
+  const settings = await sessions.getCommunitySettings(DISCORD_GUILD_ID);
+  if (settings?.presence_enabled === false) return;
   for (const member of guild.members.cache.values()) {
     if (member.user?.bot) continue;
     for (const gameName of playingGames(member.presence)) {
@@ -122,7 +161,7 @@ async function runPresenceHeartbeat() {
     try {
       await sessions.heartbeatSession(sessionId, heartbeatAt);
     } catch (error) {
-      console.error("No se pudo actualizar un heartbeat:", error.message);
+      console.error("No se pudo actualizar un heartbeat.");
     }
   }
   try {
@@ -134,7 +173,7 @@ async function runPresenceHeartbeat() {
       endedAt: heartbeatAt,
     });
   } catch (error) {
-    console.error("No se pudo cerrar sesiones obsoletas:", error.message);
+    console.error("No se pudo cerrar sesiones obsoletas.");
   }
 }
 
@@ -320,6 +359,7 @@ client.on("guildMemberAdd", async (member) => {
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (message.guild?.id !== DISCORD_GUILD_ID) return;
+  if (await handleTierlyCommand(message)) return;
   if (message.content.trim().toLowerCase() !== "!bienvenida") return;
 
   await message.channel

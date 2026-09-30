@@ -672,6 +672,7 @@
      .tierly-admin-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
      .tierly-admin-tabs button, .tierly-admin-action { border:1px solid var(--card-border); border-radius:999px; background:var(--card); color:var(--ink); padding:8px 14px; cursor:pointer; font:600 12px var(--sans); }
      .tierly-admin-tabs button.is-active, .tierly-admin-action { background:var(--teal-bright); border-color:transparent; color:#fff; }
+     .tierly-admin-tabs button:focus-visible, .tierly-admin-action:focus-visible, #tierly-admin-refresh:focus-visible { outline:3px solid var(--clay); outline-offset:3px; }
      .tierly-admin-table-wrap { overflow-x:auto; background:var(--card); border:1px solid var(--card-border); border-radius:16px; }
      .tierly-admin-table { width:100%; border-collapse:collapse; min-width:560px; }
      .tierly-admin-table th, .tierly-admin-table td { padding:13px 15px; text-align:left; border-bottom:1px solid var(--card-border); font-size:13px; }
@@ -683,6 +684,9 @@
      .tierly-admin-game-icon svg { width:16px; height:16px; stroke-width:2.2; }
      .tierly-admin-action { border-radius:8px; padding:6px 9px; margin-right:5px; }
      .tierly-admin-action + .tierly-admin-action { background:var(--sand-soft); color:var(--ink); }
+     .tierly-admin-player-list { display:flex; flex-wrap:wrap; gap:6px; min-width:180px; }
+     .tierly-admin-player { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; background:var(--sand-soft); color:var(--ink); white-space:nowrap; }
+     .tierly-admin-player img { width:24px; height:24px; border-radius:50%; object-fit:cover; }
      .tierly-admin-stat, .tierly-admin-gate { background:var(--card); border:1px solid var(--card-border); border-radius:18px; padding:24px; box-shadow:var(--card-shadow); }
      .tierly-admin-stat { display:flex; flex-direction:column; gap:4px; max-width:320px; }
      .tierly-admin-stat strong { font:600 36px var(--serif); color:var(--ink); }

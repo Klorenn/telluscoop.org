@@ -35,3 +35,13 @@ test("aísla errores de presence y heartbeat y usa stale_session_hours", () => {
   assert.match(source, /stale_session_hours/);
   assert.match(source, /sessions\.ensureCommunity/);
 });
+
+test("expone comandos de consentimiento solo para el guild configurado", () => {
+  assert.match(source, /!tierly/);
+  assert.match(source, /presencia/);
+  assert.match(source, /acceptMemberConsent/);
+  assert.match(source, /declineMemberConsent/);
+  assert.match(source, /requestMemberDeletion/);
+  assert.match(source, /message\.guild\?\.id !== DISCORD_GUILD_ID/);
+  assert.doesNotMatch(source, /console\.error\([^\n]*(message\.author|discordUserId|userId)/i);
+});
