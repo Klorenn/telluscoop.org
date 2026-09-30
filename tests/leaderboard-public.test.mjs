@@ -10,14 +10,6 @@ const vercelConfig = await readFile(new URL("../vercel.json", import.meta.url), 
 test("vercel.json rewrites /tierly to tierly/index.html", () => {
   const rules = JSON.parse(vercelConfig).rewrites;
   assert.ok(rules.some((r) => r.source === "/tierly" && r.destination === "/tierly/index.html"));
-  assert.ok(rules.some((r) => r.source === "/tierly/admin" && r.destination === "/tierly/index.html"));
-  assert.ok(rules.some((r) => r.source === "/tierly/admin/" && r.destination === "/tierly/index.html"));
-});
-
-test("Tellus redirige Tierly al dominio independiente", () => {
-  const rules = JSON.parse(vercelConfig).redirects;
-  assert.ok(rules.some((rule) => rule.source === "/tierly" && rule.destination === "https://tierly.xyz"));
-  assert.ok(rules.some((rule) => rule.source === "/tierly/admin" && rule.destination === "https://tierly.xyz/admin"));
 });
 
 test("public page renders the ranking, bracket, rewards, and auth sections", () => {
@@ -36,11 +28,17 @@ test("public page loads the ranking unconditionally, not behind a login gate", (
 
 test("public page reads only the public views, never the base gaming tables", () => {
   assert.match(app, /leaderboard_public_view/);
-  assert.match(app, /event_bracket_public_view/);
-  assert.match(app, /gaming_rewards_public_view/);
+  assert.match(app, /tierly_community_events_public_view/);
   assert.doesNotMatch(app, /from\("gaming_players"\)/);
   assert.doesNotMatch(app, /from\("gaming_scores"\)/);
   assert.doesNotMatch(app, /from\("gaming_rewards"\)/);
+});
+
+test("public page no consulta vistas retiradas con la capa de brackets", () => {
+  assert.doesNotMatch(app, /event_bracket_public_view/);
+  assert.doesNotMatch(app, /gaming_rewards_public_view/);
+  assert.doesNotMatch(app, /gaming_events_catalog_public_view/);
+  assert.doesNotMatch(app, /tierly_register_for_tournament/);
 });
 
 test("public page is bilingual (en/es)", () => {
@@ -52,20 +50,6 @@ test("public page never embeds secrets", () => {
   assert.doesNotMatch(app, /service[_-]?role/i);
   assert.doesNotMatch(app, /DISCORD_BOT_TOKEN/);
   assert.doesNotMatch(app, /eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\./);
-});
-
-test("static translations tolerate sections that are not mounted", () => {
-  const renderStaticText = app.slice(app.indexOf("function renderStaticText()"), app.indexOf("function applyLang("));
-  assert.match(renderStaticText, /const setText = \(selector, value\) =>/);
-  assert.match(renderStaticText, /if \(element\) element\.textContent = value/);
-  assert.doesNotMatch(renderStaticText, /document\.querySelector\([^\n]+\)\.textContent/);
-});
-
-test("public Tierly no conserva el panel administrativo antiguo", () => {
-  assert.doesNotMatch(app, /tierly_admin_(matches|players|events)/);
-  assert.doesNotMatch(app, /tierly_(create_smash_tournament|confirm_match|award_reward)/);
-  assert.doesNotMatch(app, /data-view="admin"|renderAdminView|loadAdminAccess/);
-  assert.doesNotMatch(page, /id="lb-admin"/);
 });
 
 test("Tierly resolves Discord avatars from metadata and renders an initials fallback", () => {

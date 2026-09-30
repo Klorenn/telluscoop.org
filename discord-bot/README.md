@@ -10,7 +10,7 @@ Proceso Node separado de la web y de las Supabase Edge Functions. Corre 24/7 via
 - Si hay credenciales de Supabase configuradas, sincroniza `discord_member = true` en `gaming_players` apenas la persona entra al server — no hace falta que además haga login en la web para que quede marcada.
 - Cualquier miembro puede escribir `!bienvenida` en el canal del bot para forzar su propio saludo + sync manual (útil para quien ya era miembro del server antes de que el bot arrancara, ya que `guildMemberAdd` no dispara retroactivamente).
 - Observa `presenceUpdate` para abrir y cerrar sesiones de juegos, reconcilia la caché al arrancar y mantiene las sesiones activas con un heartbeat cada cinco minutos. La cobertura depende de la visibilidad de presence de cada usuario.
-- Entrega recordatorios de eventos generados por Supabase. La migración `20260930201000_tierly_event_reminders.sql` crea el registro idempotente por guild/evento y el job `tierly-generar-recordatorios`; el bot solo reclama filas `pending` de su guild y las marca como `sent` de forma condicional.
+- Entrega recordatorios de eventos generados por Supabase. La migración `20260930201000_tierly_event_reminders.sql` crea la tabla `tierly_event_notifications` (el nombre del archivo es histórico) con el registro idempotente por guild/evento y el job `tierly-generar-recordatorios`; el bot solo reclama filas `pending` de su guild y las marca como `sent` de forma condicional.
 - Registra únicamente conexión, heartbeat, errores normalizados y contadores técnicos en `tierly_bot_health`; no guarda IDs, nombres, mensajes de error ni secretos.
 
 ## Variables de entorno

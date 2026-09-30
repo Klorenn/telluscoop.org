@@ -10,12 +10,15 @@ import { calculatePoints } from "./points.mjs";
 
   const STRINGS = {
     en: {
-      title: "Tierly Gaming Leaderboard",
+      title: "TIRLY Gaming Leaderboard",
       subtitle: "Compete in events. Climb the ranks. Earn epic rewards.",
       rank: "Rank", player: "Player", points: "Points",
       rankingTitle: "Top Players",
       seasonResetsOn: "Season resets on {date}",
-      bracketTitle: "Latest event", rewardsTitle: "Winners & rewards",
+      bracketTitle: "Community events", rewardsTitle: "Winners & rewards",
+      eventRegistered: "signed up", eventRegister: "Sign up", eventRegistering: "Signing up…",
+      eventRegisterError: "Could not sign up. Sign in with Discord and try again.",
+      eventRegisteredOk: "You are signed up for this event.",
       navRanking: "Leaderboard", navBracket: "Events", navRewards: "Rewards", navProfile: "Profile", navSettings: "Settings", navAdmin: "Admin",
       adminTitle: "Create event", adminName: "Event name", adminDate: "Date", adminLocation: "Location", adminLuma: "Luma event link", adminBanner: "Banner image URL", adminGame: "Game", adminFormat: "Format", adminElimination: "Bracket elimination", adminHeats: "Heats", adminPlayers: "Optional registered players", adminAddPlayer: "Add player", adminCreate: "Create event", adminReady: "Admin access enabled.", adminCreated: "Event created.", adminLogin: "Sign in with the administrator account to use this panel.", adminError: "Could not create the event. Check the fields and try again.", adminNoPlayers: "Select at least two players to create an initial bracket, or leave empty for registrations.", adminMatches: "Pending matches", adminConfirm: "Confirm winner", adminDone: "Match confirmed.", adminReward: "Award prize", adminRewardPrompt: "Prize description", adminRewarded: "Prize assigned.", adminNoAccounts: "No registered player accounts yet.", adminManagePlayers: "Manage registered players", adminEdit: "Edit", adminDelete: "Delete", adminDeleteConfirm: "Delete this player?", adminHistoryError: "Players with match history cannot be deleted.", eventLogin: "Sign in to join this event",
       profileTitle: "Profile",
@@ -75,9 +78,9 @@ import { calculatePoints } from "./points.mjs";
       settingsTitle: "Settings",
       settingsLangLabel: "Language",
       settingsThemeLabel: "Theme", themeLight: "Light", themeDark: "Dark",
-       settingsAbout: "Tierly is the Discord verification bot for this leaderboard. It only checks server membership, it never reads or posts messages.",
+       settingsAbout: "TIRLY is the Discord verification bot for this leaderboard. It only checks server membership, it never reads or posts messages.",
        privacyTitle: "Presence privacy",
-       privacyBody: "Presence means the game activity Discord shares with the server. Tierly uses it to calculate aggregated gaming statistics, not to read or publish messages.",
+       privacyBody: "Presence means the game activity Discord shares with the server. TIRLY uses it to calculate aggregated gaming statistics, not to read or publish messages.",
        privacyObserve: "Allow observation of my presence",
        privacyDelete: "Request deletion of my presence data",
        privacyDeleteConfirm: "Request deletion of your presence data? This will stop observation and remove stored sessions.",
@@ -101,7 +104,7 @@ import { calculatePoints } from "./points.mjs";
       passportLinked: "Stellar Passport profile ↗",
       passportResultsLabel: "Also on Stellar Passport",
       passportNoMatches: "No matches found",
-      discordJoinBody: "You must join the Tellus Discord server to participate. Tierly checks your membership before unlocking anything.",
+      discordJoinBody: "You must join the Tellus Discord server to participate. TIRLY checks your membership before unlocking anything.",
       discordJoinBtn: "Join Tellus Discord",
       discordVerifyBtn: "I already joined · Verify",
       discordChecking: "Checking your membership…",
@@ -170,12 +173,15 @@ import { calculatePoints } from "./points.mjs";
       lbBack: "Back",
     },
     es: {
-      title: "Leaderboard Gaming Tierly",
+      title: "Leaderboard Gaming TIRLY",
       subtitle: "Compite en eventos. Sube en el ranking. Gana premios.",
       rank: "Puesto", player: "Jugador", points: "Puntos",
       rankingTitle: "Mejores jugadores",
       seasonResetsOn: "La temporada se reinicia el {date}",
-      bracketTitle: "Último evento", rewardsTitle: "Ganadores y premios",
+      bracketTitle: "Eventos comunitarios", rewardsTitle: "Ganadores y premios",
+      eventRegistered: "inscritos", eventRegister: "Inscribirme", eventRegistering: "Inscribiendo…",
+      eventRegisterError: "No se pudo completar la inscripción. Inicia sesión con Discord e inténtalo de nuevo.",
+      eventRegisteredOk: "Tu inscripción quedó registrada.",
       navRanking: "Leaderboard", navBracket: "Eventos", navRewards: "Premios", navProfile: "Perfil", navSettings: "Configuración", navAdmin: "Administración",
       adminTitle: "Crear evento", adminName: "Nombre del evento", adminDate: "Fecha", adminLocation: "Ubicación", adminLuma: "Enlace del evento en Luma", adminBanner: "URL de imagen del banner", adminGame: "Juego", adminFormat: "Formato", adminElimination: "Bracket de eliminación", adminHeats: " heats", adminPlayers: "Jugadores registrados opcionales", adminAddPlayer: "Agregar jugador", adminCreate: "Crear evento", adminReady: "Acceso de administrador habilitado.", adminCreated: "Evento creado.", adminLogin: "Inicia sesión con la cuenta administradora para usar este panel.", adminError: "No se pudo crear el evento. Revisa los campos e inténtalo de nuevo.", adminNoPlayers: "Selecciona al menos dos jugadores para crear un bracket inicial o deja vacío para que se inscriban.", adminMatches: "Partidas pendientes", adminConfirm: "Confirmar ganador", adminDone: "Partida confirmada.", adminReward: "Asignar premio", adminRewardPrompt: "Descripción del premio", adminRewarded: "Premio asignado.", adminNoAccounts: "Todavía no hay cuentas de jugadores registradas.", adminManagePlayers: "Administrar jugadores registrados", adminEdit: "Editar", adminDelete: "Eliminar", adminDeleteConfirm: "¿Eliminar este jugador?", adminHistoryError: "No se pueden eliminar jugadores con historial de partidas.", eventLogin: "Inicia sesión para unirte al evento",
       profileTitle: "Perfil",
@@ -235,9 +241,9 @@ import { calculatePoints } from "./points.mjs";
       settingsTitle: "Configuración",
       settingsLangLabel: "Idioma",
       settingsThemeLabel: "Tema", themeLight: "Claro", themeDark: "Oscuro",
-       settingsAbout: "Tierly es el bot de verificación de Discord de este leaderboard. Solo confirma tu membresía del server, nunca lee ni postea mensajes.",
+       settingsAbout: "TIRLY es el bot de verificación de Discord de este leaderboard. Solo confirma tu membresía del server, nunca lee ni postea mensajes.",
        privacyTitle: "Privacidad del presence",
-       privacyBody: "Presence es la actividad de juego que Discord comparte con el servidor. Tierly la usa para calcular estadísticas agregadas, no para leer ni publicar mensajes.",
+       privacyBody: "Presence es la actividad de juego que Discord comparte con el servidor. TIRLY la usa para calcular estadísticas agregadas, no para leer ni publicar mensajes.",
        privacyObserve: "Permitir la observación de mi presence",
        privacyDelete: "Solicitar borrado de mis datos de presence",
        privacyDeleteConfirm: "¿Solicitar el borrado de tus datos de presence? Esto detendrá la observación y eliminará las sesiones guardadas.",
@@ -261,7 +267,7 @@ import { calculatePoints } from "./points.mjs";
       passportLinked: "Perfil de Stellar Passport ↗",
       passportResultsLabel: "También en Stellar Passport",
       passportNoMatches: "No encontramos coincidencias",
-      discordJoinBody: "Debes unirte al servidor de Discord de Tellus para participar. Tierly comprueba tu membresía antes de desbloquear cualquier cosa.",
+      discordJoinBody: "Debes unirte al servidor de Discord de Tellus para participar. TIRLY comprueba tu membresía antes de desbloquear cualquier cosa.",
       discordJoinBtn: "Unirse al Discord de Tellus",
       discordVerifyBtn: "Ya me uní · Verificar",
       discordChecking: "Comprobando tu membresía…",
@@ -471,7 +477,7 @@ import { calculatePoints } from "./points.mjs";
   function emptyStateBlock(title, body, ctaLabel, ctaView, mascot = "tierly-apoyado.png") {
     return `
       <div class="lb-empty-state">
-        <img src="/tierly/${mascot}" alt="Tierly" class="lb-empty-mascot" />
+        <img src="/tierly/${mascot}" alt="TIRLY" class="lb-empty-mascot" />
         <strong>${title}</strong>
         <p>${body}</p>
         <button class="lb-promo-btn lb-empty-cta" data-view="${ctaView}">${ctaLabel}</button>
@@ -632,88 +638,121 @@ import { calculatePoints } from "./points.mjs";
     window.lucide?.createIcons();
   }
 
-  function eventStatus(dateStr) {
+  function parseEventDate(dateStr) {
     if (!dateStr) return null;
-    const eventDay = new Date(`${dateStr}T00:00:00`);
+    const raw = typeof dateStr === "string" && dateStr.length <= 10 ? `${dateStr}T00:00:00` : dateStr;
+    const date = new Date(raw);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function eventStatus(dateStr) {
+    const eventDay = parseEventDate(dateStr);
+    if (!eventDay) return null;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    if (eventDay.getTime() === today.getTime()) return "live";
-    return eventDay.getTime() > today.getTime() ? "upcoming" : "past";
+    const eventDayStart = new Date(eventDay);
+    eventDayStart.setHours(0, 0, 0, 0);
+    if (eventDayStart.getTime() === today.getTime()) return "live";
+    return eventDayStart.getTime() > today.getTime() ? "upcoming" : "past";
   }
 
   function fmtEventDate(dateStr) {
-    if (!dateStr) return "";
-    return new Intl.DateTimeFormat(lang === "es" ? "es-CL" : "en-US", { dateStyle: "medium" }).format(new Date(`${dateStr}T00:00:00`));
+    const date = parseEventDate(dateStr);
+    if (!date) return "";
+    return new Intl.DateTimeFormat(lang === "es" ? "es-CL" : "en-US", { dateStyle: "medium" }).format(date);
   }
 
-  function renderLatestBracket() {
-    const el = document.querySelector("#lb-bracket");
-    if (!bracketRows.length) { el.innerHTML = `<p class="lb-empty">${t("empty")}</p>`; return; }
-    const latestEventId = bracketRows[0].event_id;
-    const rows = bracketRows.filter((r) => r.event_id === latestEventId);
-    const status = eventStatus(rows[0].event_date);
-    const badgeLabel = status === "live" ? t("eventLive") : status === "upcoming" ? t("eventUpcoming") : t("eventPast");
-    const tournamentId = rows[0].tournament_id;
-    const registrationCount = rows[0].registration_count || 0;
-    const matches = new Map();
-    rows.forEach((row) => { if (!matches.has(row.match_id)) matches.set(row.match_id, []); matches.get(row.match_id).push(row); });
-    const rounds = new Map();
-    [...matches.values()].forEach((match) => { const round = match[0].round || 1; if (!rounds.has(round)) rounds.set(round, []); rounds.get(round).push(match); });
-    el.innerHTML = `
-      <div class="lb-event-banner lb-event-${status || "past"}">
-        ${rows[0].banner_url ? `<img class="lb-event-banner-image" src="${esc(rows[0].banner_url)}" alt="" loading="lazy" />` : ""}
-        ${status ? `<span class="lb-event-badge">${badgeLabel}</span>` : ""}
-        <h3>${esc(rows[0].event_name)}</h3>
-        <span class="lb-event-date">${esc(fmtEventDate(rows[0].event_date))} · ${registrationCount} inscritos${rows[0].luma_url ? ` · <a href="${esc(rows[0].luma_url)}" target="_blank" rel="noopener">Luma ↗</a>` : ""}</span>
-      </div>
-      ${rows[0].tournament_status === "draft" ? (currentSession ? `<button type="button" class="lb-promo-btn" id="lb-register-event" data-tournament="${tournamentId}">Inscribirme</button>` : `<button type="button" class="lb-discord-btn" id="lb-event-login">${t("eventLogin")}</button>`) : ""}
-      <div class="lb-bracket-board lb-public-bracket">${[...rounds.entries()].sort((a, b) => a[0] - b[0]).map(([round, roundMatches]) => `<div class="lb-bracket-round"><h3>Ronda ${round}</h3>${roundMatches.map((match) => `<div class="lb-bracket-match">${match.map((r) => `<span class="lb-bracket-player${r.placement === 1 && r.match_status === "confirmed" ? " is-winner" : ""}">${esc(r.display_name || "Jugador")}</span>`).join("")}</div>`).join("")}</div>`).join("")}</div>`;
-    document.querySelector("#lb-register-event")?.addEventListener("click", async (event) => {
-      const button = event.currentTarget;
-      await registerForTournament(button.dataset.tournament, button);
-    });
-    document.querySelector("#lb-event-login")?.addEventListener("click", () => {
-      supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: `${window.location.origin}/tierly` } });
-    });
+  function fmtEventStart(event) {
+    const date = parseEventDate(event.starts_at || event.event_date);
+    if (!date) return "";
+    return new Intl.DateTimeFormat(lang === "es" ? "es-CL" : "en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: event.timezone || undefined,
+    }).format(date);
   }
 
-  async function loadLatestBracket() {
-    const { data, error } = await supabase
-      .from("event_bracket_public_view")
-      .select("*")
-      .order("event_date", { ascending: false })
-      .limit(50);
-    bracketRows = error || !data ? [] : data;
-    const catalog = await supabase.from("gaming_events_catalog_public_view").select("*").order("event_date", { ascending: false }).limit(30);
-    if (!catalog.error && catalog.data?.length) { renderEventCatalog(catalog.data); return; }
-    renderLatestBracket();
+  function setEventNotice(kind, key) {
+    const el = document.querySelector("#lb-events-notice");
+    if (!el) return;
+    el.textContent = key ? t(key) : "";
+    el.dataset.kind = kind || "";
+    el.hidden = !key;
   }
 
-  function renderEventCatalog(events) {
+  function renderCommunityEvents(events) {
     const el = document.querySelector("#lb-bracket");
     if (!el) return;
-    el.innerHTML = events.map((event) => {
-      const names = (event.registered_players || []).map((player) => player.display_name).length
-        ? (event.registered_players || []).map((player) => player.display_name)
-        : bracketRows.filter((row) => row.tournament_id === event.tournament_id && row.round === 1).map((row) => row.display_name);
-      const slots = [...Array(Math.max(4, names.length || 4))].map((_, index) => names[index] || "Por definir");
-      return `<article class="lb-event-catalog-card">${event.banner_url ? `<img src="${esc(event.banner_url)}" alt="" loading="lazy" />` : ""}<h3>${esc(event.event_name)}</h3><p>${esc(event.game)} · ${esc(fmtEventDate(event.event_date))} · ${event.registration_count} inscritos</p><p>${esc(event.location || "")}${event.luma_url ? ` · <a href="${esc(event.luma_url)}" target="_blank" rel="noopener">Luma ↗</a>` : ""}</p><div class="lb-bracket-board lb-catalog-bracket"><div class="lb-bracket-round"><h3>Primera ronda</h3>${slots.map((name) => `<div class="lb-bracket-match"><span class="lb-bracket-player">${esc(name)}</span></div>`).join("")}</div><div class="lb-bracket-round"><h3>Semifinal</h3><div class="lb-bracket-match"><span class="lb-bracket-player">Por definir</span></div><div class="lb-bracket-match"><span class="lb-bracket-player">Por definir</span></div></div><div class="lb-bracket-round"><h3>Final</h3><div class="lb-bracket-match"><span class="lb-bracket-player">Por definir</span></div></div></div>${event.tournament_status === "draft" ? `<button type="button" class="lb-discord-btn" data-catalog-login="${event.tournament_id}">${currentSession ? "Inscribirme" : t("eventLogin")}</button>` : ""}</article>`;
-    }).join("");
-    el.querySelectorAll("[data-catalog-login]").forEach((button) => button.addEventListener("click", async () => {
-      if (!currentSession) return supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: `${window.location.origin}/tierly` } });
-      await registerForTournament(button.dataset.catalogLogin, button);
+    if (!events.length) {
+      el.innerHTML = `<p class="lb-empty">${t("empty")}</p>`;
+      return;
+    }
+    el.innerHTML = `<div class="lb-event-catalog-grid">${events.map((event) => {
+      const status = eventStatus(event.starts_at || event.event_date);
+      const badgeLabel = event.status === "live" || status === "live"
+        ? t("eventLive")
+        : status === "upcoming" ? t("eventUpcoming") : t("eventPast");
+      const canRegister = event.status === "scheduled";
+      const meta = [
+        event.community_name,
+        fmtEventStart(event),
+        `${event.registration_count || 0} ${t("eventRegistered")}`,
+      ].filter(Boolean).map(esc).join(" · ");
+      const action = canRegister
+        ? (currentSession
+          ? `<button type="button" class="lb-promo-btn" data-event-register="${esc(event.event_id)}">${t("eventRegister")}</button>`
+          : `<button type="button" class="lb-discord-btn" data-event-login>${t("eventLogin")}</button>`)
+        : "";
+      return `<article class="lb-event-catalog-card">
+        ${event.banner_url ? `<img src="${esc(event.banner_url)}" alt="" loading="lazy" />` : ""}
+        <h3>${esc(event.event_name)}</h3>
+        <p>${meta}</p>
+        ${event.description ? `<p>${esc(event.description)}</p>` : ""}
+        ${event.location ? `<p>${esc(event.location)}</p>` : ""}
+        ${event.luma_url ? `<p><a href="${esc(event.luma_url)}" target="_blank" rel="noopener">Luma ↗</a></p>` : ""}
+        <p><span class="lb-event-badge">${esc(badgeLabel)}</span></p>
+        ${action}
+      </article>`;
+    }).join("")}</div>`;
+    el.querySelectorAll("[data-event-register]").forEach((button) => button.addEventListener("click", () => {
+      registerForCommunityEvent(button.dataset.eventRegister, button);
+    }));
+    el.querySelectorAll("[data-event-login]").forEach((button) => button.addEventListener("click", () => {
+      supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: `${window.location.origin}/tierly` } });
     }));
   }
 
-  async function loadRewards() {
+  async function loadCommunityEvents() {
     const { data, error } = await supabase
-      .from("gaming_rewards_public_view")
+      .from("tierly_community_events_public_view")
       .select("*")
+      .order("event_date", { ascending: false })
       .limit(30);
-    rewardsRows = error || !data ? [] : data;
+    bracketRows = error || !data ? [] : data;
+    renderCommunityEvents(bracketRows);
+  }
+
+  async function registerForCommunityEvent(eventId, button) {
+    if (!currentSession) return supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: `${window.location.origin}/tierly` } });
+    const original = button.textContent;
+    button.disabled = true;
+    button.textContent = t("eventRegistering");
+    await checkDiscordMembership(currentSession);
+    const { error } = await supabase.rpc("tierly_register_event", { p_event_id: eventId });
+    button.disabled = false;
+    if (error) {
+      button.textContent = original;
+      setEventNotice("error", "eventRegisterError");
+      return;
+    }
+    await loadCommunityEvents();
+    setEventNotice("success", "eventRegisteredOk");
+  }
+
+  async function loadRewards() {
+    rewardsRows = [];
     const el = document.querySelector("#lb-rewards");
-    if (!rewardsRows.length) { el.innerHTML = `<p class="lb-empty">${t("empty")}</p>`; return; }
-    el.innerHTML = `<ul>${rewardsRows.map((r) => `<li>${esc(r.display_name || "")} · ${esc(r.description)}</li>`).join("")}</ul>`;
+    if (el) el.innerHTML = `<p class="lb-empty">${t("empty")}</p>`;
   }
 
   function renderStats() {
@@ -967,7 +1006,7 @@ import { calculatePoints } from "./points.mjs";
     const latestReward = rewardsRows[0];
     el.innerHTML = `
       <div class="lb-promo-card">
-        <img src="/tierly/tierly-trofeo.png" alt="Tierly" class="lb-promo-mascot" />
+        <img src="/tierly/tierly-trofeo.png" alt="TIRLY" class="lb-promo-mascot" />
         <h3>${t("promoTitle1")}<br>${t("promoTitle2")}</h3>
         <p>${t("promoBody")}</p>
         <button class="lb-promo-btn" data-view="bracket">${t("promoExplore")} →</button>
@@ -1021,7 +1060,7 @@ import { calculatePoints } from "./points.mjs";
       <div class="lb-upcoming-row">
         <div>
           <strong>${esc(r.event_name)}</strong>
-          <span class="lb-mini-sub">${esc(r.game)} · ${esc(fmtEventDate(r.event_date))}</span>
+          <span class="lb-mini-sub">${esc(r.community_name || "")} · ${esc(fmtEventDate(r.event_date))}</span>
         </div>
         <button class="lb-mini-btn" data-view="bracket">${t("viewEvent")} →</button>
       </div>`).join("");
@@ -1315,6 +1354,15 @@ import { calculatePoints } from "./points.mjs";
       ptr = { data: null, error: invokeError };
     }
     const { data, error } = ptr;
+    // El backend decide si la cuenta es dueña del guild; no se envía guild_id.
+    if (!error && currentSession) {
+      const claim = await supabase.functions.invoke("discord-verify", {
+        body: { action: "claim_community_admin" },
+        headers: { Authorization: `Bearer ${currentSession.access_token}` },
+      });
+      if (claim.error && claim.error.status !== 403) console.error("[TIERLY] community claim failed:", claim.error.message);
+      await checkAdminVisibility(currentSession);
+    }
     if (error || !data?.player) {
       console.error("[TIERLY] discord-verify failed:", error?.message || data?.error || "sin respuesta");
       profileSyncError = data?.error || error?.message || "";
@@ -1332,20 +1380,7 @@ import { calculatePoints } from "./points.mjs";
     renderProfileSummary();
     renderProfileStats();
     renderProfileHistory();
-    loadLatestBracket();
-  }
-
-  async function registerForTournament(tournamentId, button) {
-    if (!currentSession) {
-      return supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: `${window.location.origin}/tierly` } });
-    }
-    button.disabled = true;
-    await checkDiscordMembership(currentSession);
-    const activeButton = document.querySelector(`[data-tournament="${tournamentId}"], [data-catalog-login="${tournamentId}"]`) || button;
-    activeButton.disabled = true;
-    const { error } = await supabase.rpc("tierly_register_for_tournament", { p_tournament_id: tournamentId });
-    activeButton.textContent = error ? (error.message || "No se pudo inscribir") : "Inscripción confirmada";
-    if (error) activeButton.disabled = false;
+    loadCommunityEvents();
   }
 
   function renderAuth(session) {
@@ -1369,7 +1404,7 @@ import { calculatePoints } from "./points.mjs";
       });
       renderProfileStats();
       renderProfileHistory();
-      loadLatestBracket();
+      loadCommunityEvents();
       return;
     }
     renderProfileAvatar();
@@ -1897,7 +1932,7 @@ import { calculatePoints } from "./points.mjs";
     renderProfileHistory();
     renderRanksModal();
     loadRanking();
-    loadLatestBracket();
+    loadCommunityEvents();
     loadRewards();
   }
 
@@ -1939,7 +1974,7 @@ import { calculatePoints } from "./points.mjs";
   initAuth();
 
   const rankingPromise = loadRanking();
-  const bracketPromise = loadLatestBracket();
+  const bracketPromise = loadCommunityEvents();
   const rewardsPromise = loadRewards();
   Promise.all([rankingPromise, bracketPromise, rewardsPromise]).then(() => {
     renderStats();

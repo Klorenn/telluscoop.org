@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tierly Gaming Leaderboard</title>
+  <title>TIRLY Gaming Leaderboard</title>
   <meta name="description" content="Compete in events. Climb the ranks. Earn epic rewards across every Tellus gaming event." />
   <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://telluscoop.org/tierly" />
+  <link rel="canonical" href="https://www.tirly.xyz/tierly" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://telluscoop.org/tierly" />
-  <meta property="og:site_name" content="Tellus Cooperative" />
-  <meta property="og:title" content="Tierly Gaming Leaderboard" />
+  <meta property="og:url" content="https://www.tirly.xyz/tierly" />
+  <meta property="og:site_name" content="TIRLY" />
+  <meta property="og:title" content="TIRLY Gaming Leaderboard" />
   <meta property="og:description" content="Compete in events. Climb the ranks. Earn epic rewards across every Tellus gaming event." />
   <meta property="og:image" content="https://telluscoop.org/tierly/OpenGraph.png" />
   <meta property="og:image:type" content="image/png" />
@@ -21,7 +21,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@TellusCoop" />
   <meta name="twitter:creator" content="@TellusCoop" />
-  <meta name="twitter:title" content="Tierly Gaming Leaderboard" />
+  <meta name="twitter:title" content="TIRLY Gaming Leaderboard" />
   <meta name="twitter:description" content="Compete in events. Climb the ranks. Earn epic rewards across every Tellus gaming event." />
   <meta name="twitter:image" content="https://telluscoop.org/tierly/OpenGraph.png" />
   <link rel="icon" type="image/png" href="/tierly/tierly-logo.png" />
@@ -681,7 +681,11 @@
      .lb-privacy-block button { margin-top: 4px; }
      .lb-privacy-status { min-height: 1.6em; margin-top: 10px; }
      .lb-privacy-toggle input:focus-visible, .lb-privacy-block button:focus-visible, .lb-settings-lang button:focus-visible { outline: 3px solid var(--clay); outline-offset: 3px; }
-     .tierly-admin-head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:24px; }
+      .tierly-admin-head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:24px; }
+      .tierly-admin-head-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+      .tierly-admin-community-picker { display:grid; gap:5px; color:var(--ink-dim); font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+      .tierly-admin-community-picker select { min-height:40px; min-width:190px; padding:8px 30px 8px 11px; border:1px solid var(--card-border); border-radius:10px; background:var(--card); color:var(--ink); font:600 13px var(--sans); }
+      .tierly-admin-community-picker select:focus-visible { outline:3px solid var(--clay); outline-offset:3px; }
      .tierly-admin-head h1, .tierly-admin-content h2 { font-family:var(--serif); color:var(--ink); }
      .tierly-admin-kicker { color:var(--teal-bright); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
      .tierly-admin-note { color:var(--ink-dim); font-size:13px; margin-top:6px; }
@@ -730,7 +734,7 @@
       .tierly-admin-event-card ul { margin-top:8px; }
       .tierly-admin-event-card li { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
       .tierly-admin-attendance-state { color:var(--ink-dim); font-size:12px; margin-left:auto; }
-      @media (max-width:640px) { .tierly-admin-event-form form { grid-template-columns:1fr; } .tierly-admin-event-form label:nth-last-child(2), .tierly-admin-event-form button { grid-column:auto; } }
+       @media (max-width:640px) { .tierly-admin-head { flex-direction:column; } .tierly-admin-head-actions { width:100%; } .tierly-admin-community-picker, .tierly-admin-community-picker select, #tierly-admin-refresh { width:100%; } .tierly-admin-event-form form { grid-template-columns:1fr; } .tierly-admin-event-form label:nth-last-child(2), .tierly-admin-event-form button { grid-column:auto; } }
 
     .lb-chess-lobby-shell { width: 100%; max-width: 1080px; margin: 0 auto; }
     #lb-chess-title { width: 100%; max-width: 1080px; margin: 0 auto 18px; }
@@ -865,6 +869,19 @@
     .lb-bracket-player { display: block; padding: 5px 7px; border-radius: 6px; background: var(--chip-bg); font-size: 13px; }
     .lb-bracket-player.is-winner { background: rgba(21,156,131,.18); color: var(--teal-deep); font-weight: 700; }
 
+    #lb-events-notice { margin: 0 0 16px; padding: 12px 14px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); font-size: 14px; }
+    #lb-events-notice[data-kind="success"] { border-color: rgba(21,156,131,.45); background: rgba(21,156,131,.1); color: var(--teal-deep); }
+    #lb-events-notice[data-kind="error"] { border-color: rgba(199,90,42,.5); background: rgba(199,90,42,.1); color: var(--clay); }
+
+    .lb-event-catalog-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); margin-top: 20px; }
+    .lb-event-catalog-card { display: grid; gap: 10px; align-content: start; padding: 18px; border: 1px solid var(--card-border); border-radius: 16px; background: var(--card); box-shadow: var(--card-shadow); }
+    .lb-event-catalog-card > img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; }
+    .lb-event-catalog-card h3 { margin: 0; font-size: 17px; }
+    .lb-event-catalog-card p { margin: 0; color: var(--ink-dim); font-size: 13.5px; line-height: 1.55; }
+    .lb-event-catalog-card p:empty { display: none; }
+    .lb-event-catalog-card .lb-event-badge { display: inline-block; padding: 4px 10px; border-radius: 999px; background: var(--chip-bg); color: var(--ink-dim); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+    .lb-event-catalog-card .lb-promo-btn, .lb-event-catalog-card .lb-discord-btn { justify-self: start; }
+
     @media (max-width: 960px) {
       .lb-content-grid { flex-direction: column; }
       .lb-col-side { width: 100%; }
@@ -902,14 +919,14 @@
     <div class="lb-shell">
       <aside class="lb-sidebar">
         <div class="lb-brand">
-          <img src="/tierly/tierly-logo.png" alt="Tierly" />
-          <span>Tierly</span>
+          <img src="/tierly/tierly-logo.png" alt="TIRLY" />
+          <span>TIRLY</span>
         </div>
         <button id="lb-menu-toggle" class="lb-menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false"><span></span></button>
         <nav class="lb-nav" id="lb-nav"></nav>
         <div class="lb-sidebar-promo">
           <p id="lb-sidebar-promo-text"></p>
-          <img src="/tierly/tierly-apoyado.png" alt="Tierly" />
+          <img src="/tierly/tierly-apoyado.png" alt="TIRLY" />
         </div>
       </aside>
        <div class="lb-main">
@@ -954,6 +971,7 @@
 
         <section class="lb-view" data-view="bracket" hidden>
           <h2 id="lb-bracket-title" class="lb-view-head"></h2>
+          <p id="lb-events-notice" role="status" data-kind="" hidden></p>
           <div id="lb-bracket"></div>
         </section>
 
@@ -1004,7 +1022,7 @@
 
         <footer class="lb-footer">
           <div class="lb-footer-brand">
-            <img src="/tierly/tierly-logo.png" alt="Tierly" class="lb-footer-tierly-mark" />
+            <img src="/tierly/tierly-logo.png" alt="TIRLY" class="lb-footer-tierly-mark" />
             <span>×</span>
             <img src="/hub/logos/tellus-logo-full.svg" alt="Tellus Cooperative" />
           </div>
@@ -1015,7 +1033,7 @@
           </nav>
           <div class="lb-footer-links" id="lb-footer-links"></div>
           <div class="lb-footer-divider"></div>
-          <span class="lb-footer-copy">© 2026 Tellus Cooperative · Tierly</span>
+          <span class="lb-footer-copy">© 2026 Tellus Cooperative · TIRLY</span>
         </footer>
       </div>
     </div>
@@ -1061,8 +1079,8 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"></script>
-        <script type="module" src="/tierly/chess.js?v=20260930-03"></script>
-        <script type="module" src="/tierly/app.js?v=20260930-03"></script>
-        <script type="module" src="/tierly/admin.js?v=20260930-03"></script>
+         <script type="module" src="/tierly/chess.js?v=20260930-06"></script>
+         <script type="module" src="/tierly/app.js?v=20260930-06"></script>
+         <script type="module" src="/tierly/admin.js?v=20260930-06"></script>
 </body>
 </html>
