@@ -70,6 +70,20 @@
     return state.games.find((game) => String(game.id) === String(id))?.display_name || `Juego ${id}`;
   }
 
+  function playerMarkup(player) {
+    return `<span class="tierly-admin-player">${player.avatar_url ? `<img src="${esc(player.avatar_url)}" alt="" loading="lazy">` : ""}<span>${esc(player.display_name || "Jugador sin nombre")}</span></span>`;
+  }
+
+  function presenceGroups(players) {
+    const groups = new Map();
+    players.forEach((player) => {
+      const group = groups.get(String(player.game_id)) || [];
+      group.push(player);
+      groups.set(String(player.game_id), group);
+    });
+    return [...groups.entries()].map(([id, rows]) => `<article class="tierly-admin-presence-game"><h3><span class="tierly-admin-game-name">${gameIconMarkup(id)}<span>${esc(gameName(id))}</span></span><span class="tierly-admin-presence-count">${number(rows.length)}</span></h3><div class="tierly-admin-player-list">${rows.map(playerMarkup).join("")}</div></article>`).join("");
+  }
+
   function renderContent() {
     const view = state.view;
     let title = "Juegos";
@@ -80,6 +94,8 @@
       const timezoneOptions = [...new Set([...communityTimezones, ...timezones])];
       body = `${state.isAdmin ? `<div class="tierly-admin-event-form"><h3>Crear evento</h3><form id="tierly-event-form"><label>Comunidad<select name="guild_id" required>${state.communities.map((community) => `<option value="${esc(community.guild_id)}" data-timezone="${esc(community.timezone)}">${esc(community.name)}</option>`).join("")}</select></label><label>Zona horaria<select name="timezone" required>${timezoneOptions.map((timezone) => `<option value="${esc(timezone)}">${esc(timezone)}</option>`).join("")}</select></label><label>Nombre<input name="name" required maxlength="160"></label><label>Fecha y hora local<input name="starts_at" type="datetime-local" required></label><label>Fin local<input name="ends_at" type="datetime-local"></label><label>Ubicación<input name="location" maxlength="200"></label><label>Enlace de evento<input name="luma_url" type="url"></label><label>Descripción<textarea name="description" maxlength="1000"></textarea></label><button class="tierly-admin-action" type="submit">Crear evento</button></form></div>` : ""}${state.events.length ? state.events.map((event) => eventCard(event)).join("") : `<p class="lb-empty">No hay eventos comunitarios todavía.</p>`}`;
     } else if (view === "games") {
+      const activePlayers = state.players.filter((player) => player.is_active);
+      const historicalPlayers = state.players.filter((player) => !player.is_active);
       const totals = new Map();
       state.rollups.forEach((row) => {
         const item = totals.get(row.game_id) || { players: 0, minutes: 0, sessions: 0 };
@@ -88,9 +104,10 @@
         item.sessions += Number(row.session_count || 0);
         totals.set(row.game_id, item);
       });
-       body = renderTable(["Juego", "Días agregados", "Jugadores", "Minutos", "Sesiones", "Quiénes jugaron"], [...totals.entries()].map(([id, total]) => {
+        const presence = `<section class="tierly-admin-presence"><h2>Jugando ahora</h2>${activePlayers.length ? presenceGroups(activePlayers) : `<p class="lb-empty">No hay jugadores activos en este momento.</p>`}</section>${historicalPlayers.length ? `<section class="tierly-admin-presence tierly-admin-history"><h2>Histórico</h2>${presenceGroups(historicalPlayers)}</section>` : ""}`;
+       body = presence + renderTable(["Juego", "Días agregados", "Jugadores", "Minutos", "Sesiones", "Quiénes jugaron"], [...totals.entries()].map(([id, total]) => {
          const players = state.players.filter((player) => String(player.game_id) === String(id));
-         const names = players.map((player) => `<span class="tierly-admin-player">${player.avatar_url ? `<img src="${esc(player.avatar_url)}" alt="" loading="lazy">` : ""}<span>${esc(player.display_name || "Jugador sin nombre")}</span></span>`).join("");
+          const names = players.map(playerMarkup).join("");
          return `<tr><td><span class="tierly-admin-game-name">${gameIconMarkup(id)}<span>${esc(gameName(id))}</span></span></td><td>${number(state.rollups.filter((row) => String(row.game_id) === String(id)).length)}</td><td>${number(total.players)}</td><td>${number(total.minutes)}</td><td>${number(total.sessions)}</td><td><div class="tierly-admin-player-list">${names || "-"}</div></td></tr>`;
        }));
     } else if (view === "players") {
@@ -206,7 +223,7 @@
         supabase.from("games").select("id, display_name, canonical_name"),
         supabase.from("daily_game_rollups").select("guild_id, game_id, day, unique_players, total_minutes, session_count").in("guild_id", guildIds),
         supabase.from("suggested_events").select("id, guild_id, game_id, generated_at, window_days, player_count, status").in("guild_id", guildIds),
-        supabase.from("tierly_admin_game_players").select("guild_id, game_id, player_id, display_name, avatar_url").in("guild_id", guildIds),
+         supabase.from("tierly_admin_game_players").select("guild_id, game_id, display_name, avatar_url, is_active, started_at").in("guild_id", guildIds),
       ]);
       state.communities = communities.data || []; state.games = games.data || []; state.rollups = rollups.data || []; state.suggestions = suggestions.data || []; state.players = players.data || [];
     }

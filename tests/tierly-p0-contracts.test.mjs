@@ -45,7 +45,7 @@ test("P0: las RPCs administrativas quedan limitadas a community_admins", () => {
 });
 
 test("P0: los eventos usan la zona de la comunidad y validan IANA", () => {
-  const timezone = readMigration("20260930210000_tierly_event_timezone.sql");
+  const timezone = readMigration("20260930211000_tierly_event_timezone.sql");
   assert.match(timezone, /coalesce\(nullif\(trim\(p_timezone\), ''\), c\.timezone\)/i);
   assert.match(timezone, /pg_timezone_names/);
   assert.match(timezone, /v_timezone/);
