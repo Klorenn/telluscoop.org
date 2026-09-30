@@ -28,7 +28,7 @@ const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
 
 const WELCOME_CHANNEL_NAME = "bienvenida-tierly";
 const ANNOUNCE_CHANNEL_NAME = "anuncios-tierly";
-const LEADERBOARD_URL = "https://telluscoop.org/tierly";
+const LEADERBOARD_URL = "https://tierly.xyz";
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
 const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000;
 const CONSENT_VERSION = "1";

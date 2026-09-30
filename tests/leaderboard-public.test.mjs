@@ -14,6 +14,12 @@ test("vercel.json rewrites /tierly to tierly/index.html", () => {
   assert.ok(rules.some((r) => r.source === "/tierly/admin/" && r.destination === "/tierly/index.html"));
 });
 
+test("Tellus redirige Tierly al dominio independiente", () => {
+  const rules = JSON.parse(vercelConfig).redirects;
+  assert.ok(rules.some((rule) => rule.source === "/tierly" && rule.destination === "https://tierly.xyz"));
+  assert.ok(rules.some((rule) => rule.source === "/tierly/admin" && rule.destination === "https://tierly.xyz/admin"));
+});
+
 test("public page renders the ranking, bracket, rewards, and auth sections", () => {
   assert.match(page, /id="lb-ranking"/);
   assert.match(page, /id="lb-bracket"/);
