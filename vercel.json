@@ -1,11 +1,11 @@
 {
   "redirects": [
-    { "source": "/tierly", "destination": "https://tierly.xyz", "permanent": true },
-    { "source": "/tierly/", "destination": "https://tierly.xyz", "permanent": true },
-    { "source": "/tierly/admin", "destination": "https://tierly.xyz/admin", "permanent": true },
-    { "source": "/tierly/admin/", "destination": "https://tierly.xyz/admin", "permanent": true },
-    { "source": "/admin/event", "destination": "https://tierly.xyz/admin", "permanent": true },
-    { "source": "/admin/event/", "destination": "https://tierly.xyz/admin", "permanent": true }
+    { "source": "/tierly", "destination": "https://www.tirly.xyz", "permanent": true },
+    { "source": "/tierly/", "destination": "https://www.tirly.xyz", "permanent": true },
+    { "source": "/tierly/admin", "destination": "https://www.tirly.xyz/admin", "permanent": true },
+    { "source": "/tierly/admin/", "destination": "https://www.tirly.xyz/admin", "permanent": true },
+    { "source": "/admin/event", "destination": "https://www.tirly.xyz/admin", "permanent": true },
+    { "source": "/admin/event/", "destination": "https://www.tirly.xyz/admin", "permanent": true }
   ],
   "rewrites": [
     { "source": "/ops/merch", "destination": "/ops/merch/index.html" },
