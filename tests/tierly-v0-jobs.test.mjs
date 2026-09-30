@@ -36,3 +36,12 @@ test("las sugerencias respetan el umbral y no duplican pendientes", () => {
 test("programa los jobs con pg_cron", () => {
   assert.match(sql, /cron\.schedule/i);
 });
+
+test("la RPC administrativa actualiza sugerencias con estado permitido", () => {
+  const adminSql = readFileSync(new URL("../supabase/migrations/20260930140000_tierly_admin_suggestion_status.sql", import.meta.url), "utf8");
+  assert.match(adminSql, /tierly_update_suggestion_status/i);
+  assert.match(adminSql, /p_status not in \('accepted', 'dismissed'\)/i);
+  assert.match(adminSql, /community_admins/);
+  assert.match(adminSql, /grant execute on function public\.tierly_update_suggestion_status\(bigint, text\) to authenticated/i);
+  assert.doesNotMatch(adminSql, /to anon/i);
+});

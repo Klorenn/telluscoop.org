@@ -21,13 +21,32 @@ test("el panel admin reconoce la ruta y ofrece las cuatro vistas", () => {
   }
 });
 
-test("el panel solo consulta fuentes agregadas y catálogos autorizados", () => {
-  for (const table of ["community_admins", "daily_game_rollups", "suggested_events", "games", "communities"]) {
+test("el panel consulta identidades solo mediante la fuente administrativa autorizada", () => {
+  for (const table of ["community_admins", "daily_game_rollups", "suggested_events", "games", "communities", "tierly_admin_game_players"]) {
     assert.match(admin, new RegExp(`from\\(["']${table}["']\\)`));
   }
   assert.doesNotMatch(admin, /from\(["']play_sessions["']\)/);
   assert.doesNotMatch(admin, /discord_user_id/);
-  assert.match(admin, /cobertura parcial|partial coverage/i);
+  assert.match(admin, /display_name/);
+  assert.match(admin, /avatar_url/);
+});
+
+test("la migración mantiene RLS y evita filtrar identidades hacia la página pública", () => {
+  const migration = readFileSync(new URL("../supabase/migrations/20260930120000_tierly_observed_member_identity.sql", import.meta.url), "utf8");
+  assert.match(migration, /security_invoker\s*=\s*true/);
+  assert.match(migration, /grant select on public\.tierly_admin_game_players to authenticated/i);
+  assert.doesNotMatch(html, /tierly_admin_game_players|observed_members/);
+  assert.doesNotMatch(admin, /discord_user_id/);
+});
+
+test("cada juego del panel usa un icono Lucide determinista y controlado", () => {
+  assert.match(admin, /function gameIcon\(game\)/);
+  assert.match(admin, /canonical_name.*display_name/);
+  assert.match(admin, /data-lucide=\"\$\{gameIcon\(game\)\}\"/);
+  assert.match(admin, /createIcons\(\)/);
+  assert.match(admin, /gameIconNames/);
+  assert.match(html, /tierly-admin-game-icon/);
+  assert.doesNotMatch(admin, /icon_url|image_url/);
 });
 
 test("la única escritura posible es la RPC segura de estado de sugerencia", () => {

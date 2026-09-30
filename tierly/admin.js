@@ -7,9 +7,35 @@
   if (!bridge || !root) return;
   root.closest(".lb-view")?.setAttribute("data-view", "admin");
   const supabase = bridge.supabase;
-  const state = { view: "games", communities: [], games: [], rollups: [], suggestions: [], authorized: false, message: "" };
+  const state = { view: "games", communities: [], games: [], rollups: [], suggestions: [], players: [], authorized: false, message: "" };
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
   const number = (value) => new Intl.NumberFormat("es-CL").format(Number(value || 0));
+  const gameIconNames = ["gamepad-2", "trophy", "puzzle", "target", "zap", "rocket", "dice-5", "swords"];
+
+  function gameIcon(game) {
+    const text = `${game?.canonical_name || ""} ${game?.display_name || ""}`.toLowerCase();
+    const match = [
+      [/chess|ajedrez/, "crown"],
+      [/racer|race|carrera/, "flag"],
+      [/card|carta|poker/, "layers"],
+      [/word|palabra/, "type"],
+      [/quiz|trivia/, "circle-help"],
+      [/puzzle/, "puzzle"],
+      [/sport|futbol|football/, "medal"],
+    ].find(([pattern]) => pattern.test(text));
+    if (match) return match[1];
+    const hash = [...text].reduce((total, character) => ((total * 31) + character.charCodeAt(0)) >>> 0, 0);
+    return gameIconNames[hash % gameIconNames.length];
+  }
+
+  function gameById(id) {
+    return state.games.find((game) => String(game.id) === String(id)) || { display_name: `Juego ${id}`, canonical_name: String(id) };
+  }
+
+  function gameIconMarkup(id) {
+    const game = gameById(id);
+    return `<span class="tierly-admin-game-icon" aria-hidden="true"><i data-lucide="${gameIcon(game)}"></i></span>`;
+  }
 
   function query(table) {
     return supabase.from(table).select("*");
@@ -42,11 +68,15 @@
         item.sessions += Number(row.session_count || 0);
         totals.set(row.game_id, item);
       });
-      body = renderTable(["Juego", "Días agregados", "Jugadores", "Minutos", "Sesiones"], [...totals.entries()].map(([id, total]) => `<tr><td>${esc(gameName(id))}</td><td>${number(state.rollups.filter((row) => String(row.game_id) === String(id)).length)}</td><td>${number(total.players)}</td><td>${number(total.minutes)}</td><td>${number(total.sessions)}</td></tr>`));
+       body = renderTable(["Juego", "Días agregados", "Jugadores", "Minutos", "Sesiones", "Quiénes jugaron"], [...totals.entries()].map(([id, total]) => {
+         const players = state.players.filter((player) => String(player.game_id) === String(id));
+         const names = players.map((player) => `<span class="tierly-admin-player">${player.avatar_url ? `<img src="${esc(player.avatar_url)}" alt="" loading="lazy">` : ""}<span>${esc(player.display_name || "Jugador sin nombre")}</span></span>`).join("");
+         return `<tr><td><span class="tierly-admin-game-name">${gameIconMarkup(id)}<span>${esc(gameName(id))}</span></span></td><td>${number(state.rollups.filter((row) => String(row.game_id) === String(id)).length)}</td><td>${number(total.players)}</td><td>${number(total.minutes)}</td><td>${number(total.sessions)}</td><td><div class="tierly-admin-player-list">${names || "-"}</div></td></tr>`;
+       }));
     } else if (view === "players") {
       title = "Jugadores";
-      const total = state.rollups.reduce((sum, row) => sum + Number(row.unique_players || 0), 0);
-      body = `<div class="tierly-admin-stat"><strong>${number(total)}</strong><span>participaciones únicas agregadas</span></div><p class="tierly-admin-note">Los jugadores se muestran como métricas agregadas. No se exponen identidades individuales.</p>`;
+       const total = state.players.length;
+       body = `<div class="tierly-admin-stat"><strong>${number(total)}</strong><span>jugadores observados</span></div>${renderTable(["Juego", "Jugadores"], state.games.map((game) => { const players = state.players.filter((player) => String(player.game_id) === String(game.id)); return players.length ? `<tr><td>${esc(game.display_name)}</td><td><div class="tierly-admin-player-list">${players.map((player) => `<span class="tierly-admin-player">${player.avatar_url ? `<img src="${esc(player.avatar_url)}" alt="" loading="lazy">` : ""}<span>${esc(player.display_name || "Jugador sin nombre")}</span></span>`).join("")}</div></td></tr>` : ""; }).filter(Boolean))}`;
     } else if (view === "trends") {
       title = "Tendencias";
       const days = [...new Set(state.rollups.map((row) => row.day))].sort().reverse().slice(0, 14);
@@ -57,9 +87,10 @@
       body += `<p class="tierly-admin-note">Presence tiene cobertura parcial: esta vista solo representa los rollups diarios disponibles.</p>`;
     } else {
       title = "Sugerencias";
-      body = renderTable(["Juego", "Jugadores", "Ventana", "Estado", "Acción"], state.suggestions.map((suggestion) => `<tr><td>${esc(gameName(suggestion.game_id))}</td><td>${number(suggestion.player_count)}</td><td>${number(suggestion.window_days)} días</td><td>${esc(suggestion.status)}</td><td>${suggestion.status === "pending" ? `<button class="tierly-admin-action" data-suggestion-id="${esc(suggestion.id)}" data-status="accepted">Aceptar</button><button class="tierly-admin-action" data-suggestion-id="${esc(suggestion.id)}" data-status="dismissed">Descartar</button>` : "-"}</td></tr>`));
+      body = renderTable(["Juego", "Jugadores", "Ventana", "Estado", "Acción"], state.suggestions.map((suggestion) => `<tr><td><span class="tierly-admin-game-name">${gameIconMarkup(suggestion.game_id)}<span>${esc(gameName(suggestion.game_id))}</span></span></td><td>${number(suggestion.player_count)}</td><td>${number(suggestion.window_days)} días</td><td>${esc(suggestion.status)}</td><td>${suggestion.status === "pending" ? `<button class="tierly-admin-action" data-suggestion-id="${esc(suggestion.id)}" data-status="accepted">Aceptar</button><button class="tierly-admin-action" data-suggestion-id="${esc(suggestion.id)}" data-status="dismissed">Descartar</button>` : "-"}</td></tr>`));
     }
     root.querySelector("#tierly-admin-content").innerHTML = `<h2>${title}</h2>${body}`;
+    if (window.lucide?.createIcons) window.lucide.createIcons();
     root.querySelectorAll(".tierly-admin-action").forEach((button) => button.addEventListener("click", () => updateSuggestion(button)));
   }
 
@@ -88,17 +119,19 @@
       state.message = "La cuenta autenticada no tiene una comunidad administrable.";
       return render();
     }
-    const [communities, games, rollups, suggestions] = await Promise.all([
+    const [communities, games, rollups, suggestions, players] = await Promise.all([
       supabase.from("communities").select("guild_id, name, presence_enabled").in("guild_id", guildIds),
       supabase.from("games").select("id, display_name, canonical_name"),
       supabase.from("daily_game_rollups").select("guild_id, game_id, day, unique_players, total_minutes, session_count").in("guild_id", guildIds),
       supabase.from("suggested_events").select("id, guild_id, game_id, generated_at, window_days, player_count, status").in("guild_id", guildIds),
+      supabase.from("tierly_admin_game_players").select("guild_id, game_id, display_name, avatar_url").in("guild_id", guildIds),
     ]);
     state.communities = communities.data || [];
     state.games = games.data || [];
     state.rollups = rollups.data || [];
     state.suggestions = suggestions.data || [];
-    state.message = [communities, games, rollups, suggestions].find((result) => result.error)?.error?.message || "";
+    state.players = players.data || [];
+    state.message = [communities, games, rollups, suggestions, players].find((result) => result.error)?.error?.message || "";
     render();
   }
 

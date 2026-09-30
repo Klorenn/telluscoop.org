@@ -15,6 +15,25 @@ export class SessionStore {
     this.supabase = supabase;
   }
 
+  async ensureCommunity({ guildId, name = "Comunidad Discord" } = {}) {
+    if (!guildId) throw new TypeError("Se requiere guildId para bootstrap de la comunidad");
+    const result = await this.supabase
+      .from("communities")
+      .upsert({ guild_id: guildId, name }, { onConflict: "guild_id", ignoreDuplicates: true })
+      .select("guild_id, stale_session_hours")
+      .maybeSingle();
+    return throwIfError(result);
+  }
+
+  async getCommunitySettings(guildId) {
+    const result = await this.supabase
+      .from("communities")
+      .select("stale_session_hours")
+      .eq("guild_id", guildId)
+      .single();
+    return throwIfError(result);
+  }
+
   async resolveGame(rawActivityName) {
     const alias = await this.supabase
       .from("game_aliases")
@@ -41,7 +60,19 @@ export class SessionStore {
     return createdAlias.data.game_id;
   }
 
-  async openSession({ guildId, discordUserId, gameId, startedAt } = {}) {
+  async openSession({ guildId, discordUserId, gameId, displayName, avatarUrl, startedAt, communityName } = {}) {
+    await this.ensureCommunity({ guildId, name: communityName });
+    const member = await this.supabase
+      .from("observed_members")
+      .upsert({
+        guild_id: guildId,
+        discord_user_id: discordUserId,
+        ...(displayName !== undefined ? { display_name: displayName } : {}),
+        ...(avatarUrl !== undefined ? { avatar_url: avatarUrl } : {}),
+        last_seen_at: new Date().toISOString(),
+      }, { onConflict: "guild_id,discord_user_id" });
+    if (member?.error) throw member.error;
+
     const values = {
       guild_id: guildId,
       discord_user_id: discordUserId,
@@ -96,6 +127,12 @@ export class SessionStore {
   }
 
   async closeStaleSessions({ guildId, before, endedAt = new Date().toISOString() } = {}) {
+    if (typeof this.supabase.rpc === "function") {
+      return throwIfError(await this.supabase.rpc("tierly_close_stale_sessions_for_guild", {
+        target_guild: guildId,
+        stale_before: before,
+      }));
+    }
     let query = this.supabase
       .from(TABLE)
       .update({ ended_at: endedAt, closed_reason: "heartbeat" })

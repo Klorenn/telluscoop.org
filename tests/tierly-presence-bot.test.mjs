@@ -28,3 +28,10 @@ test("no registra identificadores ni secretos en logs", () => {
   assert.doesNotMatch(source, /console\.log\([^\n]*(discordUserId|userId|discord_user_id)/i);
   assert.doesNotMatch(source, /SUPABASE_SERVICE_ROLE_KEY\s*=\s*["'][A-Za-z0-9]/);
 });
+
+test("aísla errores de presence y heartbeat y usa stale_session_hours", () => {
+  assert.match(source, /try \{[\s\S]*sessions\.heartbeatSession/);
+  assert.match(source, /getCommunitySettings/);
+  assert.match(source, /stale_session_hours/);
+  assert.match(source, /sessions\.ensureCommunity/);
+});

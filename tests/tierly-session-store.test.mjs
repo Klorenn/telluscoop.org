@@ -39,7 +39,18 @@ test("inserta una sesión sin depender de un upsert incompatible con un índice 
   const store = new SessionStore(supabase);
 
   await assert.doesNotReject(() => store.openSession({ guildId: "g", discordUserId: "u", gameId: 3 }));
-  assert.deepEqual(supabase.calls[0].insert, [{ guild_id: "g", discord_user_id: "u", game_id: 3 }]);
+  assert.deepEqual(supabase.calls[1].upsert[0], { guild_id: "g", discord_user_id: "u", last_seen_at: supabase.calls[1].upsert[0].last_seen_at });
+  assert.equal(supabase.calls[1].table, "observed_members");
+  assert.deepEqual(supabase.calls[2].insert, [{ guild_id: "g", discord_user_id: "u", game_id: 3 }]);
+});
+
+test("mantiene el nombre y avatar seguros del miembro observado", async () => {
+  const supabase = fakeSupabase({ data: { id: 7 } });
+  const store = new SessionStore(supabase);
+  await store.openSession({ guildId: "g", discordUserId: "u", gameId: 3, displayName: "Jugador", avatarUrl: "https://cdn.example/avatar.png" });
+  assert.deepEqual(supabase.calls[1].upsert[0], {
+    guild_id: "g", discord_user_id: "u", display_name: "Jugador", avatar_url: "https://cdn.example/avatar.png", last_seen_at: supabase.calls[1].upsert[0].last_seen_at,
+  });
 });
 
 test("actualiza heartbeat y cierra normalmente", async () => {
@@ -72,4 +83,12 @@ test("resuelve una actividad Discord a un game_id persistido", async () => {
   await assert.doesNotReject(() => store.resolveGame("Minecraft"));
   assert.equal(supabase.calls[0].table, "game_aliases");
   assert.deepEqual(supabase.calls[0].eq, ["raw_activity_name", "Minecraft"]);
+});
+
+test("prepara la comunidad antes de usar tablas con FK", async () => {
+  const supabase = fakeSupabase({ data: { guild_id: "g", stale_session_hours: 12 } });
+  const store = new SessionStore(supabase);
+  await store.ensureCommunity({ guildId: "g", name: "Servidor" });
+  assert.equal(supabase.calls[0].table, "communities");
+  assert.deepEqual(supabase.calls[0].upsert[0], { guild_id: "g", name: "Servidor" });
 });

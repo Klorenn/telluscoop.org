@@ -49,6 +49,17 @@ function sessionKey(userId, gameName) {
   return `${userId}:${gameName}`;
 }
 
+function memberIdentity(member) {
+  const user = member?.user;
+  const avatarHash = user?.avatar;
+  return {
+    displayName: user?.globalName || user?.username || member?.displayName || "Jugador",
+    avatarUrl: avatarHash
+      ? `https://cdn.discordapp.com/avatars/${member.id}/${avatarHash}.${avatarHash.startsWith("a_") ? "gif" : "png"}`
+      : null,
+  };
+}
+
 async function handlePresenceUpdate(oldPresence, newPresence) {
   if (!sessions) return;
   const guildId = newPresence?.guild?.id || oldPresence?.guild?.id;
@@ -60,20 +71,31 @@ async function handlePresenceUpdate(oldPresence, newPresence) {
   const { started, stopped } = presenceDelta(oldPresence, newPresence);
 
   for (const gameName of started) {
-    const gameId = await sessions.resolveGame(gameName);
-    const session = await sessions.openSession({
-      guildId: DISCORD_GUILD_ID,
-      discordUserId: userId,
-      gameId,
-    });
-    if (session?.id) activeSessions.set(sessionKey(userId, gameName), session.id);
+    try {
+      const gameId = await sessions.resolveGame(gameName);
+      const identity = memberIdentity(newPresence.member);
+      const session = await sessions.openSession({
+        guildId: DISCORD_GUILD_ID,
+        communityName: newPresence.guild?.name,
+        discordUserId: userId,
+        gameId,
+        ...identity,
+      });
+      if (session?.id) activeSessions.set(sessionKey(userId, gameName), session.id);
+    } catch (error) {
+      console.error("No se pudo abrir la sesion de presence:", error.message);
+    }
   }
   for (const gameName of stopped) {
-    const key = sessionKey(userId, gameName);
-    const sessionId = activeSessions.get(key);
-    if (!sessionId) continue;
-    await sessions.closeSession(sessionId, undefined, "normal");
-    activeSessions.delete(key);
+    try {
+      const key = sessionKey(userId, gameName);
+      const sessionId = activeSessions.get(key);
+      if (!sessionId) continue;
+      await sessions.closeSession(sessionId, undefined, "normal");
+      activeSessions.delete(key);
+    } catch (error) {
+      console.error("No se pudo cerrar la sesion de presence:", error.message);
+    }
   }
 }
 
@@ -82,10 +104,12 @@ async function reconcilePresence(guild) {
     if (member.user?.bot) continue;
     for (const gameName of playingGames(member.presence)) {
       const gameId = await sessions.resolveGame(gameName);
+      const identity = memberIdentity(member);
       const session = await sessions.openSession({
         guildId: DISCORD_GUILD_ID,
         discordUserId: member.id,
         gameId,
+        ...identity,
       });
       if (session?.id) activeSessions.set(sessionKey(member.id, gameName), session.id);
     }
@@ -95,13 +119,23 @@ async function reconcilePresence(guild) {
 async function runPresenceHeartbeat() {
   const heartbeatAt = new Date().toISOString();
   for (const sessionId of activeSessions.values()) {
-    await sessions.heartbeatSession(sessionId, heartbeatAt);
+    try {
+      await sessions.heartbeatSession(sessionId, heartbeatAt);
+    } catch (error) {
+      console.error("No se pudo actualizar un heartbeat:", error.message);
+    }
   }
-  await sessions.closeStaleSessions({
-    guildId: DISCORD_GUILD_ID,
-    before: new Date(Date.now() - HEARTBEAT_INTERVAL_MS * 2).toISOString(),
-    endedAt: heartbeatAt,
-  });
+  try {
+    const settings = await sessions.getCommunitySettings(DISCORD_GUILD_ID);
+    const staleHours = Number(settings?.stale_session_hours) || 12;
+    await sessions.closeStaleSessions({
+      guildId: DISCORD_GUILD_ID,
+      before: new Date(Date.now() - staleHours * 60 * 60 * 1000).toISOString(),
+      endedAt: heartbeatAt,
+    });
+  } catch (error) {
+    console.error("No se pudo cerrar sesiones obsoletas:", error.message);
+  }
 }
 
 async function getWelcomeChannel(guild) {
@@ -255,6 +289,8 @@ client.once("ready", async () => {
   }
 
   if (sessions) {
+    await sessions.ensureCommunity({ guildId: DISCORD_GUILD_ID, name: guild.name })
+      .catch((err) => console.error("Fallo el bootstrap de la comunidad:", err.message));
     await sessions.reconcileOpenSessions({ guildId: DISCORD_GUILD_ID, reason: "crash" })
       .catch((err) => console.error("Fallo la reconciliacion inicial:", err.message));
     await reconcilePresence(guild)
