@@ -11,6 +11,7 @@ Proceso Node separado de la web y de las Supabase Edge Functions. Corre 24/7 via
 - Cualquier miembro puede escribir `!bienvenida` en el canal del bot para forzar su propio saludo + sync manual (útil para quien ya era miembro del server antes de que el bot arrancara, ya que `guildMemberAdd` no dispara retroactivamente).
 - Observa `presenceUpdate` para abrir y cerrar sesiones de juegos, reconcilia la caché al arrancar y mantiene las sesiones activas con un heartbeat cada cinco minutos. La cobertura depende de la visibilidad de presence de cada usuario.
 - Entrega recordatorios de eventos generados por Supabase. La migración `20260930201000_tierly_event_reminders.sql` crea el registro idempotente por guild/evento y el job `tierly-generar-recordatorios`; el bot solo reclama filas `pending` de su guild y las marca como `sent` de forma condicional.
+- Registra únicamente conexión, heartbeat, errores normalizados y contadores técnicos en `tierly_bot_health`; no guarda IDs, nombres, mensajes de error ni secretos.
 
 ## Variables de entorno
 
@@ -115,15 +116,58 @@ Deberías ver `Tierly conectado como Tierly#XXXX` y el bot pasa a **online** en 
 
 ## Health y reinicio: checklist
 
-No existe un endpoint HTTP de health en este bot. La verificación operativa es
-el estado del servicio, el último log de conexión y el estado **online** en
-Discord:
+No existe un endpoint HTTP de health en este bot. `healthcheck.mjs` consulta el
+estado técnico agregado y detecta la última conexión, el heartbeat obsoleto y
+los contadores de errores:
 
 ```bash
 sudo systemctl is-enabled tierly-bot
 sudo systemctl is-active tierly-bot
 sudo systemctl status tierly-bot --no-pager
 sudo journalctl -u tierly-bot -n 100 --no-pager
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node healthcheck.mjs
+```
+
+El comando devuelve JSON técnico y termina con código `0` si el heartbeat tiene
+menos de 15 minutos. Se puede ajustar con `TIERLY_HEALTH_MAX_AGE_SECONDS`.
+Nunca se deben imprimir la clave ni el archivo `.env`.
+
+Para revisión automática, crear `/etc/systemd/system/tierly-healthcheck.service`:
+
+```ini
+[Unit]
+Description=Tierly bot healthcheck
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/<usuario>/tellus/discord-bot
+EnvironmentFile=/home/<usuario>/tellus/discord-bot/.env
+ExecStart=/usr/bin/node healthcheck.mjs
+```
+
+Crear `/etc/systemd/system/tierly-healthcheck.timer`:
+
+```ini
+[Unit]
+Description=Revisar salud de Tierly
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Unit=tierly-healthcheck.service
+
+[Install]
+WantedBy=timers.target
+```
+
+Activar y revisar solo el resultado del servicio:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now tierly-healthcheck.timer
+sudo systemctl start tierly-healthcheck.service
+sudo systemctl status tierly-healthcheck.service --no-pager
 ```
 
 Después de reiniciar, confirmar:

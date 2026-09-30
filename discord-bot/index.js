@@ -32,6 +32,7 @@ const LEADERBOARD_URL = "https://telluscoop.org/tierly";
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
 const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000;
 const CONSENT_VERSION = "1";
+const BOT_CONNECTED_AT = new Date().toISOString();
 
 const client = new Client({
   intents: [
@@ -45,6 +46,14 @@ const client = new Client({
 
 const sessions = supabase ? createSessionStore(supabase) : null;
 const activeSessions = new Map();
+
+async function recordBotHealth(action, errorCode = null) {
+  if (!supabase) return;
+  const result = action === "error"
+    ? await supabase.rpc("tierly_bot_health_error", { p_error_code: errorCode || "unknown" })
+    : await supabase.rpc("tierly_bot_health_heartbeat", { p_connected_at: action === "connected" ? BOT_CONNECTED_AT : null });
+  if (result.error) console.error("No se pudo registrar el estado operativo de Tierly.");
+}
 
 function sessionKey(userId, gameName) {
   return `${userId}:${gameName}`;
@@ -78,6 +87,7 @@ async function handleTierlyCommand(message) {
       await message.channel.send("Usa: `!tierly presencia si`, `!tierly presencia no` o `!tierly borrar`.");
     }
   } catch (error) {
+    await recordBotHealth("error", "consent_update");
     console.error("No se pudo actualizar el consentimiento de Tierly.");
     await message.channel.send("No se pudo actualizar el consentimiento. Inténtalo nuevamente más tarde.");
   }
@@ -120,6 +130,7 @@ async function handlePresenceUpdate(oldPresence, newPresence) {
       });
       if (session?.id) activeSessions.set(sessionKey(userId, gameName), session.id);
     } catch (error) {
+      await recordBotHealth("error", "presence_open");
       console.error("No se pudo abrir la sesion de presence.");
     }
   }
@@ -131,6 +142,7 @@ async function handlePresenceUpdate(oldPresence, newPresence) {
       await sessions.closeSession(sessionId, undefined, "normal");
       activeSessions.delete(key);
     } catch (error) {
+      await recordBotHealth("error", "presence_close");
       console.error("No se pudo cerrar la sesion de presence.");
     }
   }
@@ -161,6 +173,7 @@ async function runPresenceHeartbeat() {
     try {
       await sessions.heartbeatSession(sessionId, heartbeatAt);
     } catch (error) {
+      await recordBotHealth("error", "presence_heartbeat");
       console.error("No se pudo actualizar un heartbeat.");
     }
   }
@@ -173,6 +186,7 @@ async function runPresenceHeartbeat() {
       endedAt: heartbeatAt,
     });
   } catch (error) {
+    await recordBotHealth("error", "stale_sessions");
     console.error("No se pudo cerrar sesiones obsoletas.");
   }
 }
@@ -339,6 +353,7 @@ async function syncMembership(member) {
 
 client.once("ready", async () => {
   console.log(`Tierly conectado como ${client.user.tag}`);
+  await recordBotHealth("connected");
   client.user.setPresence({
     activities: [{ name: "el ranking gaming de Tellus", type: ActivityType.Watching }],
     status: "online",
@@ -365,6 +380,7 @@ client.once("ready", async () => {
     await reconcilePresence(guild)
       .catch((err) => console.error("Fallo la reconciliacion de presence:", err.message));
     setInterval(() => {
+      recordBotHealth("heartbeat").catch(() => {});
       runPresenceHeartbeat().catch((err) => console.error("Fallo el heartbeat de presence:", err.message));
     }, HEARTBEAT_INTERVAL_MS);
   }
@@ -372,7 +388,10 @@ client.once("ready", async () => {
 
 client.on("presenceUpdate", (oldPresence, newPresence) => {
   handlePresenceUpdate(oldPresence, newPresence)
-    .catch((err) => console.error("Fallo al registrar sesion de presence:", err.message));
+    .catch((err) => {
+      recordBotHealth("error", "presence_update").catch(() => {});
+      console.error("Fallo al registrar sesion de presence:", err.message);
+    });
 });
 
 client.on("guildMemberAdd", async (member) => {

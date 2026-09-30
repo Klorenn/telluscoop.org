@@ -44,6 +44,21 @@ test("P0: las RPCs administrativas quedan limitadas a community_admins", () => {
   assert.match(confirmAttendance, /grant execute on function[\s\S]*to authenticated/i);
 });
 
+test("P0: los eventos usan la zona de la comunidad y validan IANA", () => {
+  const timezone = readMigration("20260930210000_tierly_event_timezone.sql");
+  assert.match(timezone, /coalesce\(nullif\(trim\(p_timezone\), ''\), c\.timezone\)/i);
+  assert.match(timezone, /pg_timezone_names/);
+  assert.match(timezone, /v_timezone/);
+});
+
+test("P1: el administrador convierte desde la zona local y muestra la zona del evento", () => {
+  const admin = readFileSync(new URL("../tierly/admin.js", import.meta.url), "utf8");
+  assert.match(admin, /localDateTimeToUtc/);
+  assert.match(admin, /p_timezone: values\.timezone/);
+  assert.match(admin, /timeZone: timezone/);
+  assert.doesNotMatch(admin, /p_timezone: "America\/Santiago"/);
+});
+
 test("P0: la privacidad autenticada solo permite modificar el propio Discord", () => {
   const privacy = readFileSync(new URL("../supabase/migrations/20260930180000_tierly_member_privacy_authenticated.sql", import.meta.url), "utf8");
   assert.match(privacy, /tierly_member_owns_discord_id/);
