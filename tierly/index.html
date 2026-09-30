@@ -103,7 +103,15 @@
       cursor: pointer; transition: background 160ms ease, transform 160ms ease; white-space: nowrap;
     }
     .lb-discord-btn:hover { background: #4752C4; transform: translateY(-1px); }
-    .lb-discord-btn svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
+     .lb-discord-btn svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
+     .lb-discord-cta-action { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+     .lb-discord-cta-action .lb-session-avatar { width: 30px; height: 30px; flex: 0 0 30px; }
+     .lb-discord-cta-action .lb-session-avatar-fallback { font-size: 10px; }
+     .lb-admin-banner { margin: -16px 0 20px; padding: 7px 12px; background: var(--teal-ink); border-radius: 8px; text-align: center; }
+     .lb-admin-banner[hidden] { display: none; }
+     .lb-admin-banner a { color: var(--sand-soft); font-size: 12px; font-weight: 700; text-decoration: none; }
+     .lb-admin-banner a:hover, .lb-admin-banner a:focus-visible { text-decoration: underline; }
+     .lb-admin-banner a:focus-visible, .lb-discord-cta-action button:focus-visible { outline: 3px solid var(--clay); outline-offset: 3px; }
 
     .lb-session-pill { display: inline-flex; align-items: center; gap: 9px; background: var(--sand-soft); padding: 8px 14px; border-radius: 999px; }
     .lb-session-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex: 0 0 22px; }
@@ -694,7 +702,13 @@
      .tierly-admin-action + .tierly-admin-action { background:var(--sand-soft); color:var(--ink); }
      .tierly-admin-player-list { display:flex; flex-wrap:wrap; gap:6px; min-width:180px; }
      .tierly-admin-player { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; background:var(--sand-soft); color:var(--ink); white-space:nowrap; }
-     .tierly-admin-player img { width:24px; height:24px; border-radius:50%; object-fit:cover; }
+      .tierly-admin-player img { width:24px; height:24px; border-radius:50%; object-fit:cover; }
+      .tierly-admin-presence { display:grid; gap:12px; margin-bottom:24px; }
+      .tierly-admin-presence h2 { margin:0; font-family:var(--serif); color:var(--ink); }
+      .tierly-admin-presence-game { background:var(--card); border:1px solid var(--card-border); border-radius:16px; padding:14px 16px; box-shadow:var(--card-shadow); }
+      .tierly-admin-presence-game h3 { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 12px; font:600 15px var(--sans); color:var(--ink); }
+      .tierly-admin-presence-count { min-width:24px; padding:4px 8px; border-radius:999px; background:var(--teal-bright); color:#fff; text-align:center; font-size:11px; }
+      .tierly-admin-history { padding-top:8px; }
      .tierly-admin-stat, .tierly-admin-gate { background:var(--card); border:1px solid var(--card-border); border-radius:18px; padding:24px; box-shadow:var(--card-shadow); }
      .tierly-admin-stat { display:flex; flex-direction:column; gap:4px; max-width:320px; }
      .tierly-admin-stat strong { font:600 36px var(--serif); color:var(--ink); }
@@ -898,7 +912,8 @@
           <img src="/tierly/tierly-apoyado.png" alt="Tierly" />
         </div>
       </aside>
-      <div class="lb-main">
+       <div class="lb-main">
+         <div id="lb-admin-banner" class="lb-admin-banner" hidden role="region" aria-live="polite"></div>
 
         <section id="lb-ranking-view" class="lb-view" data-view="ranking">
           <div class="lb-stats" id="lb-stats"></div>
@@ -1046,8 +1061,8 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"></script>
-    <script type="module" src="/tierly/chess.js?v=20260930-02"></script>
-    <script type="module" src="/tierly/app.js?v=20260930-02"></script>
-    <script type="module" src="/tierly/admin.js?v=20260930-02"></script>
+        <script type="module" src="/tierly/chess.js?v=20260930-03"></script>
+        <script type="module" src="/tierly/app.js?v=20260930-03"></script>
+        <script type="module" src="/tierly/admin.js?v=20260930-03"></script>
 </body>
 </html>

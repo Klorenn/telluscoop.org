@@ -45,7 +45,7 @@ import { calculatePoints } from "./points.mjs";
       tier: "Tier", searchResultsLabel: "Search results",
       searchNoResults: "No players match that name.", searchLoading: "Searching…",
       searchNoProfile: "This player hasn't set up a public profile yet.",
-      loginDiscord: "Sign in with Discord", loginedAs: "Signed in as",
+       loginDiscord: "Sign in with Discord", loginedAs: "Signed in as", viewYourProfile: "View your profile", adminPanel: "Admin panel",
       signOutBtn: "Sign out",
       profileEditBtn: "Edit profile", profileEditBtnClose: "Done",
       bannerPickerTitle: "Choose a banner",
@@ -205,7 +205,7 @@ import { calculatePoints } from "./points.mjs";
       tier: "Rango", searchResultsLabel: "Resultados de búsqueda",
       searchNoResults: "Ningún jugador coincide con ese nombre.", searchLoading: "Buscando…",
       searchNoProfile: "Este jugador todavía no tiene perfil público.",
-      loginDiscord: "Iniciar sesión con Discord", loginedAs: "Sesión iniciada como",
+       loginDiscord: "Iniciar sesión con Discord", loginedAs: "Sesión iniciada como", viewYourProfile: "Ver tu perfil", adminPanel: "Panel administrador",
       signOutBtn: "Cerrar sesión",
       profileEditBtn: "Editar perfil", profileEditBtnClose: "Listo",
       bannerPickerTitle: "Elige un banner",
@@ -366,6 +366,7 @@ import { calculatePoints } from "./points.mjs";
   let bracketRows = [];
   let rewardsRows = [];
   let viewingPlayer = null;
+  let isAdmin = false;
 
   window.TierlyBridge = {
     supabase,
@@ -971,14 +972,17 @@ import { calculatePoints } from "./points.mjs";
         <p>${t("promoBody")}</p>
         <button class="lb-promo-btn" data-view="bracket">${t("promoExplore")} →</button>
       </div>
-      <div class="lb-discord-card">
-        <div class="lb-discord-icon">${DISCORD_ICON}</div>
-        <div>
-          <strong>${t("loginDiscord")}</strong>
-          <p>${t("loginPrompt")}</p>
-        </div>
-        <button class="lb-mini-btn" data-view="profile">${t("navProfile")} →</button>
-      </div>
+       <div class="lb-discord-card" aria-labelledby="lb-discord-cta-title">
+         <div class="lb-discord-icon">${DISCORD_ICON}</div>
+         <div>
+           <strong id="lb-discord-cta-title">${currentSession ? t("loginedAs") : t("loginDiscord")}</strong>
+           <p>${t("loginPrompt")}</p>
+         </div>
+         <div class="lb-discord-cta-action">
+           ${currentSession ? renderSessionAvatar(currentSession.user) : ""}
+           <button class="lb-mini-btn" id="lb-discord-cta-button" type="button">${currentSession ? t("viewYourProfile") : t("loginDiscord")}</button>
+         </div>
+       </div>
       <div class="lb-mini-row">
       <div class="lb-mini-card">
         <div class="lb-mini-head"><span>${t("latestEventLabel")}</span>${latestEvent ? `<span class="lb-event-badge lb-mini-badge">${t(eventStatus(latestEvent.event_date) === "live" ? "eventLive" : eventStatus(latestEvent.event_date) === "upcoming" ? "eventUpcoming" : "eventPast")}</span>` : ""}</div>
@@ -995,7 +999,11 @@ import { calculatePoints } from "./points.mjs";
         <button class="lb-mini-btn" data-view="rewards">${t("viewRewards")} →</button>
       </div>
       </div>`;
-    el.querySelectorAll("[data-view]").forEach((btn) => btn.addEventListener("click", () => switchView(btn.dataset.view)));
+     el.querySelectorAll("[data-view]").forEach((btn) => btn.addEventListener("click", () => switchView(btn.dataset.view)));
+     el.querySelector("#lb-discord-cta-button")?.addEventListener("click", () => {
+       if (currentSession) switchView("profile");
+       else supabase.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: `${window.location.origin}/tierly` } });
+     });
     window.lucide?.createIcons();
   }
 
@@ -1342,6 +1350,9 @@ import { calculatePoints } from "./points.mjs";
 
   function renderAuth(session) {
     currentSession = session;
+    renderAdminBanner();
+    renderSideCards();
+    checkAdminVisibility(session);
     const el = document.querySelector("#lb-auth");
     if (!el) return;
     if (!session) {
@@ -1368,6 +1379,21 @@ import { calculatePoints } from "./points.mjs";
     loadPrivacyState().then(() => { if (activeView === "settings") renderSettingsView(); });
     renderProfileStats();
     renderProfileHistory();
+  }
+
+  async function checkAdminVisibility(session) {
+    isAdmin = false;
+    if (!session) return renderAdminBanner();
+    const { data, error } = await supabase.from("community_admins").select("guild_id, role");
+    isAdmin = !error && Array.isArray(data) && data.length > 0;
+    renderAdminBanner();
+  }
+
+  function renderAdminBanner() {
+    const banner = document.querySelector("#lb-admin-banner");
+    if (!banner) return;
+    banner.hidden = !isAdmin;
+    banner.innerHTML = isAdmin ? `<a href="/tierly/admin" aria-label="${esc(t("adminPanel"))}">${esc(t("adminPanel"))}</a>` : "";
   }
 
   async function initAuth() {

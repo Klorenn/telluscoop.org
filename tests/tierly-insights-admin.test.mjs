@@ -51,6 +51,26 @@ test("cada juego del panel usa un icono Lucide determinista y controlado", () =>
   assert.doesNotMatch(admin, /icon_url|image_url/);
 });
 
+test("muestra presencia actual agrupada por juego y conserva histórico", () => {
+  assert.match(admin, /Jugando ahora/);
+  assert.match(admin, /is_active/);
+  assert.match(admin, /started_at/);
+  assert.match(admin, /presenceGroups/);
+  assert.match(admin, /tierly-admin-history/);
+  assert.match(admin, /tierly_admin_game_players.*select\(.*is_active.*started_at/s);
+});
+
+test("la migración de presencia conserva el invocador y no expone discord_user_id", () => {
+  const migration = readFileSync(new URL("../supabase/migrations/20260930220000_tierly_admin_game_presence.sql", import.meta.url), "utf8");
+  assert.match(migration, /security_invoker\s*=\s*true/);
+  assert.match(migration, /is_active/);
+  assert.match(migration, /ended_at\s+is\s+null/);
+  assert.match(migration, /started_at/);
+  assert.match(migration, /grant select on public\.tierly_admin_game_players to authenticated/i);
+  const exposedColumns = migration.split(/\n\s*from public\.play_sessions sessions/i)[0];
+  assert.doesNotMatch(exposedColumns, /^\s*sessions\.discord_user_id\s*[,)]/im);
+});
+
 test("la única escritura posible es la RPC segura de estado de sugerencia", () => {
   assert.match(admin, /rpc\(["']tierly_update_suggestion_status["']/);
   assert.doesNotMatch(admin, /\.insert\(|\.upsert\(|\.delete\(|\.update\(/);
