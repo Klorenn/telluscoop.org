@@ -78,7 +78,11 @@ export default function SubscribeForm({
           className={`${h} w-full min-w-0 rounded-full border px-5 font-sans outline-none transition-colors sm:flex-1 ${input}`}
         />
         <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
-        <button type="submit" disabled={state === "loading" || state === "ok"} className={`cta-pill ${ink ? "cta-ink" : ""} ${h} shrink-0 px-6 text-[15px]`}>
+        <button
+          type="submit"
+          disabled={state === "loading" || state === "ok"}
+          className={`cta-pill ${ink ? "cta-ink text-white" : "text-ink"} ${h} shrink-0 px-6 text-[15px]`}
+        >
           {state === "loading" ? "Enviando…" : state === "ok" ? "¡Suscrito!" : cta}
         </button>
       </div>

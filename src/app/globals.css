@@ -65,18 +65,31 @@ h1 em,
 }
 
 .cta-pill {
+  appearance: none;
+  -webkit-appearance: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
   background: var(--color-mint-btn);
   color: var(--color-ink);
+  -webkit-text-fill-color: var(--color-ink);
+  caret-color: transparent;
   font-family: var(--font-sans);
   font-weight: 600;
   letter-spacing: -0.01em;
   text-transform: none;
   border: 1px solid var(--color-mint-btn);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
   transition: background 180ms ease, border-color 180ms ease;
+}
+.cta-pill::selection,
+.cta-pill *::selection {
+  background: transparent;
+  color: inherit;
+  -webkit-text-fill-color: inherit;
 }
 .cta-pill:hover {
   background: var(--color-mint-deep);
@@ -88,6 +101,7 @@ h1 em,
 .cta-yellow {
   background: var(--color-yellow);
   color: var(--color-ink);
+  -webkit-text-fill-color: var(--color-ink);
   border-color: var(--color-yellow);
 }
 .cta-yellow:hover {
@@ -97,6 +111,7 @@ h1 em,
 .cta-ink {
   background: var(--color-ink);
   color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
   border-color: var(--color-ink);
 }
 .cta-ink:hover {

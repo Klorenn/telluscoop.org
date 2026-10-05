@@ -1,9 +1,9 @@
 /** Pau-approved comic planet mascots + remaining Figma pack.
- *  No banned Earth/robot/line-art. No kids-planting. Map slot stays empty until the plain LATAM map arrives. */
+ *  No banned Earth/robot/line-art in chrome. Pastillas mascot stays out of these slots.
+ *  Illustrated LATAM map lives in MapBand, not here. */
 export const CHARACTERS = {
   "robot-espacio": { src: "/brand/personaje-robot-espacio.png", width: 900, height: 900 },
   "planetas-botas": { src: "/brand/personaje-planetas-botas.png", width: 800, height: 669 },
-  greenpill: { src: "/brand/personaje-greenpill-pastillas.png", width: 726, height: 771 },
   blockchain: { src: "/brand/mascota-blockchain-bloques.png", width: 1200, height: 1001 },
   ia: { src: "/brand/mascota-ia-cyborg.png", width: 1200, height: 1001 },
   emprendimiento: { src: "/brand/mascota-emprendimiento-astronauta.png", width: 1200, height: 1001 },

@@ -73,6 +73,10 @@ test("official /brand logos stay; chrome matches Milk Road colors", async () => 
   const layout = await read("src/app/layout.tsx");
   const css = await read("src/app/globals.css");
   const form = await read("src/components/SubscribeForm.tsx");
+  assert.match(form, /cta-pill/);
+  assert.match(form, /text-white/);
+  assert.match(css, /-webkit-text-fill-color/);
+  assert.match(css, /user-select: none/);
   const ticker = await read("src/components/PriceTicker.tsx");
   assert.match(logo, /logo-dark\.svg/);
   assert.match(logo, /logo-color\.svg/);
@@ -111,8 +115,8 @@ test("official /brand logos stay; chrome matches Milk Road colors", async () => 
   assert.ok(!existsSync(new URL("public/brand/tellus-logo.png", root)));
   assert.ok(!existsSync(new URL("public/brand/illo-hero.svg", root)));
   assert.ok(existsSync(new URL("src/app/icon.png", root)));
-  assert.doesNotMatch(home, /mapa-latam/);
   assert.match(home, /planetas-botas/);
+  assert.match(home, /MapBand/);
   assert.doesNotMatch(home, /robot-teal|tierra-corbata|tierra-traje|personaje-tierra/);
 });
 
@@ -127,7 +131,6 @@ test("Figma pack fills Milk Road illustration slots; no invented drawings", asyn
   const character = await read("src/components/Character.tsx");
   for (const src of [home, footer, archive, tag, post, card, notFound, character]) {
     assert.doesNotMatch(src, /illo-hero|illo-subscribe|illo-archive|illo-hub|HubBanner/);
-    assert.doesNotMatch(src, /mapa-latam/);
     assert.doesNotMatch(src, /ninos-plantando|ninos"|placeholder="ninos"/);
   }
   assert.match(home, /planetas-botas/);
@@ -136,11 +139,13 @@ test("Figma pack fills Milk Road illustration slots; no invented drawings", asyn
   assert.match(home, /VideoRow/);
   assert.match(home, /getSessionVideos/);
   assert.doesNotMatch(home, /Charlas y sesiones de la cooperativa|La conversación diaria de miembros/);
-  assert.match(home, /slot="mapa"/);
+  assert.match(home, /MapBand/);
+  assert.doesNotMatch(home, /slot="mapa"|SlotPlaceholder/);
   assert.doesNotMatch(home, /ninos|placeholder="ninos"|ninos-plantando/);
-  assert.match(card, /greenpill/);
-  assert.match(footer, /greenpill/);
-  assert.doesNotMatch(footer, /tierra-corbata/);
+  assert.match(card, /emprendimiento/);
+  assert.doesNotMatch(card, /greenpill/);
+  assert.match(footer, /emprendimiento/);
+  assert.doesNotMatch(footer, /greenpill|tierra-corbata/);
   assert.match(archive, /planetas-botas/);
   assert.doesNotMatch(archive, /tierra-traje/);
   assert.doesNotMatch(post, /tierra-traje|Character/);
@@ -150,7 +155,7 @@ test("Figma pack fills Milk Road illustration slots; no invented drawings", asyn
   assert.match(character, /mascota-emprendimiento-astronauta/);
   assert.match(character, /mascota-cursos-profesor/);
   assert.match(character, /mascota-pro-candado/);
-  assert.doesNotMatch(character, /tierra-corbata|tierra-traje|robot-teal|ilustracion-educacion/);
+  assert.doesNotMatch(character, /tierra-corbata|tierra-traje|robot-teal|ilustracion-educacion|greenpill/);
   assert.match(notFound, /robot-espacio/);
   const topics = await read("src/components/TopicGrid.tsx");
   const pro = await read("src/components/ProBlock.tsx");
@@ -163,10 +168,12 @@ test("Figma pack fills Milk Road illustration slots; no invented drawings", asyn
   assert.match(site, /slug: "cursos"/);
   assert.match(pro, /Posiciónate para lo que viene/);
   assert.match(pro, /name="pro"/);
-  const placeholder = await read("src/components/SlotPlaceholder.tsx");
-  assert.match(placeholder, /slot: "mapa"/);
-  assert.doesNotMatch(placeholder, /ninos/);
-  assert.doesNotMatch(placeholder, /svg|path |<img/i);
+  assert.ok(!existsSync(new URL("src/components/SlotPlaceholder.tsx", root)));
+  assert.ok(existsSync(new URL("src/components/MapBand.tsx", root)));
+  assert.ok(existsSync(new URL("public/brand/mapa-latam.svg", root)));
+  const mapBand = await read("src/components/MapBand.tsx");
+  assert.match(mapBand, /mapa-latam\.svg/);
+  assert.match(mapBand, /bg-ink/);
   const heading = await read("src/components/SectionHeading.tsx");
   assert.doesNotMatch(heading, /ninos|placeholder/);
   assert.ok(!existsSync(new URL("public/brand/personaje-robot-teal.png", root)));

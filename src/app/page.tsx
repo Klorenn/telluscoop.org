@@ -4,8 +4,8 @@ import SubscribeForm from "@/components/SubscribeForm";
 import SubscribeCard from "@/components/SubscribeCard";
 import SectionHeading from "@/components/SectionHeading";
 import Character from "@/components/Character";
-import SlotPlaceholder from "@/components/SlotPlaceholder";
 import TopicGrid from "@/components/TopicGrid";
+import MapBand from "@/components/MapBand";
 import ProBlock from "@/components/ProBlock";
 import VideoRow from "@/components/VideoRow";
 import { Meta, PostCard, TagPill } from "@/components/PostCard";
@@ -123,13 +123,9 @@ export default function Home() {
             <PostCard key={p.slug} post={p} />
           ))}
         </div>
-
-        <SlotPlaceholder
-          slot="mapa"
-          className="mt-16 h-[200px] w-full rounded-[28px] bg-sand-soft md:h-[260px]"
-        />
       </section>
 
+      <MapBand />
       <TopicGrid />
       <ProBlock />
       <VideoRow videos={videos} channelHref={pub.social.youtube} />

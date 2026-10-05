@@ -18,7 +18,7 @@ export default function Footer() {
 
   return (
     <footer className="mt-8 bg-ink text-sand/80">
-      <div className="border-b border-sand/10 bg-sand-soft text-ink">
+      <div className="overflow-hidden border-b border-sand/10 bg-sand-soft text-ink">
         <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-5 py-12 md:grid-cols-[1.2fr_1fr] md:px-8 md:py-16">
           <div>
             <p className="font-sans text-[11px] font-medium uppercase tracking-[0.14em] text-teal-deep">Suscríbete</p>
@@ -34,8 +34,8 @@ export default function Footer() {
           <div className="relative">
             <SubscribeForm placement="footer" source="footer" size="lg" />
             <Character
-              name="greenpill"
-              className="pointer-events-none absolute -right-4 -top-16 hidden h-28 w-auto lg:block"
+              name="emprendimiento"
+              className="pointer-events-none absolute -bottom-8 -right-6 hidden h-44 w-auto select-none object-contain lg:block"
             />
           </div>
         </div>
