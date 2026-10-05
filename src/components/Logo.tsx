@@ -1,37 +1,30 @@
-/** Pau's primary lockup: stacked slab-serif “tellus / cooperative” + terracotta disc.
- *  The τ hexagon is the compact isotype (favicon, tight mobile header). */
-const STACKED: Record<"black" | "teal" | "white", string> = {
-  black: "/brand/logo-stacked-serif-black.svg",
-  teal: "/brand/logo-stacked-serif-teal.svg",
-  white: "/brand/logo-stacked-serif-white.svg",
+/** Official /brand wordmarks. Do not recolor or redraw. */
+const WORDMARK: Record<"dark" | "color" | "white", string> = {
+  dark: "/brand/logo-dark.svg",
+  color: "/brand/logo-color.svg",
+  white: "/brand/logo-white.svg",
 };
 
-const MARK: Record<"black" | "teal" | "white" | "terracotta", string> = {
-  black: "/brand/logo-mark-tau-black.svg",
-  teal: "/brand/logo-mark-tau-teal.svg",
-  white: "/brand/logo-mark-tau-white.svg",
-  terracotta: "/brand/logo-mark-tau-terracotta.svg",
-};
+const ICON = "/brand/logo-icon.png";
 
 export default function Logo({
-  variant = "black",
+  variant = "dark",
   mark = false,
   className = "h-10 w-auto",
 }: {
-  variant?: "black" | "teal" | "white" | "terracotta";
+  variant?: "dark" | "color" | "white" | "black" | "teal";
   mark?: boolean;
   className?: string;
 }) {
-  const src = mark
-    ? MARK[variant === "terracotta" ? "terracotta" : variant]
-    : STACKED[variant === "terracotta" ? "black" : variant];
+  const mapped = variant === "black" || variant === "teal" ? "dark" : variant;
+  const src = mark ? ICON : WORDMARK[mapped];
   // eslint-disable-next-line @next/next/no-img-element
   return (
     <img
       src={src}
       alt="Tellus Cooperative"
-      width={mark ? 96 : 216}
-      height={mark ? 85 : 70}
+      width={mark ? 64 : 240}
+      height={mark ? 62 : 110}
       className={className}
       decoding="async"
     />

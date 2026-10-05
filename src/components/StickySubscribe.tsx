@@ -25,7 +25,7 @@ export default function StickySubscribe() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 p-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-sand/95 p-3 shadow-[0_-8px_24px_rgba(31,53,54,0.12)] backdrop-blur md:hidden"
       role="complementary"
       aria-label="Suscripción rápida"
       data-placement="sticky"
@@ -33,12 +33,12 @@ export default function StickySubscribe() {
       <div className="mx-auto flex max-w-[700px] items-start gap-2">
         <div className="min-w-0 flex-1">
           <p className="mb-2 font-display text-[15px] font-bold leading-tight text-ink">Recibe Tellus en tu correo</p>
-          <SubscribeForm placement="sticky" source="sticky" size="md" variant="black" cta="Suscribirme" />
+          <SubscribeForm placement="sticky" source="sticky" size="md" cta="Suscribirme" />
         </div>
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="mt-1 shrink-0 rounded-full p-1.5 font-sans text-[18px] leading-none text-muted hover:bg-cream hover:text-ink"
+          className="mt-1 shrink-0 rounded-full p-1.5 font-sans text-[18px] leading-none text-teal-deep hover:bg-sand-soft hover:text-ink"
           aria-label="Cerrar"
         >
           ×

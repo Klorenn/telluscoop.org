@@ -65,26 +65,71 @@ test("canonical site url is telluscoop.org and RSS/sitemap exist", async () => {
   assert.ok(existsSync(new URL("src/app/api/luma-events/route.ts", root)));
 });
 
-test("primary logo is stacked serif with terracotta disc; tau mark is compact/favicon", async () => {
+test("official /brand logos replace recreated lockups; CTAs are Clay pills", async () => {
   const logo = await read("src/components/Logo.tsx");
   const header = await read("src/components/Header.tsx");
   const footer = await read("src/components/Footer.tsx");
-  assert.match(logo, /logo-stacked-serif-black\.svg/);
-  assert.match(logo, /logo-stacked-serif-white\.svg/);
-  assert.match(logo, /logo-stacked-serif-teal\.svg/);
-  assert.match(logo, /logo-mark-tau-/);
-  assert.doesNotMatch(logo, /logo-horizontal\.webp/);
-  assert.match(header, /Logo className="hidden h-\[42px\]/);
-  assert.match(header, /mark variant="teal"/);
+  const home = await read("src/app/page.tsx");
+  const layout = await read("src/app/layout.tsx");
+  const css = await read("src/app/globals.css");
+  const form = await read("src/components/SubscribeForm.tsx");
+  assert.match(logo, /logo-dark\.svg/);
+  assert.match(logo, /logo-color\.svg/);
+  assert.match(logo, /logo-white\.svg/);
+  assert.match(logo, /logo-icon\.png/);
+  assert.doesNotMatch(logo, /logo-stacked-serif/);
+  assert.doesNotMatch(logo, /logo-horizontal/);
+  assert.doesNotMatch(logo, /logo-mark-tau/);
+  assert.match(header, /min-w-\[120px\]/);
+  assert.match(header, /cta-pill/);
   assert.match(footer, /variant="white"/);
-  for (const v of ["black", "teal", "white"]) {
-    const svg = await read(`public/brand/logo-stacked-serif-${v}.svg`);
-    assert.match(svg, /#B3582D/);
-    assert.doesNotMatch(svg, /#B65A30/);
-  }
-  assert.ok(existsSync(new URL("public/brand/personaje-planetas-botas.webp", root)));
-  assert.ok(existsSync(new URL("public/brand/personaje-tierra.webp", root)));
+  assert.match(footer, /min-w-\[120px\]/);
+  assert.match(layout, /Fraunces/);
+  assert.doesNotMatch(layout, /Figtree/);
+  assert.match(css, /#ece0cc/i);
+  assert.match(css, /#3f8487/i);
+  assert.match(css, /#c75a2a/i);
+  assert.match(css, /#1f3536/i);
+  assert.match(css, /#2a5a5c/i);
+  assert.match(css, /#9e441f/i);
+  assert.doesNotMatch(css, /#ffffff/);
+  assert.doesNotMatch(css, /#bedada/);
+  assert.doesNotMatch(css, /#cfe8e6/);
+  assert.match(form, /cta-pill/);
+  assert.doesNotMatch(form, /mint-btn/);
+  assert.ok(existsSync(new URL("public/brand/logo-dark.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/logo-color.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/logo-white.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/logo-icon.png", root)));
+  assert.ok(!existsSync(new URL("public/brand/logo-horizontal.webp", root)));
+  assert.ok(!existsSync(new URL("public/brand/logo-stacked-serif-black.svg", root)));
+  assert.ok(!existsSync(new URL("public/brand/tellus-logo.png", root)));
   assert.ok(existsSync(new URL("src/app/icon.png", root)));
+  assert.doesNotMatch(home, /mapa-latam/);
+  assert.doesNotMatch(home, /planetas-botas/);
+  assert.doesNotMatch(home, /Character/);
+});
+
+test("characters are not scattered; only 404 uses a mascot", async () => {
+  const home = await read("src/app/page.tsx");
+  const footer = await read("src/components/Footer.tsx");
+  const archive = await read("src/app/archive/page.tsx");
+  const tag = await read("src/app/t/[slug]/page.tsx");
+  const post = await read("src/app/p/[slug]/page.tsx");
+  const card = await read("src/components/SubscribeCard.tsx");
+  const notFound = await read("src/app/not-found.tsx");
+  const character = await read("src/components/Character.tsx");
+  for (const src of [home, footer, archive, tag, post, card]) {
+    assert.doesNotMatch(src, /Character/);
+    assert.doesNotMatch(src, /mascot/);
+  }
+  assert.match(notFound, /robot-espacio/);
+  assert.match(character, /robot-espacio/);
+  assert.doesNotMatch(character, /greenpill|planetas|tierra-corbata|crecimiento|educacion/);
+  assert.ok(!existsSync(new URL("public/brand/personaje-planetas-botas.webp", root)));
+  assert.ok(!existsSync(new URL("public/brand/personaje-greenpill-pastillas.webp", root)));
+  assert.ok(!existsSync(new URL("public/brand/mapa-latam.webp", root)));
+  assert.ok(existsSync(new URL("public/brand/personaje-robot-espacio.webp", root)));
 });
 
 test("vercel.json asks Vercel to build Next.js without dropping existing redirects", async () => {

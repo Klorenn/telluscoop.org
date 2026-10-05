@@ -74,7 +74,7 @@ export default async function PostPage({ params }: PageProps<"/p/[slug]">) {
     mainEntityOfPage: url,
     image: post.image?.url,
     author: post.authors.map((a) => ({ "@type": "Person", name: a.name })),
-    publisher: { "@type": "Organization", name: SITE.name, logo: { "@type": "ImageObject", url: absUrl("/brand/tellus-logo.png") } },
+    publisher: { "@type": "Organization", name: SITE.name, logo: { "@type": "ImageObject", url: absUrl("/brand/logo-color.png") } },
   };
 
   return (
@@ -89,24 +89,24 @@ export default async function PostPage({ params }: PageProps<"/p/[slug]">) {
           </aside>
 
           <div className="min-w-0">
-            <h1 className="font-display text-[34px] font-extrabold leading-[1.08] tracking-[-0.03em] text-ink sm:text-[44px] md:text-[52px]">
+            <h1 className="font-display text-[34px] font-bold leading-[1.08] tracking-[-0.03em] text-ink sm:text-[44px] md:text-[52px]">
               {post.title}
             </h1>
             {post.subtitle && (
-              <p className="mt-5 font-display text-[19px] leading-[1.55] text-ink-2 md:text-[22px]">{post.subtitle}</p>
+              <p className="mt-5 font-sans text-[19px] leading-[1.55] text-ink-2 md:text-[22px]">{post.subtitle}</p>
             )}
 
             <div className="mt-8 flex flex-wrap items-center justify-between gap-5">
               <div className="flex items-center gap-3">
                 <div>
-                  <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Escrito por</p>
+                    <p className="font-sans text-[11px] font-medium uppercase tracking-[0.12em] text-teal-deep">Escrito por</p>
                   <div className="mt-2 flex items-center gap-3">
                     {author?.avatar && (
-                      <Image src={author.avatar} alt="" width={44} height={44} className="h-11 w-11 rounded-full bg-cream object-cover" />
+                      <Image src={author.avatar} alt="" width={44} height={44} className="h-11 w-11 rounded-full bg-sand-soft object-cover" />
                     )}
                     <div className="font-sans text-[14px] leading-tight">
                       <div className="font-semibold text-ink">{post.authors.map((a) => a.name).join(", ") || "Tellus Cooperative"}</div>
-                      <div className="mt-1 text-muted">
+                      <div className="mt-1 text-teal-deep">
                         <time dateTime={post.publishedAt}>{formatDate(post.publishedAt)}</time>
                         {post.readingMinutes ? <> · {post.readingMinutes} min de lectura</> : null}
                       </div>
@@ -120,7 +120,7 @@ export default async function PostPage({ params }: PageProps<"/p/[slug]">) {
             </div>
 
             {post.image && (
-              <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-[20px] bg-cream ring-1 ring-line">
+              <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-[14px] bg-sand-soft ring-1 ring-line">
                 <Image src={post.image.url} alt={post.title} fill priority sizes="(min-width: 800px) 720px, 100vw" className="object-cover" />
               </div>
             )}
@@ -132,7 +132,7 @@ export default async function PostPage({ params }: PageProps<"/p/[slug]">) {
             {post.tags.length > 0 && (
               <div className="mt-10 flex flex-wrap gap-2">
                 {post.tags.map((t) => (
-                  <Link key={t.slug} href={`/t/${t.slug}`} className="rounded-full bg-cream px-3.5 py-1.5 font-sans text-[13px] font-medium text-ink-2 hover:bg-mint">
+                  <Link key={t.slug} href={`/t/${t.slug}`} className="rounded-full bg-sand-soft px-3.5 py-1.5 font-sans text-[13px] font-medium text-ink-2 hover:bg-sand-muted">
                     #{tagLabel(t)}
                   </Link>
                 ))}
@@ -140,7 +140,7 @@ export default async function PostPage({ params }: PageProps<"/p/[slug]">) {
             )}
 
             <div className="mt-10">
-              <SubscribeCard placement="end" title="¿Te gustó? Recibe el próximo en tu correo" mascot="tierra-corbata" />
+              <SubscribeCard placement="end" title="¿Te gustó? Recibe el próximo en tu correo" />
             </div>
           </div>
 
@@ -148,7 +148,7 @@ export default async function PostPage({ params }: PageProps<"/p/[slug]">) {
             <div className="sticky top-36 space-y-10">
               {post.toc.length > 1 && (
                 <nav aria-label="En este artículo">
-                  <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">En esta página</p>
+                  <p className="font-sans text-[11px] font-medium uppercase tracking-[0.12em] text-teal-deep">En esta página</p>
                   <ol className="mt-3 space-y-2">
                     {post.toc.slice(0, 12).map((i) => (
                       <li key={i.id} className={i.level === 3 ? "pl-3" : ""}>
@@ -170,8 +170,8 @@ export default async function PostPage({ params }: PageProps<"/p/[slug]">) {
         <section className="mx-auto mt-16 max-w-[1280px] px-5 md:px-8">
           <div className="mb-7 flex items-end justify-between">
             <div>
-              <p className="font-sans text-[12px] font-semibold uppercase tracking-[0.14em] text-teal">Sigue leyendo</p>
-              <h2 className="mt-1 font-display text-[28px] font-extrabold tracking-[-0.02em]">Más de Tellus</h2>
+              <p className="font-sans text-[11px] font-medium uppercase tracking-[0.14em] text-teal-deep">Sigue leyendo</p>
+              <h2 className="mt-1 font-display text-[28px] font-bold tracking-[-0.02em]">Más de Tellus</h2>
             </div>
             {post.tags[0] && <TagPill tag={post.tags[0]} />}
           </div>

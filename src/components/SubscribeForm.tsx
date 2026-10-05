@@ -4,13 +4,13 @@ import { useState } from "react";
 type State = "idle" | "loading" | "ok" | "error";
 
 export default function SubscribeForm({
-  variant = "mint",
+  variant = "clay",
   source = "web",
   placement,
   size = "md",
   cta = "Suscríbete gratis",
 }: {
-  variant?: "mint" | "black" | "dark" | "light";
+  variant?: "clay" | "dark";
   source?: string;
   placement?: string;
   size?: "md" | "lg";
@@ -56,17 +56,9 @@ export default function SubscribeForm({
 
   const h = size === "lg" ? "h-14 text-[16px]" : "h-12 text-[15px]";
   const dark = variant === "dark";
-  const btn =
-    variant === "black"
-      ? "bg-ink text-white hover:bg-navy"
-      : variant === "dark"
-        ? "bg-white text-ink hover:bg-mint"
-        : variant === "light"
-          ? "bg-teal text-white hover:bg-teal-dark"
-          : "bg-mint-btn text-ink hover:bg-mint";
   const input = dark
-    ? "border-white/20 bg-white/10 text-white placeholder:text-white/50 focus:border-white/60"
-    : "border-[#d8d5ce] bg-white text-ink placeholder:text-muted focus:border-teal";
+    ? "border-sand/25 bg-sand/10 text-sand placeholder:text-sand/50 focus:border-sand/60"
+    : "border-line bg-sand-soft text-ink placeholder:text-teal-deep/70 focus:border-teal";
 
   return (
     <form onSubmit={onSubmit} noValidate className="w-full">
@@ -86,11 +78,7 @@ export default function SubscribeForm({
           className={`${h} w-full min-w-0 rounded-full border px-5 font-sans outline-none transition-colors sm:flex-1 ${input}`}
         />
         <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
-        <button
-          type="submit"
-          disabled={state === "loading" || state === "ok"}
-          className={`${h} shrink-0 rounded-full px-6 font-sans font-semibold transition-colors disabled:opacity-70 ${btn}`}
-        >
+        <button type="submit" disabled={state === "loading" || state === "ok"} className={`cta-pill ${h} shrink-0 px-6 text-[11px] md:text-[12px]`}>
           {state === "loading" ? "Enviando…" : state === "ok" ? "¡Suscrito!" : cta}
         </button>
       </div>
@@ -98,7 +86,7 @@ export default function SubscribeForm({
         role="status"
         aria-live="polite"
         className={`mt-2 min-h-[1.25rem] font-sans text-[13px] ${
-          state === "error" ? (dark ? "text-red-300" : "text-red-700") : dark ? "text-white/60" : "text-muted"
+          state === "error" ? (dark ? "text-sand" : "text-clay-deep") : dark ? "text-sand/60" : "text-teal-deep"
         }`}
       >
         {msg || "Gratis. Sin spam. Te desuscribes con un clic."}

@@ -3,7 +3,6 @@ import ArchiveSearch, { type ArchiveItem } from "@/components/ArchiveSearch";
 import SubscribeCard from "@/components/SubscribeCard";
 import FeaturedRail from "@/components/FeaturedRail";
 import ShareButtons from "@/components/ShareButtons";
-import Character from "@/components/Character";
 import { getAllSummaries, getTags } from "@/lib/content";
 import { absUrl, formatDateShort, tagLabel } from "@/lib/site";
 
@@ -40,22 +39,15 @@ export default function ArchivePage() {
           </div>
         </aside>
         <div className="min-w-0">
-          <div className="flex items-center gap-4">
-            <Character name="tierra-corbata" className="h-16 w-16 object-contain md:h-20 md:w-20" />
-            <h1 className="font-display text-[40px] font-extrabold leading-[1.05] tracking-[-0.03em] md:text-[52px]">Boletines Tellus</h1>
-          </div>
+          <p className="font-sans text-[11px] font-medium uppercase tracking-[0.14em] text-teal-deep">Archivo</p>
+          <h1 className="mt-2 font-display text-[40px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[52px]">Boletines Tellus</h1>
           <div className="mt-6">
-            <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Escrito por</p>
+            <p className="font-sans text-[11px] font-medium uppercase tracking-[0.12em] text-teal-deep">Escrito por</p>
             <p className="mt-2 font-sans text-[15px] font-semibold text-ink">Tellus Cooperative</p>
-            <p className="font-sans text-[13px] text-muted">{items.length} artículos · Equipo editorial</p>
+            <p className="font-sans text-[13px] text-teal-deep">{items.length} artículos · Equipo editorial</p>
           </div>
           <div className="mt-8">
-            <SubscribeCard
-              placement="archive"
-              title="Aprende blockchain en español, cinco minutos a la semana."
-              body=""
-              mascot="robot-teal"
-            />
+            <SubscribeCard placement="archive" title="Aprende blockchain en español, cinco minutos a la semana." body="" />
           </div>
           <div className="mt-10">
             <ArchiveSearch items={items} tags={tags} />

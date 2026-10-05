@@ -1,28 +1,30 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #101010;
-  --color-ink-2: #3a3a3a;
-  --color-muted: #6b6b6b;
-  --color-line: #e8e6e1;
-  --color-paper: #ffffff;
-  --color-cream: #f7f5ed;
-  --color-sand: #e8dac4;
-  --color-teal: #42807f;
-  --color-teal-dark: #2f6463;
-  --color-mint: #d9ebe9;
-  --color-mint-btn: #bedada;
-  --color-clay: #b3582d;
-  --color-clay-dark: #9a4a26;
-  --color-navy: #22333f;
-  --color-leaf: #4a8f45;
-  --color-sky: #74b6d0;
+  --color-sand: #ece0cc;
+  --color-sand-soft: #f5eddd;
+  --color-sand-muted: #d4c8b5;
+  --color-paper: #ece0cc;
+  --color-cream: #f5eddd;
+  --color-line: #d4c8b5;
+  --color-ink: #1f3536;
+  --color-ink-2: #2a5a5c;
+  --color-muted: #2a5a5c;
+  --color-teal: #3f8487;
+  --color-teal-deep: #2a5a5c;
+  --color-teal-dark: #2a5a5c;
+  --color-clay: #c75a2a;
+  --color-clay-deep: #9e441f;
+  --color-clay-dark: #9e441f;
+  --color-tick-up: #2a5a5c;
+  --color-tick-down: #9e441f;
+  --color-navy: #1f3536;
 
-  --font-display: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), "Fraunces", Georgia, serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
-  --radius-card: 20px;
+  --radius-card: 14px;
 }
 
 html {
@@ -30,24 +32,77 @@ html {
   scroll-behavior: smooth;
 }
 body {
-  background: var(--color-paper);
+  background: var(--color-sand);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 ::selection {
-  background: var(--color-mint);
+  background: color-mix(in srgb, var(--color-teal) 28%, var(--color-sand));
 }
 :focus-visible {
   outline: 2px solid var(--color-teal);
   outline-offset: 2px;
 }
 
-/* Organic blob behind the mascot — Milk Road cyan wash, Tellus teal */
-.hero-blob {
-  background: #cfe8e6;
-  border-radius: 48% 52% 42% 58% / 38% 44% 56% 62%;
+h1 em,
+.font-display em {
+  font-style: italic;
+  color: var(--color-teal);
+  font-weight: inherit;
+}
+
+.cta-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-clay);
+  color: var(--color-sand);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--color-clay);
+  transition: background 180ms ease, border-color 180ms ease;
+}
+.cta-pill:hover {
+  background: var(--color-clay-deep);
+  border-color: var(--color-clay-deep);
+}
+.cta-pill:disabled {
+  opacity: 0.7;
+}
+
+.ticker-mask {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  gap: 2.5rem;
+  animation: ticker-marquee 32s linear infinite;
+}
+@media (min-width: 768px) {
+  .ticker-track {
+    width: 100%;
+    animation: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
+@keyframes ticker-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 /* ===== Artículo ===== */
@@ -55,7 +110,7 @@ body {
   font-family: var(--font-display);
   font-size: 20px;
   line-height: 32.5px;
-  color: #1c1c1c;
+  color: var(--color-ink);
   overflow-wrap: break-word;
 }
 @media (max-width: 640px) {
@@ -89,13 +144,17 @@ body {
   font-weight: 700;
   margin-top: 1.4em;
 }
+.prose-tellus em {
+  font-style: italic;
+  color: var(--color-teal);
+}
 .prose-tellus h2 + *,
 .prose-tellus h3 + *,
 .prose-tellus h4 + * {
   margin-top: 0.6em;
 }
 .prose-tellus a {
-  color: var(--color-teal-dark);
+  color: var(--color-teal-deep);
   text-decoration: underline;
   text-decoration-thickness: 1.5px;
   text-underline-offset: 3px;
@@ -135,7 +194,7 @@ body {
   font-style: italic;
 }
 .prose-tellus img {
-  border-radius: 16px;
+  border-radius: 14px;
   width: 100%;
   height: auto;
 }
@@ -147,7 +206,7 @@ body {
 .prose-tellus code {
   font-family: var(--font-mono);
   font-size: 0.85em;
-  background: var(--color-cream);
+  background: var(--color-sand-soft);
   border-radius: 6px;
   padding: 0.1em 0.35em;
 }
@@ -155,9 +214,9 @@ body {
   font-family: var(--font-mono);
   font-size: 15px;
   line-height: 1.6;
-  background: #111;
-  color: #f2f2f2;
-  border-radius: 16px;
+  background: var(--color-ink);
+  color: var(--color-sand);
+  border-radius: 14px;
   padding: 1em 1.2em;
   overflow-x: auto;
 }
@@ -184,7 +243,7 @@ body {
 .prose-tellus iframe {
   width: 100%;
   aspect-ratio: 16 / 9;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 0;
 }
 .prose-tellus .embed-card {
@@ -193,14 +252,15 @@ body {
   align-items: stretch;
   text-decoration: none;
   border: 1px solid var(--color-line);
-  border-radius: 16px;
+  border-radius: 14px;
   padding: 14px;
   color: inherit;
+  background: var(--color-sand-soft);
   transition: border-color 0.15s, background 0.15s;
 }
 .prose-tellus .embed-card:hover {
   border-color: var(--color-teal);
-  background: #fbfaf7;
+  background: var(--color-sand);
 }
 .prose-tellus .embed-body {
   display: flex;
@@ -228,7 +288,7 @@ body {
 .prose-tellus .embed-host {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--color-teal-dark);
+  color: var(--color-teal-deep);
 }
 .prose-tellus .embed-card img {
   width: 140px;
