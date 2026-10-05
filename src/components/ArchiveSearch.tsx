@@ -128,8 +128,8 @@ export default function ArchiveSearch({
       </p>
 
       {results.length === 0 ? (
-        <div className="flex flex-col items-center py-16 text-center" id="archivo-vacio">
-          <Character name="emprendimiento" className="h-40 w-48 object-contain object-bottom" />
+        <div className="flex flex-col items-center py-10 text-center" id="archivo-vacio">
+          <Character name="emprendimiento" className="h-[8.5rem] w-40 object-contain object-bottom" />
           <p className="mt-4 font-display text-[24px] font-bold tracking-[-0.02em]">Nada por aquí todavía</p>
           <p className="mt-2 max-w-md font-sans text-[16px] text-ink-2">
             No encontramos artículos{q ? ` con “${q}”` : ""}
