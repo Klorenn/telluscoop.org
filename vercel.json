@@ -1,4 +1,7 @@
 {
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
   "redirects": [
     { "source": "/tierly", "destination": "https://www.tirly.xyz", "permanent": true },
     { "source": "/tierly/", "destination": "https://www.tirly.xyz", "permanent": true },

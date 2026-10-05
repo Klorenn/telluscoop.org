@@ -24,17 +24,18 @@ The education-to-incubation pipeline: learn blockchain → build a project → g
 
 ## Operating Context
 
-- Public marketing site (`index.html`) — no-bundler React 18 + Babel prototype, in-browser JSX transpilation, bilingual (English/Spanish via `i18n.js`).
-- `brand.html` — public brand guidelines page.
+- Public blog (`src/app`) — Next.js 16 on Vercel. Home, `/p/<slug>` posts, `/archive`, `/t/<tag>`, RSS, sitemap. Content synced from Beehiiv's public site (or API when `BEEHIIV_API_KEY` + `CONTENT_SOURCE=beehiivApi`).
+- `index.html` / `foundation.jsx` — leftover no-bundler design-host prototype; not the live homepage.
+- `brand.html` — public brand guidelines page (`/brand`).
 - `ops/stellar/` — private Stellar Ops compliance dashboard for the Chile Stellar Ambassador Program SOW; separate vanilla-JS stack, Supabase-backed, auth-gated (not part of the public marketing surface).
-- Deploys to Vercel (telluscoop.org) as static files plus serverless functions (`api/subscribe.js` for Beehiiv newsletter, Supabase Edge Functions for Luma events and first-access).
+- Deploys to Vercel (telluscoop.org) as Next.js plus copied static apps. Newsletter signup is `src/app/api/subscribe/route.ts`.
 
 ## Capabilities and Constraints
 
-- Newsletter signup via Beehiiv (`api/subscribe.js`).
-- Live events pulled from Luma calendar API via Supabase Edge Function (server-side key, public metadata + aggregate counts only).
-- Design-tweaks shell (`tweaks-panel.jsx`) and `<image-slot>` custom element for drag-and-drop image fills — both are authoring/editing tooling for the omelette design host, not end-user-facing product features.
-- No bundler, no TypeScript, no lint step. Tests are `node --test`.
+- Newsletter signup via Beehiiv (`src/app/api/subscribe/route.ts`), with `utm_medium` per placement.
+- Live events pulled from Luma calendar API via `/api/luma-events` and the Supabase Edge Function (server-side key, public metadata + aggregate counts only).
+- Design-tweaks shell (`tweaks-panel.jsx`) and `<image-slot>` custom element remain as authoring tooling for the omelette design host, not the live homepage.
+- Public blog is Next.js 16 + TypeScript. Existing ops/hub/resources apps stay vanilla. Tests are `node --test`.
 
 ## Brand Commitments
 

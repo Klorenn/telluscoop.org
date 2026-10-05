@@ -7,9 +7,10 @@ const page = await readFile(new URL("../tierly/index.html", import.meta.url), "u
 const app = await readFile(new URL("../tierly/app.js", import.meta.url), "utf8");
 const vercelConfig = await readFile(new URL("../vercel.json", import.meta.url), "utf8");
 
-test("vercel.json rewrites /tierly to tierly/index.html", () => {
-  const rules = JSON.parse(vercelConfig).rewrites;
-  assert.ok(rules.some((r) => r.source === "/tierly" && r.destination === "/tierly/index.html"));
+test("vercel.json redirects /tierly to the canonical TIRLY domain", () => {
+  const config = JSON.parse(vercelConfig);
+  assert.ok(config.redirects.some((r) => r.source === "/tierly" && r.destination === "https://www.tirly.xyz"));
+  assert.ok(!(config.rewrites || []).some((r) => r.source === "/tierly"));
 });
 
 test("public page renders the ranking, bracket, rewards, and auth sections", () => {

@@ -7,6 +7,26 @@ scraper/.venv
 __pycache__
 *.pyc
 .env*
+!.env.example
+
+# Next.js
+/.next/
+/out/
+*.tsbuildinfo
+
+# Staged copies of existing static apps (created by scripts/stage-static.mjs)
+/public/ops
+/public/hub
+/public/resources
+/public/tools
+/public/merch
+/public/stellar
+/public/uploads
+/public/Hubs
+/public/BRAND
+/public/brand.html
+/public/llms.txt
+/public/hub.html
 
 # Local-only material — not for the repo
 .playwright-mcp/
