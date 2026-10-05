@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-hidden="true">
+  <title>Tellus  archive illustration</title>
+  <circle cx="160" cy="160" r="150" fill="#F5EDDD"/>
+  <circle cx="160" cy="128" r="78" fill="#ECE0CC" stroke="#D4C8B5" stroke-width="5"/>
+  <path d="M104 108c18-26 48-38 74-30 12 4 22 14 18 26-6 16-26 12-38 22-10 8-6 24-18 28-16 6-32-6-36-18-4-12 0-18 0-28Z" fill="#3F8487"/>
+  <circle cx="136" cy="128" r="7" fill="#1F3536"/>
+  <circle cx="184" cy="128" r="7" fill="#1F3536"/>
+  <path d="M144 154c8 10 22 10 30 0" fill="none" stroke="#1F3536" stroke-width="5" stroke-linecap="round"/>
+  <path d="M96 208c12 56 38 90 64 90s52-34 64-90c-16 12-40 18-64 18s-48-6-64-18Z" fill="#1F3536"/>
+  <circle cx="232" cy="86" r="22" fill="#C75A2A"/>
+  <path d="M232 76c6 6 6 14 0 20-6-6-6-14 0-20Z" fill="#ECE0CC"/>
+</svg>

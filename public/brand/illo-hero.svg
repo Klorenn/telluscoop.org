@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-hidden="true">
+  <title>Tellus  original mascot</title>
+  <!-- Single original character in /brand tokens. Not a map. Not a trio. -->
+  <ellipse cx="330" cy="430" rx="210" ry="70" fill="#D4C8B5" opacity="0.55"/>
+  <!-- body -->
+  <path d="M230 310c18 92 58 150 110 150s92-58 110-150c-28 18-68 28-110 28s-82-10-110-28Z" fill="#1F3536"/>
+  <!-- clay tie -->
+  <path d="M340 318c0 0-10 22-10 48 0 18 10 34 10 34s10-16 10-34c0-26-10-48-10-48Z" fill="#C75A2A"/>
+  <path d="M328 318h24l-12 16z" fill="#9E441F"/>
+  <!-- head -->
+  <circle cx="340" cy="230" r="118" fill="#F5EDDD"/>
+  <circle cx="340" cy="230" r="118" fill="none" stroke="#D4C8B5" stroke-width="6"/>
+  <!-- abstract teal land  original blobs, not geography -->
+  <path d="M250 188c28-40 70-58 112-48 18 4 34 18 28 36-8 22-40 18-58 32-16 12-10 36-28 44-22 10-48-8-54-28-6-18 0-24 0-36Z" fill="#3F8487"/>
+  <path d="M378 268c22-8 46 4 58 22 8 14-2 30-18 34-22 6-40-8-52-22-10-12-8-28 12-34Z" fill="#2A5A5C"/>
+  <path d="M268 286c18 8 40 4 48-10 6-12-4-20-16-24-16-6-34 6-38 18-4 12 0 14 6 16Z" fill="#3F8487"/>
+  <!-- face -->
+  <circle cx="304" cy="236" r="10" fill="#1F3536"/>
+  <circle cx="376" cy="236" r="10" fill="#1F3536"/>
+  <circle cx="308" cy="233" r="3.2" fill="#F5EDDD"/>
+  <circle cx="380" cy="233" r="3.2" fill="#F5EDDD"/>
+  <circle cx="292" cy="258" r="14" fill="#C75A2A" opacity="0.35"/>
+  <circle cx="388" cy="258" r="14" fill="#C75A2A" opacity="0.35"/>
+  <path d="M318 276c12 16 32 16 44 0" fill="none" stroke="#1F3536" stroke-width="7" stroke-linecap="round"/>
+  <!-- clay brand disc as a pin -->
+  <circle cx="430" cy="168" r="28" fill="#C75A2A"/>
+  <path d="M430 154c8 8 8 20 0 28-8-8-8-20 0-28Z" fill="#ECE0CC"/>
+</svg>

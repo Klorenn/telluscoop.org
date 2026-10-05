@@ -53,6 +53,11 @@ h1 em,
   font-weight: inherit;
 }
 
+.hero-blob {
+  background: var(--color-sand-soft);
+  border-radius: 48% 52% 42% 58% / 38% 44% 56% 62%;
+}
+
 .cta-pill {
   display: inline-flex;
   align-items: center;

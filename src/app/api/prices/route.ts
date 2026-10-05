@@ -4,20 +4,15 @@
  * a failed upstream fetch returns the last good payload, or an empty list.
  */
 import { NextResponse } from "next/server";
-import {
-  COINGECKO_PRICE_URL,
-  TICKER_REVALIDATE_SECONDS,
-  lastTickerQuotes,
-  resolveTickerQuotes,
-} from "@/lib/ticker.mjs";
+import { COINGECKO_PRICE_URL, lastTickerQuotes, resolveTickerQuotes } from "@/lib/ticker.mjs";
 
-export const revalidate = TICKER_REVALIDATE_SECONDS;
+export const revalidate = 90;
 
 function json(body: unknown, extraHeaders: Record<string, string> = {}) {
   return NextResponse.json(body, {
     status: 200,
     headers: {
-      "Cache-Control": `public, s-maxage=${TICKER_REVALIDATE_SECONDS}, stale-while-revalidate=300`,
+      "Cache-Control": "public, s-maxage=90, stale-while-revalidate=300",
       ...extraHeaders,
     },
   });
@@ -31,7 +26,7 @@ export async function GET() {
   try {
     const res = await fetch(COINGECKO_PRICE_URL, {
       headers,
-      next: { revalidate: TICKER_REVALIDATE_SECONDS },
+      next: { revalidate: 90 },
       signal: AbortSignal.timeout(6000),
     });
     if (!res.ok) throw new Error(`CoinGecko ${res.status}`);

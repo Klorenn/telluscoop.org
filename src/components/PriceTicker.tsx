@@ -59,8 +59,8 @@ export default function PriceTicker() {
   if (!prices || prices.length === 0) return null;
 
   return (
-    <div className="border-b border-line bg-sand-soft" data-ticker="coingecko">
-      <div className="mx-auto flex max-w-[1280px] items-center gap-4 px-4 py-2 md:px-8">
+    <div className="border-y border-line bg-sand" data-ticker="coingecko">
+      <div className="mx-auto flex h-9 max-w-[1280px] items-center gap-4 px-4 md:px-8">
         <div className="ticker-mask min-w-0 flex-1">
           <div className="ticker-track md:justify-center md:gap-8">
             <div className="flex items-center gap-6 md:gap-8">

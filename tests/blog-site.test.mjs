@@ -107,10 +107,10 @@ test("official /brand logos replace recreated lockups; CTAs are Clay pills", asy
   assert.ok(existsSync(new URL("src/app/icon.png", root)));
   assert.doesNotMatch(home, /mapa-latam/);
   assert.doesNotMatch(home, /planetas-botas/);
-  assert.doesNotMatch(home, /Character/);
+  assert.match(home, /name="hero"/);
 });
 
-test("characters are not scattered; only 404 uses a mascot", async () => {
+test("characters are not scattered; only 404 uses a Figma mascot", async () => {
   const home = await read("src/app/page.tsx");
   const footer = await read("src/components/Footer.tsx");
   const archive = await read("src/app/archive/page.tsx");
@@ -120,9 +120,11 @@ test("characters are not scattered; only 404 uses a mascot", async () => {
   const notFound = await read("src/app/not-found.tsx");
   const character = await read("src/components/Character.tsx");
   for (const src of [home, footer, archive, tag, post, card]) {
-    assert.doesNotMatch(src, /Character/);
-    assert.doesNotMatch(src, /mascot/);
+    assert.doesNotMatch(src, /from "@\/components\/Character"/);
+    assert.doesNotMatch(src, /planetas-botas|mapa-latam|greenpill|tierra-corbata/);
   }
+  assert.match(home, /Illustration/);
+  assert.match(home, /illo-hero|name="hero"/);
   assert.match(notFound, /robot-espacio/);
   assert.match(character, /robot-espacio/);
   assert.doesNotMatch(character, /greenpill|planetas|tierra-corbata|crecimiento|educacion/);
@@ -130,6 +132,9 @@ test("characters are not scattered; only 404 uses a mascot", async () => {
   assert.ok(!existsSync(new URL("public/brand/personaje-greenpill-pastillas.webp", root)));
   assert.ok(!existsSync(new URL("public/brand/mapa-latam.webp", root)));
   assert.ok(existsSync(new URL("public/brand/personaje-robot-espacio.webp", root)));
+  assert.ok(existsSync(new URL("public/brand/illo-hero.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/illo-subscribe.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/illo-stellar.svg", root)));
 });
 
 test("vercel.json asks Vercel to build Next.js without dropping existing redirects", async () => {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Logo from "./Logo";
 import SubscribeForm from "./SubscribeForm";
+import Illustration from "./Illustration";
 import { getPublication, getTags } from "@/lib/content";
 import { tagLabel } from "@/lib/site";
 
@@ -30,7 +31,13 @@ export default function Footer() {
               Únete a 5.000+ personas que aprenden blockchain, Stellar y Web3 en español.
             </p>
           </div>
-          <SubscribeForm placement="footer" source="footer" size="lg" />
+          <div className="relative">
+            <SubscribeForm placement="footer" source="footer" size="lg" />
+            <Illustration
+              name="subscribe"
+              className="pointer-events-none absolute -right-4 -top-16 hidden h-28 w-auto lg:block"
+            />
+          </div>
         </div>
       </div>
 

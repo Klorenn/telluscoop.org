@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" role="img" aria-hidden="true">
+  <title>Tellus  subscribe illustration</title>
+  <circle cx="210" cy="210" r="200" fill="#F5EDDD"/>
+  <circle cx="210" cy="168" r="96" fill="#ECE0CC" stroke="#D4C8B5" stroke-width="5"/>
+  <path d="M140 140c22-32 58-46 90-38 14 4 26 16 22 30-6 18-32 14-46 26-12 10-8 28-22 34-18 8-38-6-44-22-6-14 0-20 0-30Z" fill="#3F8487"/>
+  <path d="M236 198c16-6 36 4 44 18 6 12-2 24-14 26-18 4-32-8-40-18-8-10-6-22 10-26Z" fill="#2A5A5C"/>
+  <circle cx="180" cy="170" r="8" fill="#1F3536"/>
+  <circle cx="238" cy="170" r="8" fill="#1F3536"/>
+  <circle cx="183" cy="167" r="2.4" fill="#F5EDDD"/>
+  <circle cx="241" cy="167" r="2.4" fill="#F5EDDD"/>
+  <circle cx="168" cy="188" r="11" fill="#C75A2A" opacity="0.35"/>
+  <circle cx="250" cy="188" r="11" fill="#C75A2A" opacity="0.35"/>
+  <path d="M192 202c10 12 26 12 36 0" fill="none" stroke="#1F3536" stroke-width="6" stroke-linecap="round"/>
+  <path d="M132 268c16 70 48 112 88 112s72-42 88-112c-22 14-54 22-88 22s-66-8-88-22Z" fill="#1F3536"/>
+  <path d="M210 274c0 0-8 18-8 38 0 14 8 26 8 26s8-12 8-26c0-20-8-38-8-38Z" fill="#C75A2A"/>
+  <!-- letter -->
+  <rect x="248" y="292" width="86" height="58" rx="8" fill="#ECE0CC" stroke="#3F8487" stroke-width="4"/>
+  <path d="M252 296l39 28 39-28" fill="none" stroke="#C75A2A" stroke-width="4" stroke-linecap="round"/>
+</svg>

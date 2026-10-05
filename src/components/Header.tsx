@@ -10,14 +10,6 @@ const NAV = [
   { href: "/archive", label: "Archivo", icon: GridIcon },
 ];
 
-const TICKER = [
-  { href: "/hub", label: "Hub Santiago" },
-  { href: "/resources", label: "Recursos" },
-  { href: "https://demo.stellarpassport.xyz/org/stellar-chile", label: "Stellar Passport", external: true },
-  { href: "/feed.xml", label: "RSS" },
-  { href: "/brand", label: "Marca" },
-];
-
 export default function Header() {
   return (
     <>
@@ -33,8 +25,8 @@ export default function Header() {
       </div>
 
       <header className="sticky top-0 z-40 border-b border-line bg-sand/90 backdrop-blur-[14px]">
-        <div className="mx-auto flex h-[72px] max-w-[1280px] items-center gap-5 px-4 md:h-[80px] md:gap-6 md:px-8">
-          <Link href="/" aria-label="Tellus Cooperative — inicio" className="shrink-0 py-2 pr-3">
+        <div className="mx-auto flex h-[72px] max-w-[1280px] items-center gap-5 px-4 md:h-[76px] md:gap-6 md:px-8">
+          <Link href="/" aria-label="Tellus Cooperative — inicio" className="shrink-0 py-2 pr-4">
             <Logo className="hidden h-[55px] w-auto min-w-[120px] min-[380px]:block" />
             <Logo mark className="block h-10 w-10 object-contain min-[380px]:hidden" />
           </Link>
@@ -60,7 +52,7 @@ export default function Header() {
                 <path d="m20 20-3.5-3.5" />
               </svg>
             </Link>
-            <Link href="/#suscribete" className="cta-pill h-10 px-4 text-[11px] md:px-5 md:text-[12px]">
+            <Link href="/#suscribete" className="cta-pill h-10 px-4 text-[11px] sm:h-[43px] sm:px-5 sm:text-[12px]">
               <span className="sm:hidden">Suscríbete</span>
               <span className="hidden sm:inline">Suscríbete gratis</span>
             </Link>
@@ -82,24 +74,6 @@ export default function Header() {
       </header>
 
       <PriceTicker />
-
-      <div className="hidden border-b border-line bg-sand md:block">
-        <div className="mx-auto flex h-11 max-w-[1280px] items-center gap-6 overflow-hidden px-8 font-sans text-[12px] text-teal-deep">
-          <span className="shrink-0 font-semibold uppercase tracking-[0.08em] text-ink">Hecho en LATAM</span>
-          <span className="h-4 w-px bg-line" aria-hidden="true" />
-          {TICKER.map((t) =>
-            t.external ? (
-              <a key={t.href} href={t.href} target="_blank" rel="noopener noreferrer" className="shrink-0 hover:text-teal">
-                {t.label}
-              </a>
-            ) : (
-              <Link key={t.href} href={t.href} className="shrink-0 hover:text-teal">
-                {t.label}
-              </Link>
-            ),
-          )}
-        </div>
-      </div>
     </>
   );
 }

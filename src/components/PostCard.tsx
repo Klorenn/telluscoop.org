@@ -46,7 +46,7 @@ export function PostCard({
   return (
     <article className="group relative flex flex-col">
       {post.image && (
-        <div className="relative aspect-[16/10] overflow-hidden rounded-[14px] bg-sand-soft">
+        <div className="relative aspect-[16/10] overflow-hidden rounded-[20px] bg-sand-soft">
           <Image
             src={post.image.url}
             alt=""

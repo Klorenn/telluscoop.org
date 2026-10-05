@@ -3,6 +3,7 @@ import ArchiveSearch, { type ArchiveItem } from "@/components/ArchiveSearch";
 import SubscribeCard from "@/components/SubscribeCard";
 import FeaturedRail from "@/components/FeaturedRail";
 import ShareButtons from "@/components/ShareButtons";
+import Illustration from "@/components/Illustration";
 import { getAllSummaries, getTags } from "@/lib/content";
 import { absUrl, formatDateShort, tagLabel } from "@/lib/site";
 
@@ -39,8 +40,10 @@ export default function ArchivePage() {
           </div>
         </aside>
         <div className="min-w-0">
-          <p className="font-sans text-[11px] font-medium uppercase tracking-[0.14em] text-teal-deep">Archivo</p>
-          <h1 className="mt-2 font-display text-[40px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[52px]">Boletines Tellus</h1>
+          <div className="flex items-center gap-4">
+            <Illustration name="archive" className="h-16 w-16 object-contain md:h-20 md:w-20" />
+            <h1 className="font-display text-[40px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[52px]">Boletines Tellus</h1>
+          </div>
           <div className="mt-6">
             <p className="font-sans text-[11px] font-medium uppercase tracking-[0.12em] text-teal-deep">Escrito por</p>
             <p className="mt-2 font-sans text-[15px] font-semibold text-ink">Tellus Cooperative</p>
