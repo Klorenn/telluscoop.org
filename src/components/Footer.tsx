@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Logo from "./Logo";
 import SubscribeForm from "./SubscribeForm";
-import Character from "./Character";
+import { SubscribeMascot } from "./SubscribeCard";
 import { getPublication, getTags } from "@/lib/content";
 import { tagLabel } from "@/lib/site";
 
@@ -18,8 +18,8 @@ export default function Footer() {
 
   return (
     <footer className="mt-8 bg-ink text-sand/80">
-      <div className="overflow-hidden border-b border-sand/10 bg-sand-soft text-ink">
-        <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-5 py-12 md:grid-cols-[1.2fr_1fr] md:px-8 md:py-16">
+      <div className="border-b border-sand/10 bg-sand-soft text-ink">
+        <div className="mx-auto grid max-w-[1280px] items-end gap-8 px-5 py-12 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:px-8 md:py-16 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,1fr)_auto]">
           <div>
             <p className="font-sans text-[11px] font-medium uppercase tracking-[0.14em] text-teal-deep">Suscríbete</p>
             <h2 className="mt-3 font-display text-[32px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[44px]">
@@ -28,16 +28,13 @@ export default function Footer() {
               en tu correo
             </h2>
             <p className="mt-4 max-w-md font-sans text-[17px] leading-[1.5] text-ink-2">
-              Únete a 4.500+ personas que aprenden blockchain, Stellar y Web3 en español.
+              Aprende blockchain, Stellar y Web3 en español. Gratis, cada semana.
             </p>
           </div>
-          <div className="relative">
+          <div className="relative z-10 min-w-0">
             <SubscribeForm placement="footer" source="footer" size="lg" />
-            <Character
-              name="emprendimiento"
-              className="pointer-events-none absolute -bottom-2 -right-2 hidden h-44 w-52 select-none object-contain object-bottom lg:block"
-            />
           </div>
+          <SubscribeMascot size="lg" from="lg" />
         </div>
       </div>
 

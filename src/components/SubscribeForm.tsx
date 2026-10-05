@@ -81,7 +81,7 @@ export default function SubscribeForm({
         <button
           type="submit"
           disabled={state === "loading" || state === "ok"}
-          className={`cta-pill ${ink ? "cta-ink text-white" : "text-ink"} ${h} shrink-0 px-6 text-[15px]`}
+          className={`cta-pill relative z-10 ${ink ? "cta-ink text-white" : "text-ink"} ${h} shrink-0 whitespace-nowrap px-6 text-[15px]`}
         >
           {state === "loading" ? "Enviando…" : state === "ok" ? "¡Suscrito!" : cta}
         </button>

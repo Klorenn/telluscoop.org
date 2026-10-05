@@ -143,9 +143,10 @@ test("Figma pack fills Milk Road illustration slots; no invented drawings", asyn
   assert.doesNotMatch(home, /slot="mapa"|SlotPlaceholder/);
   assert.doesNotMatch(home, /ninos|placeholder="ninos"|ninos-plantando/);
   assert.match(card, /emprendimiento/);
-  assert.doesNotMatch(card, /greenpill/);
-  assert.match(footer, /emprendimiento/);
-  assert.doesNotMatch(footer, /greenpill|tierra-corbata/);
+  assert.doesNotMatch(card, /greenpill|absolute/);
+  assert.match(footer, /SubscribeMascot/);
+  assert.doesNotMatch(footer, /greenpill|tierra-corbata|4\.500|4500/);
+  assert.match(footer, /Gratis, cada semana/);
   assert.match(archive, /ArchiveSearch/);
   assert.doesNotMatch(archive, /planetas-botas|Character|tierra-traje/);
   assert.doesNotMatch(post, /tierra-traje|Character/);
@@ -215,6 +216,24 @@ test("archive is a searchable listing with featured post, card grid and load mor
   for (const p of snap.posts) {
     assert.ok(p.image?.url, `missing thumbnail ${p.slug}`);
   }
+});
+
+test("subscribe blocks keep the mascot in its own column and skip invented counts", async () => {
+  const footer = await read("src/components/Footer.tsx");
+  const card = await read("src/components/SubscribeCard.tsx");
+  const form = await read("src/components/SubscribeForm.tsx");
+  const home = await read("src/app/page.tsx");
+  const pro = await read("src/components/ProBlock.tsx");
+  for (const src of [footer, card, form, home, pro]) {
+    assert.doesNotMatch(src, /4\.500|4500|greenpill/);
+  }
+  assert.match(card, /SubscribeMascot/);
+  assert.match(card, /name="emprendimiento"/);
+  assert.doesNotMatch(card, /absolute/);
+  assert.match(footer, /SubscribeMascot/);
+  assert.doesNotMatch(footer, /absolute -bottom|-right-2/);
+  assert.match(form, /whitespace-nowrap/);
+  assert.match(form, /relative z-10/);
 });
 
 test("Sesiones embeds real YouTube videos from posts, not channel buttons", async () => {

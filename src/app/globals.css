@@ -67,9 +67,13 @@ h1 em,
 .cta-pill {
   appearance: none;
   -webkit-appearance: none;
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  overflow: visible;
+  white-space: nowrap;
   border-radius: 999px;
   background: var(--color-mint-btn);
   color: var(--color-ink);
