@@ -1,0 +1,355 @@
+@import "tailwindcss";
+
+@theme {
+  /* Milk Road chrome, sampled from the live site. Tellus only in content/assets. */
+  --color-sand: #ffffff;
+  --color-sand-soft: #f7f5ed;
+  --color-sand-muted: #eceae4;
+  --color-paper: #ffffff;
+  --color-cream: #f7f5ed;
+  --color-line: #e8e6e1;
+  --color-ink: #101010;
+  --color-ink-2: #3a3a3a;
+  --color-muted: #6b6b6b;
+  --color-teal: #3aa0c8;
+  --color-teal-deep: #3a3a3a;
+  --color-teal-dark: #2a6f8c;
+  --color-mint: #d9ebe9;
+  --color-mint-btn: #bedada;
+  --color-mint-deep: #9ec8c8;
+  --color-yellow: #f0c93d;
+  --color-sky: #5bc3e4;
+  --color-clay: #101010;
+  --color-clay-deep: #000000;
+  --color-clay-dark: #000000;
+  --color-tick-up: #22c55e;
+  --color-tick-down: #ef4444;
+  --color-navy: #101010;
+
+  --font-display: var(--font-fraunces), "Fraunces", Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --radius-card: 14px;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+body {
+  background: var(--color-sand);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection {
+  background: var(--color-mint);
+}
+:focus-visible {
+  outline: 2px solid var(--color-teal);
+  outline-offset: 2px;
+}
+
+h1 em,
+.font-display em {
+  font-style: italic;
+  color: inherit;
+  font-weight: inherit;
+}
+
+.hero-blob {
+  background: #b6e6f4;
+  border-radius: 48% 52% 42% 58% / 38% 44% 56% 62%;
+}
+
+.cta-pill {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: var(--color-mint-btn);
+  color: var(--color-ink);
+  -webkit-text-fill-color: var(--color-ink);
+  caret-color: transparent;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  border: 1px solid var(--color-mint-btn);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+.cta-pill::selection,
+.cta-pill *::selection {
+  background: transparent;
+  color: inherit;
+  -webkit-text-fill-color: inherit;
+}
+.cta-pill:hover {
+  background: var(--color-mint-deep);
+  border-color: var(--color-mint-deep);
+}
+.cta-pill:disabled {
+  opacity: 0.7;
+}
+.cta-yellow {
+  background: var(--color-yellow);
+  color: var(--color-ink);
+  -webkit-text-fill-color: var(--color-ink);
+  border-color: var(--color-yellow);
+}
+.cta-yellow:hover {
+  background: #e2b82f;
+  border-color: #e2b82f;
+}
+.cta-ink {
+  background: var(--color-ink);
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+  border-color: var(--color-ink);
+}
+.cta-ink:hover {
+  background: #000000;
+  border-color: #000000;
+}
+
+.ticker-mask {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  gap: 2.5rem;
+  animation: ticker-marquee 32s linear infinite;
+}
+@media (min-width: 768px) {
+  .ticker-track {
+    width: 100%;
+    animation: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
+@keyframes ticker-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ===== Artículo ===== */
+.prose-tellus {
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 32.5px;
+  color: var(--color-ink);
+  overflow-wrap: break-word;
+}
+@media (max-width: 640px) {
+  .prose-tellus {
+    font-size: 18px;
+    line-height: 30px;
+  }
+}
+.prose-tellus > * + * {
+  margin-top: 1.25em;
+}
+.prose-tellus h2 {
+  font-size: 1.6em;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin-top: 2em;
+  color: var(--color-ink);
+  scroll-margin-top: 96px;
+}
+.prose-tellus h3 {
+  font-size: 1.25em;
+  line-height: 1.3;
+  font-weight: 700;
+  margin-top: 1.6em;
+  color: var(--color-ink);
+  scroll-margin-top: 96px;
+}
+.prose-tellus h4 {
+  font-size: 1.05em;
+  font-weight: 700;
+  margin-top: 1.4em;
+}
+.prose-tellus em {
+  font-style: italic;
+  color: var(--color-teal);
+}
+.prose-tellus h2 + *,
+.prose-tellus h3 + *,
+.prose-tellus h4 + * {
+  margin-top: 0.6em;
+}
+.prose-tellus a {
+  color: var(--color-teal-deep);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--color-teal) 45%, transparent);
+}
+.prose-tellus a:hover {
+  text-decoration-color: currentColor;
+}
+.prose-tellus strong,
+.prose-tellus b {
+  font-weight: 700;
+  color: var(--color-ink);
+}
+.prose-tellus ul,
+.prose-tellus ol {
+  padding-left: 1.4em;
+}
+.prose-tellus ul {
+  list-style: disc;
+}
+.prose-tellus ol {
+  list-style: decimal;
+}
+.prose-tellus li + li {
+  margin-top: 0.4em;
+}
+.prose-tellus li::marker {
+  color: var(--color-teal);
+}
+.prose-tellus li > p {
+  margin: 0;
+}
+.prose-tellus blockquote {
+  border-left: 3px solid var(--color-clay);
+  padding: 0.2em 0 0.2em 1em;
+  color: var(--color-ink-2);
+  font-style: italic;
+}
+.prose-tellus img {
+  border-radius: 14px;
+  width: 100%;
+  height: auto;
+}
+.prose-tellus hr {
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  margin: 2.5em 0;
+}
+.prose-tellus code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--color-sand-soft);
+  border-radius: 6px;
+  padding: 0.1em 0.35em;
+}
+.prose-tellus pre {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.6;
+  background: var(--color-ink);
+  color: var(--color-sand);
+  border-radius: 14px;
+  padding: 1em 1.2em;
+  overflow-x: auto;
+}
+.prose-tellus pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+.prose-tellus table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  display: block;
+  overflow-x: auto;
+}
+.prose-tellus th,
+.prose-tellus td {
+  border-bottom: 1px solid var(--color-line);
+  padding: 0.6em 0.8em;
+  text-align: left;
+}
+.prose-tellus iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  border: 0;
+}
+.prose-tellus .embed-card {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  text-decoration: none;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  padding: 14px;
+  color: inherit;
+  background: var(--color-sand-soft);
+  transition: border-color 0.15s, background 0.15s;
+}
+.prose-tellus .embed-card:hover {
+  border-color: var(--color-teal);
+  background: var(--color-sand);
+}
+.prose-tellus .embed-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+  font-family: var(--font-sans);
+}
+.prose-tellus .embed-title {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.35;
+  color: var(--color-ink);
+}
+.prose-tellus .embed-desc {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--color-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.prose-tellus .embed-host {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-teal-deep);
+}
+.prose-tellus .embed-card img {
+  width: 140px;
+  max-width: 35%;
+  aspect-ratio: 1.6;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

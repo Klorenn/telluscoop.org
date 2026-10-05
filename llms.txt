@@ -16,9 +16,16 @@ Partners include Stellar Foundation, Filecoin, Ethereum Foundation, Avalanche, P
 
 ## Newsletter & articles
 
-All published articles and newsletters are available at https://telluscoop.beehiiv.com
+The public blog lives on this site:
 
-RSS feed: https://rss.beehiiv.com/feeds/NRVrKCDABF.xml
+- Home: https://telluscoop.org/
+- Posts: https://telluscoop.org/p/<slug>
+- Archive: https://telluscoop.org/archive
+- RSS: https://telluscoop.org/feed.xml
+
+Beehiiv remains the email/newsletter backend only.
+
+RSS feed: https://telluscoop.org/feed.xml
 
 ## Social
 
@@ -41,4 +48,4 @@ Free courses on blockchain, Stellar, and Web3 available at https://www.youtube.c
 
 ## For LLM agents
 
-This site is a static single-page application. All content is rendered client-side via React. The main HTML entry point is index.html. No sitemap is currently published. For full article content, query the Beehiiv RSS feed or the newsletter archive at https://telluscoop.beehiiv.com.
+The public site is a Next.js App Router app (`src/app`). Posts are statically generated from `content/cache/snapshot.json`. Sitemap: https://telluscoop.org/sitemap.xml. Existing static apps remain at `/hub`, `/resources`, `/ops/*`, `/brand`, `/tools/*`.
