@@ -176,7 +176,7 @@ test("Figma pack fills Milk Road illustration slots; no invented drawings", asyn
   assert.match(mapBand, /mapa-latam\.svg/);
   assert.match(mapBand, /bg-ink/);
   const heading = await read("src/components/SectionHeading.tsx");
-  assert.doesNotMatch(heading, /ninos|placeholder/);
+  assert.doesNotMatch(heading, /ninos|placeholder|Character|character/);
   assert.ok(!existsSync(new URL("public/brand/personaje-robot-teal.png", root)));
   assert.ok(!existsSync(new URL("public/brand/personaje-tierra-traje.png", root)));
   assert.ok(!existsSync(new URL("public/brand/personaje-tierra-corbata.png", root)));
@@ -203,7 +203,8 @@ test("archive is a searchable listing with featured post, card grid and load mor
   const snap = JSON.parse(await read("content/cache/snapshot.json"));
   assert.match(page, /ArchiveSearch/);
   assert.match(page, /Boletines Tellus/);
-  assert.doesNotMatch(page, /Character|planetas-botas|ShareButtons|FeaturedRail/);
+  assert.match(page, /ShareButtons/);
+  assert.doesNotMatch(page, /Character|planetas-botas|FeaturedRail|Escrito por/);
   assert.match(search, /Busca un artículo, tema o autor/);
   assert.match(search, /Cargar más/);
   assert.match(search, /PostCard/);
@@ -234,6 +235,27 @@ test("subscribe blocks keep the mascot in its own column and skip invented count
   assert.doesNotMatch(footer, /absolute -bottom|-right-2/);
   assert.match(form, /whitespace-nowrap/);
   assert.match(form, /relative z-10/);
+});
+
+test("share rail uses brand SVG icons, not plain text, on posts and section pages", async () => {
+  const share = await read("src/components/ShareButtons.tsx");
+  const post = await read("src/app/p/[slug]/page.tsx");
+  const archive = await read("src/app/archive/page.tsx");
+  const tag = await read("src/app/t/[slug]/page.tsx");
+  const heading = await read("src/components/SectionHeading.tsx");
+  assert.match(share, /BrandGlyph/);
+  assert.match(share, /file: "x"/);
+  assert.match(share, /file: "linkedin"/);
+  assert.match(share, /Compartir en \$\{n\.label\}/);
+  assert.doesNotMatch(share, /label: "in"/);
+  assert.doesNotMatch(share, /rail \?[\s\S]{0,40}l\.label/);
+  assert.match(post, /layout="rail"/);
+  assert.match(archive, /layout="rail"/);
+  assert.match(tag, /layout="rail"/);
+  assert.doesNotMatch(archive, /planetas-botas/);
+  assert.doesNotMatch(heading, /Character|character/);
+  assert.ok(existsSync(new URL("public/brand/social/x.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/social/linkedin.svg", root)));
 });
 
 test("footer social links use brand SVG icons with aria-labels", async () => {

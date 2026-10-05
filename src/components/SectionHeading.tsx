@@ -1,18 +1,15 @@
 import Link from "next/link";
-import Character, { type CharacterName } from "./Character";
 
 export default function SectionHeading({
   kicker,
   title,
   href,
   cta = "Ver más",
-  character,
 }: {
   kicker: string;
   title: string;
   href?: string;
   cta?: string;
-  character?: CharacterName;
 }) {
   return (
     <div className="flex items-end justify-between gap-4">
@@ -20,25 +17,25 @@ export default function SectionHeading({
         <p className="font-sans text-[12px] font-semibold uppercase tracking-[0.14em] text-teal">{kicker}</p>
         <h2 className="mt-1 font-display text-[32px] font-bold tracking-[-0.025em] md:text-[40px]">{title}</h2>
       </div>
-      <div className="flex shrink-0 items-center gap-3">
-        {character ? <Character name={character} className="h-14 w-14 object-contain md:h-16 md:w-16" /> : null}
-        {href ? (
-          href.startsWith("http") ? (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full border border-line px-4 py-2 font-sans text-[14px] font-semibold text-ink hover:border-ink"
-            >
-              {cta}
-            </a>
-          ) : (
-            <Link href={href} className="rounded-full border border-line px-4 py-2 font-sans text-[14px] font-semibold text-ink hover:border-ink">
-              {cta}
-            </Link>
-          )
-        ) : null}
-      </div>
+      {href ? (
+        href.startsWith("http") ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 rounded-full border border-line px-4 py-2 font-sans text-[14px] font-semibold text-ink hover:border-ink"
+          >
+            {cta}
+          </a>
+        ) : (
+          <Link
+            href={href}
+            className="shrink-0 rounded-full border border-line px-4 py-2 font-sans text-[14px] font-semibold text-ink hover:border-ink"
+          >
+            {cta}
+          </Link>
+        )
+      ) : null}
     </div>
   );
 }
