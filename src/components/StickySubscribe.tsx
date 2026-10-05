@@ -32,10 +32,8 @@ export default function StickySubscribe() {
     >
       <div className="mx-auto flex max-w-[700px] items-start gap-2">
         <div className="min-w-0 flex-1">
-          <p className="mb-2 font-display text-[15px] font-bold leading-tight text-ink">
-            Recibe Tellus en tu correo
-          </p>
-          <SubscribeForm placement="sticky" source="sticky" size="md" cta="Suscribirme" />
+          <p className="mb-2 font-display text-[15px] font-bold leading-tight text-ink">Recibe Tellus en tu correo</p>
+          <SubscribeForm placement="sticky" source="sticky" size="md" variant="black" cta="Suscribirme" />
         </div>
         <button
           type="button"

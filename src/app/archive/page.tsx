@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import ArchiveSearch, { type ArchiveItem } from "@/components/ArchiveSearch";
+import SubscribeCard from "@/components/SubscribeCard";
+import FeaturedRail from "@/components/FeaturedRail";
+import ShareButtons from "@/components/ShareButtons";
 import { getAllSummaries, getTags } from "@/lib/content";
-import { formatDateShort, tagLabel } from "@/lib/site";
+import { absUrl, formatDateShort, tagLabel } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Archivo",
@@ -12,7 +15,8 @@ export const metadata: Metadata = {
 };
 
 export default function ArchivePage() {
-  const items: ArchiveItem[] = getAllSummaries().map((p) => ({
+  const summaries = getAllSummaries();
+  const items: ArchiveItem[] = summaries.map((p) => ({
     s: p.slug,
     t: p.title,
     x: (p.subtitle || p.excerpt).slice(0, 180),
@@ -23,14 +27,40 @@ export default function ArchivePage() {
     i: p.image?.url,
   }));
   const tags = getTags().map((t) => ({ slug: t.slug, label: tagLabel(t), count: t.count }));
+  const featured = summaries.slice(0, 2);
+  const shareUrl = absUrl("/archive");
+
   return (
-    <div className="mx-auto max-w-[900px] px-5 pt-10 md:px-8 md:pt-16">
-      <h1 className="font-display text-[40px] font-extrabold leading-[1.05] tracking-[-0.025em] md:text-[56px]">Archivo</h1>
-      <p className="mt-3 max-w-[36rem] font-display text-[19px] leading-[1.5] text-ink-2">
-        {items.length} artículos sobre blockchain, Stellar, IA y Web3 en español.
-      </p>
-      <div className="mt-8">
-        <ArchiveSearch items={items} tags={tags} />
+    <div className="mx-auto max-w-[1280px] px-5 pt-8 md:px-8 md:pt-12">
+      <div className="grid gap-10 lg:grid-cols-[56px_minmax(0,760px)_280px] lg:justify-center lg:gap-12">
+        <aside className="hidden lg:block">
+          <div className="sticky top-36">
+            <ShareButtons url={shareUrl} title="Boletines Tellus" layout="rail" />
+          </div>
+        </aside>
+        <div className="min-w-0">
+          <h1 className="font-display text-[40px] font-extrabold leading-[1.05] tracking-[-0.03em] md:text-[52px]">Boletines Tellus</h1>
+          <div className="mt-6">
+            <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Escrito por</p>
+            <p className="mt-2 font-sans text-[15px] font-semibold text-ink">Tellus Cooperative</p>
+            <p className="font-sans text-[13px] text-muted">{items.length} artículos · Equipo editorial</p>
+          </div>
+          <div className="mt-8">
+            <SubscribeCard
+              placement="archive"
+              title="Aprende blockchain en español, cinco minutos a la semana."
+              body=""
+            />
+          </div>
+          <div className="mt-10">
+            <ArchiveSearch items={items} tags={tags} />
+          </div>
+        </div>
+        <aside className="hidden lg:block">
+          <div className="sticky top-36">
+            <FeaturedRail posts={featured} />
+          </div>
+        </aside>
       </div>
     </div>
   );

@@ -33,12 +33,20 @@ export function TagPill({ tag }: { tag: { slug: string; name: string } }) {
   );
 }
 
-/** Tarjeta vertical (grillas). */
-export function PostCard({ post, priority = false, sizes = "(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw" }: { post: PostSummary; priority?: boolean; sizes?: string }) {
+/** Tarjeta vertical (grillas Milk Road). */
+export function PostCard({
+  post,
+  priority = false,
+  sizes = "(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw",
+}: {
+  post: PostSummary;
+  priority?: boolean;
+  sizes?: string;
+}) {
   return (
     <article className="group relative flex flex-col">
       {post.image && (
-        <div className="relative aspect-[2/1] overflow-hidden rounded-2xl bg-cream">
+        <div className="relative aspect-[16/10] overflow-hidden rounded-[20px] bg-cream">
           <Image
             src={post.image.url}
             alt=""
@@ -51,7 +59,7 @@ export function PostCard({ post, priority = false, sizes = "(min-width: 1024px) 
       )}
       <div className="mt-4 flex flex-col gap-2">
         {post.tags[0] && <TagPill tag={post.tags[0]} />}
-        <h3 className="font-display text-[21px] font-bold leading-[1.25] tracking-[-0.01em] text-ink">
+        <h3 className="font-display text-[21px] font-bold leading-[1.25] tracking-[-0.015em] text-ink">
           <Link prefetch={false} href={`/p/${post.slug}`} className="after:absolute after:inset-0 group-hover:text-teal-dark">
             {post.title}
           </Link>
@@ -81,8 +89,8 @@ export function PostRow({ post, compact = false }: { post: PostSummary; compact?
       </div>
       {post.image && (
         <div
-          className={`relative shrink-0 self-start overflow-hidden rounded-xl bg-cream ${
-            compact ? "aspect-square w-20 sm:w-24" : "aspect-[4/3] w-24 sm:aspect-[2/1] sm:w-52"
+          className={`relative shrink-0 self-start overflow-hidden rounded-[16px] bg-cream ${
+            compact ? "aspect-square w-20 sm:w-24" : "aspect-[4/3] w-24 sm:aspect-[16/10] sm:w-52"
           }`}
         >
           <Image src={post.image.url} alt="" fill sizes={compact ? "96px" : "(min-width: 640px) 208px, 96px"} className="object-cover" />

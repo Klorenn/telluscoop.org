@@ -4,16 +4,14 @@ import { useState } from "react";
 type State = "idle" | "loading" | "ok" | "error";
 
 export default function SubscribeForm({
-  variant = "light",
+  variant = "mint",
   source = "web",
   placement,
   size = "md",
   cta = "Suscríbete gratis",
 }: {
-  variant?: "light" | "dark";
-  /** Alias histórico; se usa como utm_medium si no hay placement. */
+  variant?: "mint" | "black" | "dark" | "light";
   source?: string;
-  /** Placement canónico: hero | inline | end | sticky | exit | band | footer */
   placement?: string;
   size?: "md" | "lg";
   cta?: string;
@@ -56,11 +54,23 @@ export default function SubscribeForm({
     }
   }
 
+  const h = size === "lg" ? "h-14 text-[16px]" : "h-12 text-[15px]";
   const dark = variant === "dark";
-  const h = size === "lg" ? "h-14 text-[17px]" : "h-12 text-[15px]";
+  const btn =
+    variant === "black"
+      ? "bg-ink text-white hover:bg-navy"
+      : variant === "dark"
+        ? "bg-white text-ink hover:bg-mint"
+        : variant === "light"
+          ? "bg-teal text-white hover:bg-teal-dark"
+          : "bg-mint-btn text-ink hover:bg-mint";
+  const input = dark
+    ? "border-white/20 bg-white/10 text-white placeholder:text-white/50 focus:border-white/60"
+    : "border-[#d8d5ce] bg-white text-ink placeholder:text-muted focus:border-teal";
+
   return (
     <form onSubmit={onSubmit} noValidate className="w-full">
-      <div className="flex flex-col gap-2.5 sm:flex-row">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
         <label className="sr-only" htmlFor={fieldId}>
           Tu correo electrónico
         </label>
@@ -73,20 +83,13 @@ export default function SubscribeForm({
           required
           placeholder="Tu correo electrónico"
           disabled={state === "loading" || state === "ok"}
-          className={`${h} w-full min-w-0 rounded-full border px-5 sm:w-auto sm:flex-1 font-sans outline-none transition-colors ${
-            dark
-              ? "border-white/20 bg-white/10 text-white placeholder:text-white/50 focus:border-white/60"
-              : "border-line bg-white text-ink shadow-[0_1px_0_rgba(0,0,0,0.04)] placeholder:text-muted focus:border-teal"
-          }`}
+          className={`${h} w-full min-w-0 rounded-full border px-5 font-sans outline-none transition-colors sm:flex-1 ${input}`}
         />
-        {/* honeypot anti-bots */}
         <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
         <button
           type="submit"
           disabled={state === "loading" || state === "ok"}
-          className={`${h} shrink-0 rounded-full px-6 font-sans font-semibold transition-colors disabled:opacity-70 ${
-            dark ? "bg-white text-ink hover:bg-mint" : "bg-teal text-white hover:bg-teal-dark"
-          }`}
+          className={`${h} shrink-0 rounded-full px-6 font-sans font-semibold transition-colors disabled:opacity-70 ${btn}`}
         >
           {state === "loading" ? "Enviando…" : state === "ok" ? "¡Suscrito!" : cta}
         </button>

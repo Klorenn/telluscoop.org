@@ -1,18 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import SubscribeForm from "@/components/SubscribeForm";
-import { Meta, PostCard, PostRow, TagPill } from "@/components/PostCard";
+import SubscribeCard from "@/components/SubscribeCard";
+import { Meta, PostCard, TagPill } from "@/components/PostCard";
 import { getAllSummaries, getPostsByTag, getTags } from "@/lib/content";
 import { HOME_ROWS, SITE, tagLabel } from "@/lib/site";
 
 export default function Home() {
   const posts = getAllSummaries();
   const [featured, ...rest] = posts;
-  const latest = rest.slice(0, 6);
-  const shown = new Set([featured.slug, ...latest.map((p) => p.slug)]);
+  const latest = rest.slice(0, 5);
+  const shown = new Set([featured?.slug, ...latest.map((p) => p.slug)].filter(Boolean));
   const tags = getTags();
-  const rows = HOME_ROWS.map((slug) => tags.find((t) => t.slug === slug))
-    .filter((t): t is NonNullable<typeof t> => !!t)
+  const chips = HOME_ROWS.map((slug) => tags.find((t) => t.slug === slug)).filter((t): t is NonNullable<typeof t> => !!t);
+  const rows = chips
     .map((tag) => {
       const items = getPostsByTag(tag.slug).filter((p) => !shown.has(p.slug)).slice(0, 3);
       items.forEach((p) => shown.add(p.slug));
@@ -32,82 +33,116 @@ export default function Home() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      {/* HERO */}
-      <section id="suscribete" className="relative overflow-hidden border-b border-line">
-        <div className="mx-auto grid max-w-[1200px] items-center gap-8 px-5 pb-12 pt-12 md:grid-cols-[1.15fr_1fr] md:px-8 md:pb-20 md:pt-20">
-          <div className="relative z-10">
-            <h1 className="font-display text-[42px] font-extrabold leading-[1.02] tracking-[-0.03em] text-ink sm:text-[56px] lg:text-[68px]">
-              Transforma tu curiosidad en proyectos reales
+
+      <section id="suscribete" className="relative overflow-hidden">
+        <div className="mx-auto grid max-w-[1280px] items-center gap-6 px-5 pb-10 pt-10 md:grid-cols-[1.05fr_0.95fr] md:px-8 md:pb-6 md:pt-16">
+          <div className="relative z-10 max-w-[36rem]">
+            <h1 className="font-display text-[42px] font-extrabold leading-[0.98] tracking-[-0.035em] text-ink sm:text-[56px] lg:text-[68px]">
+              Convierte
+              <br />
+              curiosidad
+              <br />
+              en proyectos reales
             </h1>
-            <p className="mt-6 max-w-[34rem] font-display text-[19px] leading-[1.55] text-ink-2 md:text-[21px]">
+            <p className="mt-6 max-w-[32rem] font-display text-[18px] leading-[1.55] text-ink-2 md:text-[20px]">
               Noticias, cursos y herramientas para entender blockchain, Stellar y Web3. Todo en español, directo a tu correo.
             </p>
-            <p className="mt-8 font-sans text-[13px] font-semibold uppercase tracking-[0.08em] text-ink">
-              Únete a 5.000+ personas que aprenden blockchain
+            <p className="mt-8 font-sans text-[12px] font-semibold uppercase tracking-[0.1em] text-ink">
+              Únete al boletín de Web3 en español
             </p>
-            <div className="mt-3 max-w-[33rem]">
-              <SubscribeForm placement="hero" source="hero" size="lg" />
+            <div className="mt-3 max-w-[34rem]">
+              <SubscribeForm placement="hero" source="hero" size="lg" variant="mint" />
             </div>
           </div>
-          <div className="relative -mx-5 -mb-12 h-[280px] sm:h-[360px] md:mx-0 md:-mb-20 md:h-[500px]">
-            <div className="tellus-blob absolute bottom-0 left-[14%] right-[-40%] top-[10%] md:left-[10%] md:right-[-30%]" aria-hidden="true" />
+          <div className="relative mx-auto h-[280px] w-full max-w-[560px] sm:h-[360px] md:h-[460px]">
+            <div className="hero-blob absolute inset-y-[6%] right-[-8%] left-[8%]" aria-hidden="true" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/mapa-latam.webp"
+              alt=""
+              width={520}
+              height={560}
+              className="absolute bottom-[8%] right-0 h-[78%] w-auto max-w-[58%] object-contain opacity-90"
+            />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/brand/mascot-planets.webp"
-              alt="Las mascotas de Tellus: dos planetas Tierra con botas amarillas y un megáfono"
+              alt="Las mascotas de Tellus: planetas Tierra con botas amarillas"
               width={960}
               height={776}
               fetchPriority="high"
-              className="absolute bottom-3 left-1/2 h-[94%] w-auto max-w-none -translate-x-1/2 object-contain md:bottom-6 md:left-[55%]"
+              className="absolute bottom-0 left-[-4%] h-[96%] w-auto max-w-none object-contain"
             />
           </div>
         </div>
       </section>
 
-      {/* DESTACADO + LO ÚLTIMO */}
-      <section className="mx-auto max-w-[1200px] px-5 pt-14 md:px-8 md:pt-20">
-        <div className="grid gap-12 lg:grid-cols-[1.45fr_1fr] lg:gap-14">
-          <article className="group relative">
-            <p className="mb-4 font-sans text-[13px] font-semibold uppercase tracking-[0.08em] text-clay">Destacado</p>
+      <section className="mx-auto max-w-[1280px] px-5 pt-8 md:px-8 md:pt-12">
+        <p className="font-sans text-[12px] font-semibold uppercase tracking-[0.14em] text-teal">Boletines</p>
+        <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+          <h2 className="font-display text-[32px] font-extrabold tracking-[-0.025em] md:text-[40px]">Lo último en español</h2>
+          <Link href="/archive" className="rounded-full border border-line px-4 py-2 font-sans text-[14px] font-semibold hover:border-ink">
+            Ver más
+          </Link>
+        </div>
+        <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto pb-1">
+          <Link href="/archive" className="shrink-0 rounded-full bg-ink px-3.5 py-1.5 font-sans text-[13px] font-medium text-white">
+            Todos
+          </Link>
+          {chips.map((t) => (
+            <Link
+              key={t.slug}
+              href={`/t/${t.slug}`}
+              className="shrink-0 rounded-full bg-cream px-3.5 py-1.5 font-sans text-[13px] font-medium text-ink-2 hover:bg-mint"
+            >
+              {tagLabel(t)}
+            </Link>
+          ))}
+        </div>
+
+        {featured && (
+          <article className="group relative mt-10 grid gap-8 lg:grid-cols-[1.35fr_1fr] lg:gap-12">
             {featured.image && (
-              <div className="relative aspect-[2/1] overflow-hidden rounded-3xl bg-cream">
-                <Image src={featured.image.url} alt="" fill priority sizes="(min-width: 1024px) 680px, 100vw" className="object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+              <div className="relative aspect-[16/9] overflow-hidden rounded-[20px] bg-cream lg:aspect-[16/10]">
+                <Image
+                  src={featured.image.url}
+                  alt=""
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 720px, 100vw"
+                  className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                />
               </div>
             )}
-            <div className="mt-6">
+            <div className="flex flex-col justify-center">
               {featured.tags[0] && <TagPill tag={featured.tags[0]} />}
-              <h2 className="mt-2 font-display text-[30px] font-extrabold leading-[1.12] tracking-[-0.02em] text-ink md:text-[40px]">
+              <h3 className="mt-2 font-display text-[28px] font-extrabold leading-[1.12] tracking-[-0.025em] md:text-[36px]">
                 <Link prefetch={false} href={`/p/${featured.slug}`} className="after:absolute after:inset-0 group-hover:text-teal-dark">
                   {featured.title}
                 </Link>
-              </h2>
-              <p className="mt-3 max-w-[40rem] font-display text-[18px] leading-[1.55] text-ink-2 md:text-[19px]">{featured.subtitle}</p>
+              </h3>
+              <p className="mt-3 max-w-[36rem] font-display text-[18px] leading-[1.5] text-ink-2">{featured.subtitle}</p>
               <Meta post={featured} className="mt-4" />
             </div>
           </article>
-          <div>
-            <div className="mb-1 flex items-baseline justify-between border-b-2 border-ink pb-3">
-              <h2 className="font-display text-[22px] font-extrabold tracking-[-0.01em]">Lo último</h2>
-              <Link href="/archive" className="font-sans text-[14px] font-semibold text-teal hover:text-teal-dark">
-                Ver todo →
-              </Link>
-            </div>
-            <div className="divide-y divide-line">
-              {latest.map((p) => (
-                <PostRow key={p.slug} post={p} compact />
-              ))}
-            </div>
-          </div>
+        )}
+
+        <div className="mt-14 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+          {latest.map((p) => (
+            <PostCard key={p.slug} post={p} />
+          ))}
         </div>
       </section>
 
-      {/* FILAS POR CATEGORÍA */}
       {rows.map(({ tag, items }, i) => (
-        <section key={tag.slug} className="mx-auto max-w-[1200px] px-5 pt-16 md:px-8 md:pt-20">
-          <div className="mb-7 flex items-baseline justify-between border-b-2 border-ink pb-3">
-            <h2 className="font-display text-[26px] font-extrabold tracking-[-0.015em] md:text-[30px]">{tagLabel(tag)}</h2>
-            <Link href={`/t/${tag.slug}`} className="font-sans text-[14px] font-semibold text-teal hover:text-teal-dark">
-              Ver todo ({tag.count}) →
+        <section key={tag.slug} className="mx-auto max-w-[1280px] px-5 pt-16 md:px-8 md:pt-20">
+          <div className="mb-7 flex items-end justify-between gap-4">
+            <div>
+              <p className="font-sans text-[12px] font-semibold uppercase tracking-[0.14em] text-teal">{tagLabel(tag)}</p>
+              <h2 className="mt-1 font-display text-[28px] font-extrabold tracking-[-0.02em] md:text-[34px]">{tagLabel(tag)}</h2>
+            </div>
+            <Link href={`/t/${tag.slug}`} className="shrink-0 rounded-full border border-line px-4 py-2 font-sans text-[14px] font-semibold hover:border-ink">
+              Ver más
             </Link>
           </div>
           <div className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
@@ -117,21 +152,37 @@ export default function Home() {
               </div>
             ))}
           </div>
-          {i === 1 && (
-            <div className="mt-16 grid items-center gap-6 rounded-3xl bg-mint px-6 py-10 md:mt-20 md:grid-cols-[1.1fr_1fr] md:px-12 md:py-12">
-              <div>
-                <h2 className="font-display text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em] md:text-[34px]">
-                  El boletín de Tellus, cada semana en tu correo
-                </h2>
-                <p className="mt-3 font-display text-[18px] leading-[1.5] text-ink-2">
-                  Oportunidades, guías y lo más importante de Stellar y Web3 en LATAM, en 5 minutos.
-                </p>
-              </div>
-              <SubscribeForm placement="band" source="band" />
+          {i === 0 && (
+            <div className="mt-16">
+              <SubscribeCard placement="band" title="El boletín de Tellus, cada semana en tu correo" />
             </div>
           )}
         </section>
       ))}
+
+      <section className="mx-auto max-w-[1280px] px-5 py-16 md:px-8 md:py-20">
+        <div className="grid items-center gap-8 overflow-hidden rounded-[20px] bg-navy px-6 py-10 text-white md:grid-cols-[1.2fr_1fr] md:px-12 md:py-14">
+          <div>
+            <p className="font-sans text-[12px] font-semibold uppercase tracking-[0.14em] text-sand">Hub Tellus</p>
+            <h2 className="mt-2 font-display text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
+              Un espacio para aprender y construir en Santiago
+            </h2>
+            <p className="mt-3 max-w-md font-display text-[17px] leading-[1.5] text-white/75">
+              Eventos, mentorías y comunidad. La cooperativa blockchain de Latinoamérica, en persona.
+            </p>
+            <a
+              href="/hub"
+              className="mt-6 inline-flex rounded-full bg-sand px-5 py-3 font-sans text-[14px] font-semibold text-ink hover:bg-cream"
+            >
+              Visitar el Hub
+            </a>
+          </div>
+          <div className="relative mx-auto h-44 w-full max-w-sm md:h-56">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/mapa-latam.webp" alt="" width={520} height={560} className="absolute inset-0 h-full w-full object-contain" />
+          </div>
+        </div>
+      </section>
     </>
   );
 }

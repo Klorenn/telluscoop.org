@@ -87,8 +87,10 @@ export default function ArchiveSearch({ items, tags }: { items: ArchiveItem[]; t
       </p>
 
       {results.length === 0 ? (
-        <div className="py-20 text-center">
-          <p className="font-display text-[22px] font-bold">No encontramos artículos con “{q}”.</p>
+        <div className="py-16 text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/mascot-planets.webp" alt="" width={240} height={200} className="mx-auto h-28 w-auto" />
+          <p className="mt-4 font-display text-[22px] font-bold">No encontramos artículos con “{q}”.</p>
           <p className="mt-2 font-sans text-muted">Prueba con otra palabra o quita el filtro de categoría.</p>
         </div>
       ) : (
