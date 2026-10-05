@@ -37,6 +37,7 @@ const nextConfig: NextConfig = {
   async rewrites() {
     // Directory indexes that vanilla Vercel static hosting served automatically.
     return [
+      { source: "/index.html", destination: "/" },
       { source: "/brand", destination: "/brand.html" },
       { source: "/hub", destination: "/hub/index.html" },
       { source: "/hub/", destination: "/hub/index.html" },
