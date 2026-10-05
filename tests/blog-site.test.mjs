@@ -65,7 +65,7 @@ test("canonical site url is telluscoop.org and RSS/sitemap exist", async () => {
   assert.ok(existsSync(new URL("src/app/api/luma-events/route.ts", root)));
 });
 
-test("official /brand logos replace recreated lockups; CTAs are Clay pills", async () => {
+test("official /brand logos stay; chrome matches Milk Road colors", async () => {
   const logo = await read("src/components/Logo.tsx");
   const header = await read("src/components/Header.tsx");
   const footer = await read("src/components/Footer.tsx");
@@ -73,6 +73,7 @@ test("official /brand logos replace recreated lockups; CTAs are Clay pills", asy
   const layout = await read("src/app/layout.tsx");
   const css = await read("src/app/globals.css");
   const form = await read("src/components/SubscribeForm.tsx");
+  const ticker = await read("src/components/PriceTicker.tsx");
   assert.match(logo, /logo-dark\.svg/);
   assert.match(logo, /logo-color\.svg/);
   assert.match(logo, /logo-white\.svg/);
@@ -84,19 +85,23 @@ test("official /brand logos replace recreated lockups; CTAs are Clay pills", asy
   assert.match(header, /cta-pill/);
   assert.match(footer, /variant="white"/);
   assert.match(footer, /min-w-\[120px\]/);
+  assert.doesNotMatch(footer, /\/hub/);
+  assert.doesNotMatch(header, /\/hub/);
+  assert.doesNotMatch(home, /\/hub|Hub Santiago|HubBanner|Hub Tellus/);
+  assert.doesNotMatch(ticker, /Hub Santiago|\/hub/);
   assert.match(layout, /Fraunces/);
   assert.doesNotMatch(layout, /Figtree/);
-  assert.match(css, /#ece0cc/i);
-  assert.match(css, /#3f8487/i);
-  assert.match(css, /#c75a2a/i);
-  assert.match(css, /#1f3536/i);
-  assert.match(css, /#2a5a5c/i);
-  assert.match(css, /#9e441f/i);
-  assert.doesNotMatch(css, /#ffffff/);
-  assert.doesNotMatch(css, /#bedada/);
-  assert.doesNotMatch(css, /#cfe8e6/);
+  assert.match(layout, /themeColor: "#ffffff"/);
+  assert.match(css, /#ffffff/i);
+  assert.match(css, /#bedada/i);
+  assert.match(css, /#b6e6f4/i);
+  assert.match(css, /#22c55e/i);
+  assert.match(css, /#ef4444/i);
+  assert.match(css, /#f0c93d/i);
+  assert.doesNotMatch(css, /#ece0cc/i);
+  assert.doesNotMatch(css, /#c75a2a/i);
   assert.match(form, /cta-pill/);
-  assert.doesNotMatch(form, /mint-btn/);
+  assert.match(css, /mint-btn/);
   assert.ok(existsSync(new URL("public/brand/logo-dark.svg", root)));
   assert.ok(existsSync(new URL("public/brand/logo-color.svg", root)));
   assert.ok(existsSync(new URL("public/brand/logo-white.svg", root)));
@@ -104,16 +109,14 @@ test("official /brand logos replace recreated lockups; CTAs are Clay pills", asy
   assert.ok(!existsSync(new URL("public/brand/logo-horizontal.webp", root)));
   assert.ok(!existsSync(new URL("public/brand/logo-stacked-serif-black.svg", root)));
   assert.ok(!existsSync(new URL("public/brand/tellus-logo.png", root)));
+  assert.ok(!existsSync(new URL("public/brand/illo-hero.svg", root)));
   assert.ok(existsSync(new URL("src/app/icon.png", root)));
   assert.doesNotMatch(home, /mapa-latam/);
   assert.doesNotMatch(home, /planetas-botas/);
-  assert.match(home, /name="hero"/);
-  assert.match(home, /HubBanner/);
-  assert.match(home, /Encuentros/);
-  assert.match(home, /4\.500\+/);
+  assert.match(home, /robot-teal/);
 });
 
-test("characters are not scattered; only 404 uses a Figma mascot", async () => {
+test("Figma pack fills Milk Road illustration slots; no invented drawings", async () => {
   const home = await read("src/app/page.tsx");
   const footer = await read("src/components/Footer.tsx");
   const archive = await read("src/app/archive/page.tsx");
@@ -122,48 +125,31 @@ test("characters are not scattered; only 404 uses a Figma mascot", async () => {
   const card = await read("src/components/SubscribeCard.tsx");
   const notFound = await read("src/app/not-found.tsx");
   const character = await read("src/components/Character.tsx");
-  for (const src of [home, footer, archive, tag, post, card]) {
-    assert.doesNotMatch(src, /from "@\/components\/Character"/);
-    assert.doesNotMatch(src, /planetas-botas|mapa-latam|greenpill|tierra-corbata/);
+  for (const src of [home, footer, archive, tag, post, card, notFound, character]) {
+    assert.doesNotMatch(src, /illo-hero|illo-subscribe|illo-archive|illo-hub|HubBanner/);
+    assert.doesNotMatch(src, /mapa-latam/);
   }
-  assert.match(home, /Illustration/);
-  assert.match(home, /illo-hero|name="hero"/);
+  assert.doesNotMatch(home, /planetas-botas/);
+  assert.match(home, /robot-teal/);
+  assert.match(home, /tierra-traje/);
+  assert.match(card, /greenpill/);
+  assert.match(footer, /tierra-corbata/);
+  assert.match(character, /educacion/);
+  assert.match(character, /inclusion/);
+  assert.match(character, /crecimiento/);
   assert.match(notFound, /robot-espacio/);
-  assert.match(character, /robot-espacio/);
-  assert.doesNotMatch(character, /greenpill|planetas|tierra-corbata|crecimiento|educacion/);
-  assert.ok(!existsSync(new URL("public/brand/personaje-planetas-botas.webp", root)));
-  assert.ok(!existsSync(new URL("public/brand/personaje-greenpill-pastillas.webp", root)));
-  assert.ok(!existsSync(new URL("public/brand/mapa-latam.webp", root)));
-  assert.ok(existsSync(new URL("public/brand/personaje-robot-espacio.webp", root)));
-  assert.ok(existsSync(new URL("public/brand/illo-hero.svg", root)));
-  assert.ok(existsSync(new URL("public/brand/illo-subscribe.svg", root)));
-  assert.ok(existsSync(new URL("public/brand/illo-stellar.svg", root)));
-  assert.ok(existsSync(new URL("public/brand/illo-events.svg", root)));
-});
-
-test("original illustrations have intrinsic size and valid XML", async () => {
-  const files = [
-    "public/brand/illo-hero.svg",
-    "public/brand/illo-archive.svg",
-    "public/brand/illo-subscribe.svg",
-    "public/brand/illo-hub.svg",
-    "public/brand/illo-stellar.svg",
-    "public/brand/illo-learn.svg",
-    "public/brand/illo-chain.svg",
-    "public/brand/illo-spark.svg",
-    "public/brand/illo-coop.svg",
-    "public/brand/illo-events.svg",
-  ];
-  for (const rel of files) {
-    const svg = await read(rel);
-    assert.match(svg, /width="/, `${rel} needs width`);
-    assert.match(svg, /height="/, `${rel} needs height`);
-    assert.doesNotMatch(svg, /[\x00-\x08\x0b\x0c\x0e-\x1f]/, `${rel} has invalid XML chars`);
-    assert.match(svg, /#3F8487|#C75A2A|#1F3536|#ECE0CC|#2A5A5C|#F5EDDD|#9E441F|#D4C8B5/);
-  }
-  const illo = await read("src/components/Illustration.tsx");
-  assert.match(illo, /width=\{w\}/);
-  assert.match(illo, /events: "\/brand\/illo-events\.svg"/);
+  assert.ok(existsSync(new URL("public/brand/personaje-robot-teal.png", root)));
+  assert.ok(existsSync(new URL("public/brand/personaje-tierra-traje.png", root)));
+  assert.ok(existsSync(new URL("public/brand/personaje-tierra-corbata.png", root)));
+  assert.ok(existsSync(new URL("public/brand/personaje-tierra.png", root)));
+  assert.ok(existsSync(new URL("public/brand/personaje-greenpill-pastillas.png", root)));
+  assert.ok(existsSync(new URL("public/brand/personaje-planetas-botas.png", root)));
+  assert.ok(existsSync(new URL("public/brand/personaje-robot-espacio.png", root)));
+  assert.ok(existsSync(new URL("public/brand/ilustracion-educacion.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/ilustracion-inclusion.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/ilustracion-crecimiento.svg", root)));
+  assert.ok(!existsSync(new URL("src/components/Illustration.tsx", root)));
+  assert.ok(!existsSync(new URL("src/components/HubBanner.tsx", root)));
 });
 
 test("vercel.json asks Vercel to build Next.js without dropping existing redirects", async () => {

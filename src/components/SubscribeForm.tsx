@@ -4,13 +4,13 @@ import { useState } from "react";
 type State = "idle" | "loading" | "ok" | "error";
 
 export default function SubscribeForm({
-  variant = "clay",
+  variant = "mint",
   source = "web",
   placement,
   size = "md",
   cta = "Suscríbete gratis",
 }: {
-  variant?: "clay" | "dark";
+  variant?: "mint" | "ink";
   source?: string;
   placement?: string;
   size?: "md" | "lg";
@@ -55,10 +55,10 @@ export default function SubscribeForm({
   }
 
   const h = size === "lg" ? "h-14 text-[16px]" : "h-12 text-[15px]";
-  const dark = variant === "dark";
-  const input = dark
-    ? "border-sand/25 bg-sand/10 text-sand placeholder:text-sand/50 focus:border-sand/60"
-    : "border-line bg-sand-soft text-ink placeholder:text-teal-deep/70 focus:border-teal";
+  const ink = variant === "ink";
+  const input = ink
+    ? "border-line bg-sand text-ink placeholder:text-muted focus:border-ink"
+    : "border-line bg-sand text-ink placeholder:text-muted focus:border-ink";
 
   return (
     <form onSubmit={onSubmit} noValidate className="w-full">
@@ -78,7 +78,7 @@ export default function SubscribeForm({
           className={`${h} w-full min-w-0 rounded-full border px-5 font-sans outline-none transition-colors sm:flex-1 ${input}`}
         />
         <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
-        <button type="submit" disabled={state === "loading" || state === "ok"} className={`cta-pill ${h} shrink-0 px-6 text-[11px] md:text-[12px]`}>
+        <button type="submit" disabled={state === "loading" || state === "ok"} className={`cta-pill ${ink ? "cta-ink" : ""} ${h} shrink-0 px-6 text-[15px]`}>
           {state === "loading" ? "Enviando…" : state === "ok" ? "¡Suscrito!" : cta}
         </button>
       </div>
@@ -86,7 +86,7 @@ export default function SubscribeForm({
         role="status"
         aria-live="polite"
         className={`mt-2 min-h-[1.25rem] font-sans text-[13px] ${
-          state === "error" ? (dark ? "text-sand" : "text-clay-deep") : dark ? "text-sand/60" : "text-teal-deep"
+          state === "error" ? "text-tick-down" : "text-muted"
         }`}
       >
         {msg || "Gratis. Sin spam. Te desuscribes con un clic."}

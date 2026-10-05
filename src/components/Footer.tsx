@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Logo from "./Logo";
 import SubscribeForm from "./SubscribeForm";
-import Illustration from "./Illustration";
+import Character from "./Character";
 import { getPublication, getTags } from "@/lib/content";
 import { tagLabel } from "@/lib/site";
 
@@ -33,8 +33,8 @@ export default function Footer() {
           </div>
           <div className="relative">
             <SubscribeForm placement="footer" source="footer" size="lg" />
-            <Illustration
-              name="subscribe"
+            <Character
+              name="tierra-corbata"
               className="pointer-events-none absolute -right-4 -top-16 hidden h-28 w-auto lg:block"
             />
           </div>
@@ -82,11 +82,6 @@ export default function Footer() {
             <li>
               <a href="/feed.xml" className="hover:text-sand">
                 RSS
-              </a>
-            </li>
-            <li>
-              <a href="/hub" className="hover:text-sand">
-                Hub
               </a>
             </li>
             <li>

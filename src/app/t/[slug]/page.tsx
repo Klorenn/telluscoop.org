@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PostCard } from "@/components/PostCard";
 import SubscribeCard from "@/components/SubscribeCard";
-import Illustration, { TAG_ILLUSTRATIONS } from "@/components/Illustration";
+import Character, { TAG_CHARACTERS } from "@/components/Character";
 import { getPostsByTag, getTags } from "@/lib/content";
 import { tagLabel } from "@/lib/site";
 
@@ -38,8 +38,8 @@ export default async function TagPage({ params }: PageProps<"/t/[slug]">) {
     <div className="mx-auto max-w-[1280px] px-5 pt-10 md:px-8 md:pt-14">
       <p className="font-sans text-[11px] font-medium uppercase tracking-[0.14em] text-teal-deep">Categoría</p>
       <div className="mt-2 flex items-center gap-4">
-        {TAG_ILLUSTRATIONS[slug] ? (
-          <Illustration name={TAG_ILLUSTRATIONS[slug]} className="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20" />
+        {TAG_CHARACTERS[slug] ? (
+          <Character name={TAG_CHARACTERS[slug]} className="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20" />
         ) : null}
         <h1 className="font-display text-[40px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[56px]">{tagLabel(tag)}</h1>
       </div>

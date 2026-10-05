@@ -18,7 +18,7 @@ export default function Header() {
           <p className="truncate font-sans text-[13px] font-medium tracking-[-0.01em] sm:text-[14px]">
             Cooperar entre pares. Invertir en colectivo.
           </p>
-          <Link href="/#suscribete" className="cta-pill hidden h-7 px-3 text-[10px] sm:inline-flex">
+          <Link href="/#suscribete" className="cta-pill cta-yellow hidden h-7 px-3 text-[12px] font-bold sm:inline-flex">
             Suscríbete gratis
           </Link>
         </div>

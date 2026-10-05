@@ -1,24 +1,30 @@
 @import "tailwindcss";
 
 @theme {
-  --color-sand: #ece0cc;
-  --color-sand-soft: #f5eddd;
-  --color-sand-muted: #d4c8b5;
-  --color-paper: #ece0cc;
-  --color-cream: #f5eddd;
-  --color-line: #d4c8b5;
-  --color-ink: #1f3536;
-  --color-ink-2: #2a5a5c;
-  --color-muted: #2a5a5c;
-  --color-teal: #3f8487;
-  --color-teal-deep: #2a5a5c;
-  --color-teal-dark: #2a5a5c;
-  --color-clay: #c75a2a;
-  --color-clay-deep: #9e441f;
-  --color-clay-dark: #9e441f;
-  --color-tick-up: #2a5a5c;
-  --color-tick-down: #9e441f;
-  --color-navy: #1f3536;
+  /* Milk Road chrome, sampled from the live site. Tellus only in content/assets. */
+  --color-sand: #ffffff;
+  --color-sand-soft: #f7f5ed;
+  --color-sand-muted: #eceae4;
+  --color-paper: #ffffff;
+  --color-cream: #f7f5ed;
+  --color-line: #e8e6e1;
+  --color-ink: #101010;
+  --color-ink-2: #3a3a3a;
+  --color-muted: #6b6b6b;
+  --color-teal: #3aa0c8;
+  --color-teal-deep: #3a3a3a;
+  --color-teal-dark: #2a6f8c;
+  --color-mint: #d9ebe9;
+  --color-mint-btn: #bedada;
+  --color-mint-deep: #9ec8c8;
+  --color-yellow: #f0c93d;
+  --color-sky: #5bc3e4;
+  --color-clay: #101010;
+  --color-clay-deep: #000000;
+  --color-clay-dark: #000000;
+  --color-tick-up: #22c55e;
+  --color-tick-down: #ef4444;
+  --color-navy: #101010;
 
   --font-display: var(--font-fraunces), "Fraunces", Georgia, serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
@@ -39,7 +45,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 ::selection {
-  background: color-mix(in srgb, var(--color-teal) 28%, var(--color-sand));
+  background: var(--color-mint);
 }
 :focus-visible {
   outline: 2px solid var(--color-teal);
@@ -49,12 +55,12 @@ body {
 h1 em,
 .font-display em {
   font-style: italic;
-  color: var(--color-teal);
+  color: inherit;
   font-weight: inherit;
 }
 
 .hero-blob {
-  background: color-mix(in srgb, var(--color-teal) 26%, var(--color-sand-soft));
+  background: #b6e6f4;
   border-radius: 48% 52% 42% 58% / 38% 44% 56% 62%;
 }
 
@@ -63,21 +69,39 @@ h1 em,
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: var(--color-clay);
-  color: var(--color-sand);
-  font-family: var(--font-mono);
+  background: var(--color-mint-btn);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border: 1px solid var(--color-clay);
+  letter-spacing: -0.01em;
+  text-transform: none;
+  border: 1px solid var(--color-mint-btn);
   transition: background 180ms ease, border-color 180ms ease;
 }
 .cta-pill:hover {
-  background: var(--color-clay-deep);
-  border-color: var(--color-clay-deep);
+  background: var(--color-mint-deep);
+  border-color: var(--color-mint-deep);
 }
 .cta-pill:disabled {
   opacity: 0.7;
+}
+.cta-yellow {
+  background: var(--color-yellow);
+  color: var(--color-ink);
+  border-color: var(--color-yellow);
+}
+.cta-yellow:hover {
+  background: #e2b82f;
+  border-color: #e2b82f;
+}
+.cta-ink {
+  background: var(--color-ink);
+  color: #ffffff;
+  border-color: var(--color-ink);
+}
+.cta-ink:hover {
+  background: #000000;
+  border-color: #000000;
 }
 
 .ticker-mask {
