@@ -1,15 +1,18 @@
 import SubscribeForm from "./SubscribeForm";
+import Character, { type CharacterName } from "./Character";
 
 export default function SubscribeCard({
   placement = "inline",
   title = "El boletín de Tellus, cada semana en tu correo",
   body = "Noticias, Stellar y Web3 en español. Gratis, en cinco minutos.",
   compact = false,
+  mascot = "greenpill",
 }: {
   placement?: string;
   title?: string;
   body?: string;
   compact?: boolean;
+  mascot?: CharacterName;
 }) {
   return (
     <aside
@@ -30,13 +33,9 @@ export default function SubscribeCard({
       <div className={`relative z-10 ${compact ? "mt-4" : "mt-5"} max-w-lg`}>
         <SubscribeForm placement={placement} source={placement} variant="black" />
       </div>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/brand/mascot-planets.webp"
-        alt=""
-        width={320}
-        height={260}
-        className="pointer-events-none absolute -bottom-6 -right-8 hidden h-36 w-auto select-none sm:block md:h-44"
+      <Character
+        name={mascot}
+        className="pointer-events-none absolute -bottom-5 -right-6 hidden h-32 w-auto select-none sm:block md:-bottom-6 md:-right-4 md:h-40"
       />
     </aside>
   );

@@ -35,9 +35,10 @@ export default function Header() {
       </div>
 
       <header className="sticky top-0 z-40 border-b border-line/80 bg-white">
-        <div className="mx-auto flex h-[64px] max-w-[1280px] items-center gap-6 px-4 md:h-[72px] md:px-8">
+        <div className="mx-auto flex h-[68px] max-w-[1280px] items-center gap-5 px-4 md:h-[76px] md:gap-6 md:px-8">
           <Link href="/" aria-label="Tellus Cooperative — inicio" className="shrink-0">
-            <Logo className="h-8 w-auto md:h-9" />
+            <Logo className="hidden h-[42px] w-auto min-[380px]:block md:h-[52px]" />
+            <Logo mark variant="teal" className="block h-10 w-auto min-[380px]:hidden" />
           </Link>
           <nav aria-label="Principal" className="hidden flex-1 items-center gap-6 lg:flex">
             {NAV.map((n) => (
@@ -65,7 +66,8 @@ export default function Header() {
               href="/#suscribete"
               className="rounded-full bg-mint-btn px-4 py-2.5 font-sans text-[13px] font-semibold text-ink transition-colors hover:bg-mint md:px-5 md:text-[14px]"
             >
-              Suscríbete gratis
+              <span className="sm:hidden">Suscríbete</span>
+              <span className="hidden sm:inline">Suscríbete gratis</span>
             </Link>
           </div>
         </div>

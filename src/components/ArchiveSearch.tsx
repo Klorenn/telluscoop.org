@@ -2,6 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import Character from "./Character";
 
 export interface ArchiveItem {
   s: string; // slug
@@ -39,7 +40,7 @@ export default function ArchiveSearch({ items, tags }: { items: ArchiveItem[]; t
 
   return (
     <div>
-      <div className="sticky top-16 z-20 -mx-5 border-b border-line bg-white/95 px-5 pb-4 pt-3 backdrop-blur md:top-[72px] md:mx-0 md:px-0">
+      <div className="sticky top-[68px] z-20 -mx-5 border-b border-line bg-white/95 px-5 pb-4 pt-3 backdrop-blur md:top-[76px] md:mx-0 md:px-0">
         <label htmlFor="buscar" className="sr-only">Buscar artículos</label>
         <div className="relative">
           <svg className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-muted" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
@@ -88,8 +89,7 @@ export default function ArchiveSearch({ items, tags }: { items: ArchiveItem[]; t
 
       {results.length === 0 ? (
         <div className="py-16 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/mascot-planets.webp" alt="" width={240} height={200} className="mx-auto h-28 w-auto" />
+          <Character name="tierra" className="mx-auto h-28 w-auto" />
           <p className="mt-4 font-display text-[22px] font-bold">No encontramos artículos con “{q}”.</p>
           <p className="mt-2 font-sans text-muted">Prueba con otra palabra o quita el filtro de categoría.</p>
         </div>

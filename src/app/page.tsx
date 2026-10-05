@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import SubscribeForm from "@/components/SubscribeForm";
 import SubscribeCard from "@/components/SubscribeCard";
+import Character, { TAG_CHARACTERS } from "@/components/Character";
 import { Meta, PostCard, TagPill } from "@/components/PostCard";
 import { getAllSummaries, getPostsByTag, getTags } from "@/lib/content";
 import { HOME_ROWS, SITE, tagLabel } from "@/lib/site";
@@ -64,12 +65,9 @@ export default function Home() {
               height={560}
               className="absolute bottom-[8%] right-0 h-[78%] w-auto max-w-[58%] object-contain opacity-90"
             />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/brand/mascot-planets.webp"
+            <Character
+              name="planetas-botas"
               alt="Las mascotas de Tellus: planetas Tierra con botas amarillas"
-              width={960}
-              height={776}
               fetchPriority="high"
               className="absolute bottom-0 left-[-4%] h-[96%] w-auto max-w-none object-contain"
             />
@@ -80,7 +78,10 @@ export default function Home() {
       <section className="mx-auto max-w-[1280px] px-5 pt-8 md:px-8 md:pt-12">
         <p className="font-sans text-[12px] font-semibold uppercase tracking-[0.14em] text-teal">Boletines</p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-          <h2 className="font-display text-[32px] font-extrabold tracking-[-0.025em] md:text-[40px]">Lo último en español</h2>
+          <div className="flex items-center gap-3">
+            <Character name="tierra" className="h-12 w-12 object-contain md:h-14 md:w-14" />
+            <h2 className="font-display text-[32px] font-extrabold tracking-[-0.025em] md:text-[40px]">Lo último en español</h2>
+          </div>
           <Link href="/archive" className="rounded-full border border-line px-4 py-2 font-sans text-[14px] font-semibold hover:border-ink">
             Ver más
           </Link>
@@ -137,9 +138,15 @@ export default function Home() {
       {rows.map(({ tag, items }, i) => (
         <section key={tag.slug} className="mx-auto max-w-[1280px] px-5 pt-16 md:px-8 md:pt-20">
           <div className="mb-7 flex items-end justify-between gap-4">
-            <div>
-              <p className="font-sans text-[12px] font-semibold uppercase tracking-[0.14em] text-teal">{tagLabel(tag)}</p>
-              <h2 className="mt-1 font-display text-[28px] font-extrabold tracking-[-0.02em] md:text-[34px]">{tagLabel(tag)}</h2>
+            <div className="flex items-center gap-3 md:gap-4">
+              <Character
+                name={TAG_CHARACTERS[tag.slug] ?? "tierra"}
+                className="h-12 w-12 shrink-0 object-contain md:h-16 md:w-16"
+              />
+              <div>
+                <p className="font-sans text-[12px] font-semibold uppercase tracking-[0.14em] text-teal">{tagLabel(tag)}</p>
+                <h2 className="mt-1 font-display text-[28px] font-extrabold tracking-[-0.02em] md:text-[34px]">{tagLabel(tag)}</h2>
+              </div>
             </div>
             <Link href={`/t/${tag.slug}`} className="shrink-0 rounded-full border border-line px-4 py-2 font-sans text-[14px] font-semibold hover:border-ink">
               Ver más
@@ -154,7 +161,7 @@ export default function Home() {
           </div>
           {i === 0 && (
             <div className="mt-16">
-              <SubscribeCard placement="band" title="El boletín de Tellus, cada semana en tu correo" />
+              <SubscribeCard placement="band" title="El boletín de Tellus, cada semana en tu correo" mascot="greenpill" />
             </div>
           )}
         </section>
@@ -177,9 +184,8 @@ export default function Home() {
               Visitar el Hub
             </a>
           </div>
-          <div className="relative mx-auto h-44 w-full max-w-sm md:h-56">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/mapa-latam.webp" alt="" width={520} height={560} className="absolute inset-0 h-full w-full object-contain" />
+          <div className="relative mx-auto grid h-44 w-full max-w-sm place-items-center overflow-hidden rounded-[20px] bg-cream md:h-56">
+            <Character name="crecimiento" className="h-[115%] w-auto max-w-none object-contain" />
           </div>
         </div>
       </section>

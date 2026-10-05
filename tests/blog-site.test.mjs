@@ -65,6 +65,28 @@ test("canonical site url is telluscoop.org and RSS/sitemap exist", async () => {
   assert.ok(existsSync(new URL("src/app/api/luma-events/route.ts", root)));
 });
 
+test("primary logo is stacked serif with terracotta disc; tau mark is compact/favicon", async () => {
+  const logo = await read("src/components/Logo.tsx");
+  const header = await read("src/components/Header.tsx");
+  const footer = await read("src/components/Footer.tsx");
+  assert.match(logo, /logo-stacked-serif-black\.svg/);
+  assert.match(logo, /logo-stacked-serif-white\.svg/);
+  assert.match(logo, /logo-stacked-serif-teal\.svg/);
+  assert.match(logo, /logo-mark-tau-/);
+  assert.doesNotMatch(logo, /logo-horizontal\.webp/);
+  assert.match(header, /Logo className="hidden h-\[42px\]/);
+  assert.match(header, /mark variant="teal"/);
+  assert.match(footer, /variant="white"/);
+  for (const v of ["black", "teal", "white"]) {
+    const svg = await read(`public/brand/logo-stacked-serif-${v}.svg`);
+    assert.match(svg, /#B3582D/);
+    assert.doesNotMatch(svg, /#B65A30/);
+  }
+  assert.ok(existsSync(new URL("public/brand/personaje-planetas-botas.webp", root)));
+  assert.ok(existsSync(new URL("public/brand/personaje-tierra.webp", root)));
+  assert.ok(existsSync(new URL("src/app/icon.png", root)));
+});
+
 test("vercel.json asks Vercel to build Next.js without dropping existing redirects", async () => {
   const vercel = JSON.parse(await read("vercel.json"));
   assert.equal(vercel.framework, "nextjs");

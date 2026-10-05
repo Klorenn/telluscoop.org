@@ -140,7 +140,7 @@ export default async function PostPage({ params }: PageProps<"/p/[slug]">) {
             )}
 
             <div className="mt-10">
-              <SubscribeCard placement="end" title="¿Te gustó? Recibe el próximo en tu correo" />
+              <SubscribeCard placement="end" title="¿Te gustó? Recibe el próximo en tu correo" mascot="tierra-corbata" />
             </div>
           </div>
 

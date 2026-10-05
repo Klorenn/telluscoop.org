@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Logo from "./Logo";
+import Character from "./Character";
 import SubscribeForm from "./SubscribeForm";
 import { getPublication, getTags } from "@/lib/content";
 import { tagLabel } from "@/lib/site";
@@ -32,13 +33,9 @@ export default function Footer() {
           </div>
           <div className="relative">
             <SubscribeForm placement="footer" source="footer" variant="mint" size="lg" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/brand/mascot-planets.webp"
-              alt=""
-              width={220}
-              height={180}
-              className="pointer-events-none absolute -right-4 -top-16 hidden h-28 w-auto lg:block"
+            <Character
+              name="tierra-traje"
+              className="pointer-events-none absolute -right-2 -top-14 hidden h-24 w-auto lg:block"
             />
           </div>
         </div>
@@ -46,7 +43,7 @@ export default function Footer() {
 
       <div className="mx-auto grid max-w-[1280px] gap-12 px-5 py-16 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:px-8">
         <div>
-          <Logo variant="white" className="h-10 w-auto" />
+          <Logo variant="white" className="h-12 w-auto md:h-14" />
           <p className="mt-5 max-w-sm font-sans text-[15px] leading-relaxed text-white/70">
             La cooperativa blockchain de Latinoamérica. Aprende, conecta y emprende en Web3, en español.
           </p>
