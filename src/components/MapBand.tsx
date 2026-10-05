@@ -9,7 +9,7 @@ export default function MapBand() {
           alt="Mapa ilustrado de Latinoamérica"
           width={1257}
           height={1554}
-          className="h-auto w-full max-w-[680px] object-contain md:max-w-[760px]"
+          className="h-auto w-full max-h-[min(78vh,760px)] max-w-[680px] object-contain"
           decoding="async"
         />
       </div>

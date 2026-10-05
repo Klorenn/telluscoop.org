@@ -35,7 +35,7 @@ export default function Footer() {
             <SubscribeForm placement="footer" source="footer" size="lg" />
             <Character
               name="emprendimiento"
-              className="pointer-events-none absolute -bottom-8 -right-6 hidden h-44 w-auto select-none object-contain lg:block"
+              className="pointer-events-none absolute -bottom-2 -right-2 hidden h-44 w-52 select-none object-contain object-bottom lg:block"
             />
           </div>
         </div>

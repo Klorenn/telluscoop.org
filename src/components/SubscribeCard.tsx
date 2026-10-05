@@ -33,7 +33,7 @@ export default function SubscribeCard({
       </div>
       <Character
         name="emprendimiento"
-        className="pointer-events-none absolute -bottom-4 -right-6 hidden h-[200px] w-auto select-none object-contain sm:block md:-bottom-2 md:-right-2 md:h-[240px]"
+        className="pointer-events-none absolute right-0 bottom-0 hidden h-[190px] w-[230px] select-none object-contain object-bottom sm:block md:right-2 md:h-[220px] md:w-[270px]"
       />
     </aside>
   );
