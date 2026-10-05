@@ -108,6 +108,9 @@ test("official /brand logos replace recreated lockups; CTAs are Clay pills", asy
   assert.doesNotMatch(home, /mapa-latam/);
   assert.doesNotMatch(home, /planetas-botas/);
   assert.match(home, /name="hero"/);
+  assert.match(home, /HubBanner/);
+  assert.match(home, /Encuentros/);
+  assert.match(home, /4\.500\+/);
 });
 
 test("characters are not scattered; only 404 uses a Figma mascot", async () => {
@@ -135,6 +138,32 @@ test("characters are not scattered; only 404 uses a Figma mascot", async () => {
   assert.ok(existsSync(new URL("public/brand/illo-hero.svg", root)));
   assert.ok(existsSync(new URL("public/brand/illo-subscribe.svg", root)));
   assert.ok(existsSync(new URL("public/brand/illo-stellar.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/illo-events.svg", root)));
+});
+
+test("original illustrations have intrinsic size and valid XML", async () => {
+  const files = [
+    "public/brand/illo-hero.svg",
+    "public/brand/illo-archive.svg",
+    "public/brand/illo-subscribe.svg",
+    "public/brand/illo-hub.svg",
+    "public/brand/illo-stellar.svg",
+    "public/brand/illo-learn.svg",
+    "public/brand/illo-chain.svg",
+    "public/brand/illo-spark.svg",
+    "public/brand/illo-coop.svg",
+    "public/brand/illo-events.svg",
+  ];
+  for (const rel of files) {
+    const svg = await read(rel);
+    assert.match(svg, /width="/, `${rel} needs width`);
+    assert.match(svg, /height="/, `${rel} needs height`);
+    assert.doesNotMatch(svg, /[\x00-\x08\x0b\x0c\x0e-\x1f]/, `${rel} has invalid XML chars`);
+    assert.match(svg, /#3F8487|#C75A2A|#1F3536|#ECE0CC|#2A5A5C|#F5EDDD|#9E441F|#D4C8B5/);
+  }
+  const illo = await read("src/components/Illustration.tsx");
+  assert.match(illo, /width=\{w\}/);
+  assert.match(illo, /events: "\/brand\/illo-events\.svg"/);
 });
 
 test("vercel.json asks Vercel to build Next.js without dropping existing redirects", async () => {

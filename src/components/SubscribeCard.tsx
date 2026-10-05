@@ -33,7 +33,7 @@ export default function SubscribeCard({
       </div>
       <Illustration
         name="subscribe"
-        className="pointer-events-none absolute -bottom-6 -right-6 hidden h-32 w-auto select-none sm:block md:-bottom-8 md:-right-4 md:h-40"
+        className="pointer-events-none absolute -bottom-8 -right-8 hidden h-40 w-auto select-none sm:block md:-bottom-10 md:-right-6 md:h-48"
       />
     </aside>
   );

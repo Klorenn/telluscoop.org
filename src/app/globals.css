@@ -54,7 +54,7 @@ h1 em,
 }
 
 .hero-blob {
-  background: var(--color-sand-soft);
+  background: color-mix(in srgb, var(--color-teal) 26%, var(--color-sand-soft));
   border-radius: 48% 52% 42% 58% / 38% 44% 56% 62%;
 }
 

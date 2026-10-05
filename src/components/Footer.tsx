@@ -28,7 +28,7 @@ export default function Footer() {
               en tu correo
             </h2>
             <p className="mt-4 max-w-md font-sans text-[17px] leading-[1.5] text-ink-2">
-              Únete a 5.000+ personas que aprenden blockchain, Stellar y Web3 en español.
+              Únete a 4.500+ personas que aprenden blockchain, Stellar y Web3 en español.
             </p>
           </div>
           <div className="relative">

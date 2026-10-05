@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-hidden="true">
+  <title>Tellus events badge</title>
+  <circle cx="64" cy="64" r="62" fill="#F5EDDD"/>
+  <circle cx="64" cy="64" r="62" fill="none" stroke="#D4C8B5" stroke-width="3"/>
+  <rect x="30" y="36" width="68" height="60" rx="10" fill="#3F8487"/>
+  <rect x="30" y="36" width="68" height="16" rx="10" fill="#1F3536"/>
+  <circle cx="46" cy="44" r="3" fill="#C75A2A"/>
+  <circle cx="58" cy="44" r="3" fill="#ECE0CC"/>
+  <rect x="40" y="62" width="12" height="10" rx="2" fill="#ECE0CC"/>
+  <rect x="58" y="62" width="12" height="10" rx="2" fill="#ECE0CC"/>
+  <rect x="76" y="62" width="12" height="10" rx="2" fill="#C75A2A"/>
+  <rect x="40" y="78" width="12" height="10" rx="2" fill="#ECE0CC"/>
+  <rect x="58" y="78" width="12" height="10" rx="2" fill="#2A5A5C"/>
+</svg>

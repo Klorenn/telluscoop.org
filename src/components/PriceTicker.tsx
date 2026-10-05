@@ -61,6 +61,11 @@ export default function PriceTicker() {
   return (
     <div className="border-y border-line bg-sand" data-ticker="coingecko">
       <div className="mx-auto flex h-9 max-w-[1280px] items-center gap-4 px-4 md:px-8">
+        <a href="/hub" className="hidden shrink-0 items-center gap-2 sm:flex">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/logo-icon.png" alt="" width={18} height={18} className="h-[18px] w-[18px] object-contain" />
+          <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.06em] text-teal-deep">Hub Santiago</span>
+        </a>
         <div className="ticker-mask min-w-0 flex-1">
           <div className="ticker-track md:justify-center md:gap-8">
             <div className="flex items-center gap-6 md:gap-8">

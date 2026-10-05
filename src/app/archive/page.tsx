@@ -4,6 +4,7 @@ import SubscribeCard from "@/components/SubscribeCard";
 import FeaturedRail from "@/components/FeaturedRail";
 import ShareButtons from "@/components/ShareButtons";
 import Illustration from "@/components/Illustration";
+import HubBanner from "@/components/HubBanner";
 import { getAllSummaries, getTags } from "@/lib/content";
 import { absUrl, formatDateShort, tagLabel } from "@/lib/site";
 
@@ -40,14 +41,17 @@ export default function ArchivePage() {
           </div>
         </aside>
         <div className="min-w-0">
-          <div className="flex items-center gap-4">
-            <Illustration name="archive" className="h-16 w-16 object-contain md:h-20 md:w-20" />
+          <div className="flex items-start justify-between gap-4">
             <h1 className="font-display text-[40px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[52px]">Boletines Tellus</h1>
+            <Illustration name="archive" className="h-16 w-16 shrink-0 rounded-full object-cover md:h-20 md:w-20" />
           </div>
           <div className="mt-6">
             <p className="font-sans text-[11px] font-medium uppercase tracking-[0.12em] text-teal-deep">Escrito por</p>
             <p className="mt-2 font-sans text-[15px] font-semibold text-ink">Tellus Cooperative</p>
             <p className="font-sans text-[13px] text-teal-deep">{items.length} artículos · Equipo editorial</p>
+          </div>
+          <div className="mt-7">
+            <HubBanner compact />
           </div>
           <div className="mt-8">
             <SubscribeCard placement="archive" title="Aprende blockchain en español, cinco minutos a la semana." body="" />

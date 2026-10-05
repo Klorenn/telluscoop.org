@@ -7,6 +7,8 @@ import ArticleBody from "@/components/ArticleBody";
 import StickySubscribe from "@/components/StickySubscribe";
 import SubscribeCard from "@/components/SubscribeCard";
 import FeaturedRail from "@/components/FeaturedRail";
+import HubBanner from "@/components/HubBanner";
+import Illustration, { TAG_ILLUSTRATIONS } from "@/components/Illustration";
 import { PostCard, TagPill } from "@/components/PostCard";
 import { getAllPosts, getPost, getPostBySourceSlug, getRelated } from "@/lib/content";
 import { absUrl, formatDate, SITE, tagLabel } from "@/lib/site";
@@ -96,10 +98,21 @@ export default async function PostPage({ params }: PageProps<"/p/[slug]">) {
               <p className="mt-5 font-sans text-[19px] leading-[1.55] text-ink-2 md:text-[22px]">{post.subtitle}</p>
             )}
 
+            <div className="mt-7">
+              <HubBanner compact />
+            </div>
+
             <div className="mt-8 flex flex-wrap items-center justify-between gap-5">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
+                {post.tags[0] && TAG_ILLUSTRATIONS[post.tags[0].slug] ? (
+                  <Illustration
+                    name={TAG_ILLUSTRATIONS[post.tags[0].slug]}
+                    className="h-11 w-11 rounded-full object-cover"
+                  />
+                ) : null}
                 <div>
-                    <p className="font-sans text-[11px] font-medium uppercase tracking-[0.12em] text-teal-deep">Escrito por</p>
+                  {post.tags[0] && <TagPill tag={post.tags[0]} />}
+                  <p className="mt-2 font-sans text-[11px] font-medium uppercase tracking-[0.12em] text-teal-deep">Escrito por</p>
                   <div className="mt-2 flex items-center gap-3">
                     {author?.avatar && (
                       <Image src={author.avatar} alt="" width={44} height={44} className="h-11 w-11 rounded-full bg-sand-soft object-cover" />
