@@ -146,8 +146,8 @@ test("Figma pack fills Milk Road illustration slots; no invented drawings", asyn
   assert.doesNotMatch(card, /greenpill/);
   assert.match(footer, /emprendimiento/);
   assert.doesNotMatch(footer, /greenpill|tierra-corbata/);
-  assert.match(archive, /planetas-botas/);
-  assert.doesNotMatch(archive, /tierra-traje/);
+  assert.match(archive, /ArchiveSearch/);
+  assert.doesNotMatch(archive, /planetas-botas|Character|tierra-traje/);
   assert.doesNotMatch(post, /tierra-traje|Character/);
   assert.match(character, /planetas-botas/);
   assert.match(character, /mascota-blockchain-bloques/);
@@ -193,6 +193,28 @@ test("Figma pack fills Milk Road illustration slots; no invented drawings", asyn
   assert.ok(!existsSync(new URL("public/brand/ilustracion-crecimiento.svg", root)));
   assert.ok(!existsSync(new URL("src/components/Illustration.tsx", root)));
   assert.ok(!existsSync(new URL("src/components/HubBanner.tsx", root)));
+});
+
+test("archive is a searchable listing with featured post, card grid and load more", async () => {
+  const page = await read("src/app/archive/page.tsx");
+  const search = await read("src/components/ArchiveSearch.tsx");
+  const card = await read("src/components/PostCard.tsx");
+  const snap = JSON.parse(await read("content/cache/snapshot.json"));
+  assert.match(page, /ArchiveSearch/);
+  assert.match(page, /Boletines Tellus/);
+  assert.doesNotMatch(page, /Character|planetas-botas|ShareButtons|FeaturedRail/);
+  assert.match(search, /Busca un artículo, tema o autor/);
+  assert.match(search, /Cargar más/);
+  assert.match(search, /PostCard/);
+  assert.match(search, /Lo último/);
+  assert.match(search, /Nada por aquí todavía/);
+  assert.match(search, /name="emprendimiento"/);
+  assert.doesNotMatch(search, /planetas-botas/);
+  assert.match(card, /line-clamp-2 min-h-\[3rem\]/);
+  assert.ok(snap.posts.length > 0);
+  for (const p of snap.posts) {
+    assert.ok(p.image?.url, `missing thumbnail ${p.slug}`);
+  }
 });
 
 test("Sesiones embeds real YouTube videos from posts, not channel buttons", async () => {

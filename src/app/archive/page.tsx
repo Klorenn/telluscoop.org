@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
-import ArchiveSearch, { type ArchiveItem } from "@/components/ArchiveSearch";
-import SubscribeCard from "@/components/SubscribeCard";
-import FeaturedRail from "@/components/FeaturedRail";
-import ShareButtons from "@/components/ShareButtons";
-import Character from "@/components/Character";
+import ArchiveSearch from "@/components/ArchiveSearch";
 import { getAllSummaries, getTags } from "@/lib/content";
-import { absUrl, formatDateShort, tagLabel } from "@/lib/site";
+import { tagLabel } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Archivo",
@@ -16,51 +12,18 @@ export const metadata: Metadata = {
 };
 
 export default function ArchivePage() {
-  const summaries = getAllSummaries();
-  const items: ArchiveItem[] = summaries.map((p) => ({
-    s: p.slug,
-    t: p.title,
-    x: (p.subtitle || p.excerpt).slice(0, 180),
-    d: p.publishedAt,
-    f: formatDateShort(p.publishedAt),
-    g: p.tags.map((t) => t.slug),
-    a: p.authors[0]?.name || "",
-    i: p.image?.url,
-  }));
+  const posts = getAllSummaries();
   const tags = getTags().map((t) => ({ slug: t.slug, label: tagLabel(t), count: t.count }));
-  const featured = summaries.slice(0, 2);
-  const shareUrl = absUrl("/archive");
 
   return (
-    <div className="mx-auto max-w-[1280px] px-5 pt-8 md:px-8 md:pt-12">
-      <div className="grid gap-10 lg:grid-cols-[56px_minmax(0,760px)_280px] lg:justify-center lg:gap-12">
-        <aside className="hidden lg:block">
-          <div className="sticky top-36">
-            <ShareButtons url={shareUrl} title="Boletines Tellus" layout="rail" />
-          </div>
-        </aside>
-        <div className="min-w-0">
-          <div className="flex items-start justify-between gap-4">
-            <h1 className="font-display text-[40px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[52px]">Boletines Tellus</h1>
-            <Character name="planetas-botas" className="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20" />
-          </div>
-          <div className="mt-6">
-            <p className="font-sans text-[11px] font-medium uppercase tracking-[0.12em] text-muted">Escrito por</p>
-            <p className="mt-2 font-sans text-[15px] font-semibold text-ink">Tellus Cooperative</p>
-            <p className="font-sans text-[13px] text-muted">{items.length} artículos · Equipo editorial</p>
-          </div>
-          <div className="mt-8">
-            <SubscribeCard placement="archive" title="Aprende blockchain en español, cinco minutos a la semana." body="" />
-          </div>
-          <div className="mt-10">
-            <ArchiveSearch items={items} tags={tags} />
-          </div>
-        </div>
-        <aside className="hidden lg:block">
-          <div className="sticky top-36">
-            <FeaturedRail posts={featured} />
-          </div>
-        </aside>
+    <div className="mx-auto max-w-[1280px] px-5 pb-16 pt-10 md:px-8 md:pt-14">
+      <p className="font-sans text-[12px] font-semibold uppercase tracking-[0.14em] text-teal">Archivo</p>
+      <h1 className="mt-2 font-display text-[40px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[56px]">Boletines Tellus</h1>
+      <p className="mt-4 max-w-[38rem] font-sans text-[18px] leading-[1.5] text-ink-2">
+        Todos los artículos sobre blockchain, Stellar, IA y Web3 en español. {posts.length} publicaciones para buscar, filtrar y seguir leyendo.
+      </p>
+      <div className="mt-8">
+        <ArchiveSearch posts={posts} tags={tags} />
       </div>
     </div>
   );

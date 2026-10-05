@@ -59,12 +59,12 @@ export function PostCard({
       )}
       <div className="mt-4 flex flex-col gap-2">
         {post.tags[0] && <TagPill tag={post.tags[0]} />}
-        <h3 className="font-display text-[21px] font-bold leading-[1.25] tracking-[-0.015em] text-ink">
+        <h3 className="line-clamp-3 font-display text-[21px] font-bold leading-[1.25] tracking-[-0.015em] text-ink">
           <Link prefetch={false} href={`/p/${post.slug}`} className="after:absolute after:inset-0 group-hover:text-teal-deep">
             {post.title}
           </Link>
         </h3>
-        <p className="line-clamp-2 font-sans text-[16px] leading-[1.5] text-ink-2">{post.subtitle || post.excerpt}</p>
+        <p className="line-clamp-2 min-h-[3rem] font-sans text-[16px] leading-[1.5] text-ink-2">{post.subtitle || post.excerpt}</p>
         <Meta post={post} className="mt-1" />
       </div>
     </article>
