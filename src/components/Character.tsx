@@ -1,4 +1,5 @@
-/** Real Figma pack only. No invented drawings. */
+/** Real Figma pack only. No invented drawings.
+ *  Home illustration slots: planetas-botas now; map + kids wait for Pau's export. */
 export const CHARACTERS = {
   tierra: { src: "/brand/personaje-tierra.png", width: 1200, height: 1199 },
   "tierra-corbata": { src: "/brand/personaje-tierra-corbata.png", width: 686, height: 733 },

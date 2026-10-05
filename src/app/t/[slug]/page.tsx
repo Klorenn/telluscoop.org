@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PostCard } from "@/components/PostCard";
 import SubscribeCard from "@/components/SubscribeCard";
-import Character, { TAG_CHARACTERS } from "@/components/Character";
 import { getPostsByTag, getTags } from "@/lib/content";
 import { tagLabel } from "@/lib/site";
 
@@ -37,12 +36,7 @@ export default async function TagPage({ params }: PageProps<"/t/[slug]">) {
   return (
     <div className="mx-auto max-w-[1280px] px-5 pt-10 md:px-8 md:pt-14">
       <p className="font-sans text-[11px] font-medium uppercase tracking-[0.14em] text-teal-deep">Categoría</p>
-      <div className="mt-2 flex items-center gap-4">
-        {TAG_CHARACTERS[slug] ? (
-          <Character name={TAG_CHARACTERS[slug]} className="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20" />
-        ) : null}
-        <h1 className="font-display text-[40px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[56px]">{tagLabel(tag)}</h1>
-      </div>
+      <h1 className="mt-2 font-display text-[40px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[56px]">{tagLabel(tag)}</h1>
       <p className="mt-3 font-sans text-[19px] text-ink-2">{posts.length} artículos</p>
       <div className="no-scrollbar mt-6 flex gap-2 overflow-x-auto pb-1">
         <Link href="/archive" className="shrink-0 rounded-full bg-sand-soft px-3.5 py-1.5 font-sans text-[13px] font-medium text-ink-2 hover:bg-sand-muted">

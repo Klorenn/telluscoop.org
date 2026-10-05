@@ -112,8 +112,8 @@ test("official /brand logos stay; chrome matches Milk Road colors", async () => 
   assert.ok(!existsSync(new URL("public/brand/illo-hero.svg", root)));
   assert.ok(existsSync(new URL("src/app/icon.png", root)));
   assert.doesNotMatch(home, /mapa-latam/);
-  assert.doesNotMatch(home, /planetas-botas/);
-  assert.match(home, /robot-teal/);
+  assert.match(home, /planetas-botas/);
+  assert.doesNotMatch(home, /robot-teal/);
 });
 
 test("Figma pack fills Milk Road illustration slots; no invented drawings", async () => {
@@ -129,15 +129,20 @@ test("Figma pack fills Milk Road illustration slots; no invented drawings", asyn
     assert.doesNotMatch(src, /illo-hero|illo-subscribe|illo-archive|illo-hub|HubBanner/);
     assert.doesNotMatch(src, /mapa-latam/);
   }
-  assert.doesNotMatch(home, /planetas-botas/);
-  assert.match(home, /robot-teal/);
-  assert.match(home, /tierra-traje/);
+  assert.match(home, /planetas-botas/);
+  assert.doesNotMatch(home, /robot-teal/);
+  assert.match(home, /slot="mapa"/);
+  assert.match(home, /placeholder="ninos"/);
   assert.match(card, /greenpill/);
   assert.match(footer, /tierra-corbata/);
-  assert.match(character, /educacion/);
-  assert.match(character, /inclusion/);
-  assert.match(character, /crecimiento/);
+  assert.match(archive, /tierra-traje/);
+  assert.match(post, /tierra-traje/);
+  assert.doesNotMatch(tag, /TAG_CHARACTERS|Character/);
+  assert.match(character, /planetas-botas/);
   assert.match(notFound, /robot-espacio/);
+  const placeholder = await read("src/components/SlotPlaceholder.tsx");
+  assert.match(placeholder, /slot: "mapa" \| "ninos"/);
+  assert.doesNotMatch(placeholder, /svg|path |<img/i);
   assert.ok(existsSync(new URL("public/brand/personaje-robot-teal.png", root)));
   assert.ok(existsSync(new URL("public/brand/personaje-tierra-traje.png", root)));
   assert.ok(existsSync(new URL("public/brand/personaje-tierra-corbata.png", root)));

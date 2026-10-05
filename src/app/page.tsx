@@ -3,7 +3,8 @@ import Link from "next/link";
 import SubscribeForm from "@/components/SubscribeForm";
 import SubscribeCard from "@/components/SubscribeCard";
 import SectionHeading from "@/components/SectionHeading";
-import Character, { TAG_CHARACTERS, type CharacterName } from "@/components/Character";
+import Character from "@/components/Character";
+import SlotPlaceholder from "@/components/SlotPlaceholder";
 import { Meta, PostCard, TagPill } from "@/components/PostCard";
 import { getAllSummaries, getPostsByTag, getPublication, getTags } from "@/lib/content";
 import { HOME_ROWS, SITE, tagLabel } from "@/lib/site";
@@ -60,7 +61,7 @@ export default function Home() {
           <div className="relative mx-auto h-[280px] w-full max-w-[560px] sm:h-[380px] md:h-[460px]">
             <div className="hero-blob absolute inset-y-[4%] right-[-10%] left-[6%]" aria-hidden="true" />
             <Character
-              name="robot-teal"
+              name="planetas-botas"
               alt=""
               fetchPriority="high"
               className="relative z-[1] h-full w-full object-contain object-bottom"
@@ -70,7 +71,7 @@ export default function Home() {
       </section>
 
       <section className="mx-auto max-w-[1280px] px-5 pt-12 md:px-8 md:pt-16">
-        <SectionHeading kicker="Boletines" title="Lo último en español" href="/archive" character="tierra-traje" />
+        <SectionHeading kicker="Boletines" title="Lo último en español" href="/archive" placeholder="ninos" />
         <div className="no-scrollbar mt-6 flex gap-2 overflow-x-auto pb-1">
           <Link href="/archive" className="shrink-0 rounded-full bg-ink px-3.5 py-1.5 font-sans text-[13px] font-medium text-sand">
             Todos
@@ -118,6 +119,11 @@ export default function Home() {
             <PostCard key={p.slug} post={p} />
           ))}
         </div>
+
+        <SlotPlaceholder
+          slot="mapa"
+          className="mt-16 h-[200px] w-full rounded-[28px] bg-sand-soft md:h-[260px]"
+        />
       </section>
 
       {(pub.social.youtube || pub.social.discord) && (
@@ -151,10 +157,9 @@ export default function Home() {
       )}
 
       {rows.map(({ tag, items }, i) => {
-        const character = TAG_CHARACTERS[tag.slug] as CharacterName | undefined;
         return (
           <section key={tag.slug} className="mx-auto max-w-[1280px] px-5 pt-16 md:px-8 md:pt-20">
-            <SectionHeading kicker={tagLabel(tag)} title={tagLabel(tag)} href={`/t/${tag.slug}`} character={character} />
+            <SectionHeading kicker={tagLabel(tag)} title={tagLabel(tag)} href={`/t/${tag.slug}`} />
             <div className="mt-8 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((p, j) => (
                 <div key={p.slug} className={j === 2 ? "hidden lg:block" : ""}>
