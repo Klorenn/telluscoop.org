@@ -52,6 +52,10 @@ export default function ArchiveSearch({
     return index.filter(({ p, hay }) => (!tag || p.tags.some((t) => t.slug === tag)) && words.every((w) => hay.includes(w))).map((r) => r.p);
   }, [index, q, tag]);
 
+  useEffect(() => {
+    if (results.length === 0) window.scrollTo({ top: 0 });
+  }, [results.length]);
+
   const withThumbs = results.filter((p) => p.image?.url);
   const browsing = !q && !tag;
   const featured = browsing ? withThumbs[0] : undefined;
@@ -60,7 +64,7 @@ export default function ArchiveSearch({
 
   return (
     <div>
-      <div className="sticky top-[112px] z-20 -mx-5 border-b border-line bg-sand/95 px-5 py-4 backdrop-blur lg:top-[76px] md:mx-0 md:px-0">
+      <div className="-mx-5 px-5 md:mx-0 md:px-0">
         <label htmlFor="buscar" className="sr-only">
           Buscar artículos
         </label>
@@ -91,7 +95,7 @@ export default function ArchiveSearch({
             className="h-14 w-full rounded-full border border-line bg-sand pl-14 pr-5 font-sans text-[17px] text-ink outline-none placeholder:text-muted focus:border-ink"
           />
         </div>
-        <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
+        <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible">
           <button
             type="button"
             onClick={() => {
@@ -124,7 +128,7 @@ export default function ArchiveSearch({
       </p>
 
       {results.length === 0 ? (
-        <div className="flex flex-col items-center py-16 text-center">
+        <div className="flex flex-col items-center py-16 text-center" id="archivo-vacio">
           <Character name="emprendimiento" className="h-40 w-48 object-contain object-bottom" />
           <p className="mt-4 font-display text-[24px] font-bold tracking-[-0.02em]">Nada por aquí todavía</p>
           <p className="mt-2 max-w-md font-sans text-[16px] text-ink-2">
@@ -147,7 +151,7 @@ export default function ArchiveSearch({
         <>
           {featured && (
             <article className="group relative mt-8 grid gap-8 lg:grid-cols-[1.35fr_1fr] lg:gap-12">
-              <div className="relative aspect-[16/9] overflow-hidden rounded-[20px] bg-sand-soft lg:aspect-[16/10]">
+              <div className="relative h-[180px] overflow-hidden rounded-[20px] bg-sand-soft sm:h-auto sm:aspect-[16/9] lg:aspect-[16/10]">
                 <Image
                   src={featured.image!.url}
                   alt=""
