@@ -26,7 +26,7 @@ export default function SocialIcons({
               target="_blank"
               rel="noopener noreferrer"
               aria-label={icon.label}
-              className="grid h-10 w-10 place-items-center rounded-full text-sand/55 transition-colors hover:bg-white/10 hover:text-sand"
+              className="grid h-10 w-10 place-items-center rounded-full text-sand/80 transition-colors hover:bg-white/10 hover:text-sand"
             >
               <span
                 aria-hidden="true"
