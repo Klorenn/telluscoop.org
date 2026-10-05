@@ -5,8 +5,11 @@ import SubscribeCard from "@/components/SubscribeCard";
 import SectionHeading from "@/components/SectionHeading";
 import Character from "@/components/Character";
 import SlotPlaceholder from "@/components/SlotPlaceholder";
+import TopicGrid from "@/components/TopicGrid";
+import ProBlock from "@/components/ProBlock";
+import VideoRow from "@/components/VideoRow";
 import { Meta, PostCard, TagPill } from "@/components/PostCard";
-import { getAllSummaries, getPostsByTag, getPublication, getTags } from "@/lib/content";
+import { getAllSummaries, getPostsByTag, getPublication, getSessionVideos, getTags } from "@/lib/content";
 import { HOME_ROWS, SITE, tagLabel } from "@/lib/site";
 
 export default function Home() {
@@ -24,6 +27,7 @@ export default function Home() {
     })
     .filter((r) => r.items.length >= 2);
   const pub = getPublication();
+  const videos = getSessionVideos(6);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -71,7 +75,7 @@ export default function Home() {
       </section>
 
       <section className="mx-auto max-w-[1280px] px-5 pt-12 md:px-8 md:pt-16">
-        <SectionHeading kicker="Boletines" title="Lo último en español" href="/archive" placeholder="ninos" />
+        <SectionHeading kicker="Boletines" title="Lo último en español" href="/archive" />
         <div className="no-scrollbar mt-6 flex gap-2 overflow-x-auto pb-1">
           <Link href="/archive" className="shrink-0 rounded-full bg-ink px-3.5 py-1.5 font-sans text-[13px] font-medium text-sand">
             Todos
@@ -126,35 +130,9 @@ export default function Home() {
         />
       </section>
 
-      {(pub.social.youtube || pub.social.discord) && (
-        <section className="mx-auto max-w-[1280px] px-5 pt-16 md:px-8 md:pt-20">
-          <SectionHeading kicker="Videos" title="Sesiones en español" />
-          <div className="mt-8 grid gap-6 sm:grid-cols-2">
-            {pub.social.youtube ? (
-              <a
-                href={pub.social.youtube}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-[20px] bg-sand-soft p-6 ring-1 ring-line transition-colors hover:ring-ink"
-              >
-                <h3 className="font-display text-[22px] font-bold tracking-[-0.02em]">YouTube</h3>
-                <p className="mt-2 font-sans text-[15px] leading-[1.5] text-ink-2">Charlas y sesiones de la cooperativa, en el canal de Tellus.</p>
-              </a>
-            ) : null}
-            {pub.social.discord ? (
-              <a
-                href={pub.social.discord}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-[20px] bg-sand-soft p-6 ring-1 ring-line transition-colors hover:ring-ink"
-              >
-                <h3 className="font-display text-[22px] font-bold tracking-[-0.02em]">Discord</h3>
-                <p className="mt-2 font-sans text-[15px] leading-[1.5] text-ink-2">La conversación diaria de miembros y builders en LATAM.</p>
-              </a>
-            ) : null}
-          </div>
-        </section>
-      )}
+      <TopicGrid />
+      <ProBlock />
+      <VideoRow videos={videos} channelHref={pub.social.youtube} />
 
       {rows.map(({ tag, items }, i) => {
         return (

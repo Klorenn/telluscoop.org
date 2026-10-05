@@ -42,7 +42,7 @@ export default function ArchivePage() {
         <div className="min-w-0">
           <div className="flex items-start justify-between gap-4">
             <h1 className="font-display text-[40px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[52px]">Boletines Tellus</h1>
-            <Character name="tierra-traje" className="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20" />
+            <Character name="planetas-botas" className="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20" />
           </div>
           <div className="mt-6">
             <p className="font-sans text-[11px] font-medium uppercase tracking-[0.12em] text-muted">Escrito por</p>

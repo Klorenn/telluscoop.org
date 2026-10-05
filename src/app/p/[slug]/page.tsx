@@ -7,7 +7,6 @@ import ArticleBody from "@/components/ArticleBody";
 import StickySubscribe from "@/components/StickySubscribe";
 import SubscribeCard from "@/components/SubscribeCard";
 import FeaturedRail from "@/components/FeaturedRail";
-import Character from "@/components/Character";
 import { PostCard, TagPill } from "@/components/PostCard";
 import { getAllPosts, getPost, getPostBySourceSlug, getRelated } from "@/lib/content";
 import { absUrl, formatDate, SITE, tagLabel } from "@/lib/site";
@@ -99,9 +98,6 @@ export default async function PostPage({ params }: PageProps<"/p/[slug]">) {
 
             <div className="mt-8 flex flex-wrap items-center justify-between gap-5">
               <div className="flex items-center gap-4">
-                {post.tags[0] ? (
-                  <Character name="tierra-traje" className="h-11 w-11 object-contain" />
-                ) : null}
                 <div>
                   {post.tags[0] && <TagPill tag={post.tags[0]} />}
                   <p className="mt-2 font-sans text-[11px] font-medium uppercase tracking-[0.12em] text-teal-deep">Escrito por</p>

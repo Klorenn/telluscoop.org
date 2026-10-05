@@ -17,15 +17,45 @@ export const TAG_LABELS: Record<string, string> = {
   "community-writers": "Community Writers",
   "boletin-semanal": "Boletín semanal",
   "trabajos-web-3": "Trabajos Web3",
-  ia: "Inteligencia artificial",
+  ia: "IA",
   educacion: "Educación",
   informacion: "Información",
   invitacion: "Invitaciones",
+  emprendimiento: "Emprendimiento",
+  cursos: "Cursos",
 };
 export const tagLabel = (t: { slug: string; name: string }) => TAG_LABELS[t.slug] || t.name;
 
 /** Filas de categorías en la portada (en este orden). */
 export const HOME_ROWS = ["stellar-en-espanol", "educacion", "blockchain", "ia", "community-writers"];
+
+/** Cuatro tarjetas de Explora por temas. Originales de blog.telluscoop.com. */
+export const TOPIC_CARDS = [
+  {
+    slug: "blockchain",
+    title: "Blockchain",
+    body: "Conceptos, casos reales y oportunidades para empezar a construir.",
+    mascot: "blockchain",
+  },
+  {
+    slug: "ia",
+    title: "IA",
+    body: "Herramientas y usos prácticos de inteligencia artificial, sin humo.",
+    mascot: "ia",
+  },
+  {
+    slug: "emprendimiento",
+    title: "Emprendimiento",
+    body: "Ideas, aprendizajes y recursos para lanzar y hacer crecer proyectos.",
+    mascot: "emprendimiento",
+  },
+  {
+    slug: "cursos",
+    title: "Cursos",
+    body: "Formación profunda y guiada para dar el siguiente salto. Inscríbete hoy.",
+    mascot: "cursos",
+  },
+] as const;
 
 const fmt = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Santiago" });
 const fmtShort = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", year: "numeric", timeZone: "America/Santiago" });

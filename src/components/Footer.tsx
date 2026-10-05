@@ -34,7 +34,7 @@ export default function Footer() {
           <div className="relative">
             <SubscribeForm placement="footer" source="footer" size="lg" />
             <Character
-              name="tierra-corbata"
+              name="greenpill"
               className="pointer-events-none absolute -right-4 -top-16 hidden h-28 w-auto lg:block"
             />
           </div>

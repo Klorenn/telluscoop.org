@@ -60,3 +60,31 @@ export function getRelated(post: Post, n = 3): PostSummary[] {
     .slice(0, n)
     .map((x) => x.p);
 }
+
+const YOUTUBE_ID = /(?:youtube\.com\/(?:embed\/|watch\?v=|live\/)|youtu\.be\/)([\w-]{11})/gi;
+
+export type SessionVideo = {
+  id: string;
+  title: string;
+  slug: string;
+  publishedAt: string;
+};
+
+/** YouTube sessions already embedded in Beehiiv posts. No invented IDs. One per post. */
+export function getSessionVideos(limit = 6): SessionVideo[] {
+  const seenIds = new Set<string>();
+  const out: SessionVideo[] = [];
+  for (const p of load().posts) {
+    const html = p.html || "";
+    YOUTUBE_ID.lastIndex = 0;
+    for (const m of html.matchAll(YOUTUBE_ID)) {
+      const id = m[1];
+      if (!id || seenIds.has(id)) continue;
+      seenIds.add(id);
+      out.push({ id, title: p.title, slug: p.slug, publishedAt: p.publishedAt });
+      break;
+    }
+    if (out.length >= limit) return out;
+  }
+  return out;
+}

@@ -113,7 +113,7 @@ test("official /brand logos stay; chrome matches Milk Road colors", async () => 
   assert.ok(existsSync(new URL("src/app/icon.png", root)));
   assert.doesNotMatch(home, /mapa-latam/);
   assert.match(home, /planetas-botas/);
-  assert.doesNotMatch(home, /robot-teal/);
+  assert.doesNotMatch(home, /robot-teal|tierra-corbata|tierra-traje|personaje-tierra/);
 });
 
 test("Figma pack fills Milk Road illustration slots; no invented drawings", async () => {
@@ -128,33 +128,96 @@ test("Figma pack fills Milk Road illustration slots; no invented drawings", asyn
   for (const src of [home, footer, archive, tag, post, card, notFound, character]) {
     assert.doesNotMatch(src, /illo-hero|illo-subscribe|illo-archive|illo-hub|HubBanner/);
     assert.doesNotMatch(src, /mapa-latam/);
+    assert.doesNotMatch(src, /ninos-plantando|ninos"|placeholder="ninos"/);
   }
   assert.match(home, /planetas-botas/);
-  assert.doesNotMatch(home, /robot-teal/);
+  assert.match(home, /TopicGrid/);
+  assert.match(home, /ProBlock/);
+  assert.match(home, /VideoRow/);
+  assert.match(home, /getSessionVideos/);
+  assert.doesNotMatch(home, /Charlas y sesiones de la cooperativa|La conversación diaria de miembros/);
   assert.match(home, /slot="mapa"/);
-  assert.match(home, /placeholder="ninos"/);
+  assert.doesNotMatch(home, /ninos|placeholder="ninos"|ninos-plantando/);
   assert.match(card, /greenpill/);
-  assert.match(footer, /tierra-corbata/);
-  assert.match(archive, /tierra-traje/);
-  assert.match(post, /tierra-traje/);
-  assert.doesNotMatch(tag, /TAG_CHARACTERS|Character/);
+  assert.match(footer, /greenpill/);
+  assert.doesNotMatch(footer, /tierra-corbata/);
+  assert.match(archive, /planetas-botas/);
+  assert.doesNotMatch(archive, /tierra-traje/);
+  assert.doesNotMatch(post, /tierra-traje|Character/);
   assert.match(character, /planetas-botas/);
+  assert.match(character, /mascota-blockchain-bloques/);
+  assert.match(character, /mascota-ia-cyborg/);
+  assert.match(character, /mascota-emprendimiento-astronauta/);
+  assert.match(character, /mascota-cursos-profesor/);
+  assert.match(character, /mascota-pro-candado/);
+  assert.doesNotMatch(character, /tierra-corbata|tierra-traje|robot-teal|ilustracion-educacion/);
   assert.match(notFound, /robot-espacio/);
+  const topics = await read("src/components/TopicGrid.tsx");
+  const pro = await read("src/components/ProBlock.tsx");
+  const site = await read("src/lib/site.ts");
+  assert.match(topics, /Explora por temas/);
+  assert.match(topics, /TOPIC_CARDS/);
+  assert.match(site, /slug: "blockchain"/);
+  assert.match(site, /slug: "ia"/);
+  assert.match(site, /slug: "emprendimiento"/);
+  assert.match(site, /slug: "cursos"/);
+  assert.match(pro, /Posiciónate para lo que viene/);
+  assert.match(pro, /name="pro"/);
   const placeholder = await read("src/components/SlotPlaceholder.tsx");
-  assert.match(placeholder, /slot: "mapa" \| "ninos"/);
+  assert.match(placeholder, /slot: "mapa"/);
+  assert.doesNotMatch(placeholder, /ninos/);
   assert.doesNotMatch(placeholder, /svg|path |<img/i);
-  assert.ok(existsSync(new URL("public/brand/personaje-robot-teal.png", root)));
-  assert.ok(existsSync(new URL("public/brand/personaje-tierra-traje.png", root)));
-  assert.ok(existsSync(new URL("public/brand/personaje-tierra-corbata.png", root)));
-  assert.ok(existsSync(new URL("public/brand/personaje-tierra.png", root)));
+  const heading = await read("src/components/SectionHeading.tsx");
+  assert.doesNotMatch(heading, /ninos|placeholder/);
+  assert.ok(!existsSync(new URL("public/brand/personaje-robot-teal.png", root)));
+  assert.ok(!existsSync(new URL("public/brand/personaje-tierra-traje.png", root)));
+  assert.ok(!existsSync(new URL("public/brand/personaje-tierra-corbata.png", root)));
+  assert.ok(!existsSync(new URL("public/brand/personaje-tierra.png", root)));
   assert.ok(existsSync(new URL("public/brand/personaje-greenpill-pastillas.png", root)));
   assert.ok(existsSync(new URL("public/brand/personaje-planetas-botas.png", root)));
   assert.ok(existsSync(new URL("public/brand/personaje-robot-espacio.png", root)));
-  assert.ok(existsSync(new URL("public/brand/ilustracion-educacion.svg", root)));
-  assert.ok(existsSync(new URL("public/brand/ilustracion-inclusion.svg", root)));
-  assert.ok(existsSync(new URL("public/brand/ilustracion-crecimiento.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/mascota-blockchain-bloques.png", root)));
+  assert.ok(existsSync(new URL("public/brand/mascota-ia-cyborg.png", root)));
+  assert.ok(existsSync(new URL("public/brand/mascota-emprendimiento-astronauta.png", root)));
+  assert.ok(existsSync(new URL("public/brand/mascota-cursos-profesor.png", root)));
+  assert.ok(existsSync(new URL("public/brand/mascota-pro-candado.png", root)));
+  assert.ok(!existsSync(new URL("public/brand/ilustracion-educacion.svg", root)));
+  assert.ok(!existsSync(new URL("public/brand/ilustracion-inclusion.svg", root)));
+  assert.ok(!existsSync(new URL("public/brand/ilustracion-crecimiento.svg", root)));
   assert.ok(!existsSync(new URL("src/components/Illustration.tsx", root)));
   assert.ok(!existsSync(new URL("src/components/HubBanner.tsx", root)));
+});
+
+test("Sesiones embeds real YouTube videos from posts, not channel buttons", async () => {
+  const home = await read("src/app/page.tsx");
+  const row = await read("src/components/VideoRow.tsx");
+  const player = await read("src/components/VideoPlayer.tsx");
+  const content = await read("src/lib/content/index.ts");
+  const snap = JSON.parse(await read("content/cache/snapshot.json"));
+  assert.match(home, /VideoRow/);
+  assert.match(home, /getSessionVideos/);
+  assert.doesNotMatch(home, /pub\.social\.discord/);
+  assert.match(row, /Sesiones en español/);
+  assert.match(row, /id="sesiones"/);
+  assert.match(player, /youtube-nocookie\.com\/embed\/\$\{id\}/);
+  assert.match(player, /i\.ytimg\.com\/vi\/\$\{id\}\/hqdefault\.jpg/);
+  assert.match(player, /loading="lazy"/);
+  assert.doesNotMatch(player, /embed\/[\w-]{11}["'?]/);
+  assert.match(content, /getSessionVideos/);
+  assert.match(content, /youtube\\.com/);
+  assert.match(content, /youtu\\.be/);
+  assert.match(content, /No invented IDs/);
+
+  const YOUTUBE_ID = /(?:youtube\.com\/(?:embed\/|watch\?v=|live\/)|youtu\.be\/)([\w-]{11})/gi;
+  const ids = new Set();
+  for (const p of snap.posts) {
+    YOUTUBE_ID.lastIndex = 0;
+    for (const m of (p.html || "").matchAll(YOUTUBE_ID)) ids.add(m[1]);
+  }
+  for (const id of ["ag_Eu8M7shI", "BXspAEAnBNQ", "77EQ9DNEq1A", "LRASqWF1RYQ", "kl2DBIP3fP8", "rD7AS1u_yoI"]) {
+    assert.ok(ids.has(id), `missing real video ${id}`);
+  }
+  assert.ok(ids.size >= 6);
 });
 
 test("vercel.json asks Vercel to build Next.js without dropping existing redirects", async () => {
