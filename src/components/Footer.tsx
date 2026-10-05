@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Logo from "./Logo";
-import SubscribeForm from "./SubscribeForm";
-import { SubscribeMascot } from "./SubscribeCard";
+import SubscribeCard from "./SubscribeCard";
+import SocialIcons from "./SocialIcons";
 import { getPublication, getTags } from "@/lib/content";
 import { tagLabel } from "@/lib/site";
 
@@ -18,23 +18,13 @@ export default function Footer() {
 
   return (
     <footer className="mt-8 bg-ink text-sand/80">
-      <div className="border-b border-sand/10 bg-sand-soft text-ink">
-        <div className="mx-auto grid max-w-[1280px] items-end gap-8 px-5 py-12 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:px-8 md:py-16 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,1fr)_auto]">
-          <div>
-            <p className="font-sans text-[11px] font-medium uppercase tracking-[0.14em] text-teal-deep">Suscríbete</p>
-            <h2 className="mt-3 font-display text-[32px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[44px]">
-              El boletín, cada semana
-              <br />
-              en tu correo
-            </h2>
-            <p className="mt-4 max-w-md font-sans text-[17px] leading-[1.5] text-ink-2">
-              Aprende blockchain, Stellar y Web3 en español. Gratis, cada semana.
-            </p>
-          </div>
-          <div className="relative z-10 min-w-0">
-            <SubscribeForm placement="footer" source="footer" size="lg" />
-          </div>
-          <SubscribeMascot size="lg" from="lg" />
+      <div className="border-b border-sand/10 bg-sand px-5 py-12 md:px-8 md:py-16">
+        <div className="mx-auto max-w-[1280px]">
+          <SubscribeCard
+            placement="footer"
+            title="El boletín de Tellus, cada semana en tu correo"
+            body="Aprende blockchain, Stellar y Web3 en español. Gratis, cada semana."
+          />
         </div>
       </div>
 
@@ -44,17 +34,7 @@ export default function Footer() {
           <p className="mt-5 max-w-sm font-sans text-[15px] leading-relaxed text-sand/70">
             La cooperativa blockchain de Latinoamérica. Aprende, conecta y emprende en Web3, en español.
           </p>
-          {social.length > 0 && (
-            <ul className="mt-6 flex flex-wrap gap-3 font-sans text-[13px] font-semibold uppercase tracking-wider">
-              {social.map((s) => (
-                <li key={s.label}>
-                  <a href={s.href} target="_blank" rel="noopener noreferrer" className="hover:text-sand">
-                    {s.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
+          {social.length > 0 && <SocialIcons links={social} />}
         </div>
         <div>
           <h2 className="font-sans text-[12px] font-semibold uppercase tracking-[0.12em] text-sand/45">Categorías</h2>

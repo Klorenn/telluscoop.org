@@ -144,7 +144,7 @@ test("Figma pack fills Milk Road illustration slots; no invented drawings", asyn
   assert.doesNotMatch(home, /ninos|placeholder="ninos"|ninos-plantando/);
   assert.match(card, /emprendimiento/);
   assert.doesNotMatch(card, /greenpill|absolute/);
-  assert.match(footer, /SubscribeMascot/);
+  assert.match(footer, /SubscribeCard/);
   assert.doesNotMatch(footer, /greenpill|tierra-corbata|4\.500|4500/);
   assert.match(footer, /Gratis, cada semana/);
   assert.match(archive, /ArchiveSearch/);
@@ -230,10 +230,27 @@ test("subscribe blocks keep the mascot in its own column and skip invented count
   assert.match(card, /SubscribeMascot/);
   assert.match(card, /name="emprendimiento"/);
   assert.doesNotMatch(card, /absolute/);
-  assert.match(footer, /SubscribeMascot/);
+  assert.match(footer, /SubscribeCard/);
   assert.doesNotMatch(footer, /absolute -bottom|-right-2/);
   assert.match(form, /whitespace-nowrap/);
   assert.match(form, /relative z-10/);
+});
+
+test("footer social links use brand SVG icons with aria-labels", async () => {
+  const footer = await read("src/components/Footer.tsx");
+  const icons = await read("src/components/SocialIcons.tsx");
+  assert.match(footer, /SocialIcons/);
+  assert.doesNotMatch(footer, /uppercase tracking-wider/);
+  for (const name of ["X", "Instagram", "LinkedIn", "YouTube", "Discord"]) {
+    assert.match(icons, new RegExp(`aria-label=\\{icon.label\\}|label: "${name}"`));
+  }
+  assert.match(icons, /brand\/social\/\$\{icon\.file\}\.svg/);
+  assert.match(icons, /aria-label=\{icon.label\}/);
+  assert.ok(existsSync(new URL("public/brand/social/x.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/social/instagram.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/social/linkedin.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/social/youtube.svg", root)));
+  assert.ok(existsSync(new URL("public/brand/social/discord.svg", root)));
 });
 
 test("Sesiones embeds real YouTube videos from posts, not channel buttons", async () => {
